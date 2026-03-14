@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
+import { useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { Loader2, User, Lock, Briefcase, Shield, UserCog } from "lucide-react";
 
@@ -11,6 +12,7 @@ const roles = [
 
 export default function Setup() {
   const [, setLocation] = useLocation();
+  const queryClient = useQueryClient();
   const [step, setStep] = useState<"welcome" | "form">("welcome");
   const [role, setRole] = useState("admin");
   const [fullName, setFullName] = useState("");
@@ -24,18 +26,39 @@ export default function Setup() {
     setError("");
     setLoading(true);
     try {
-      const res = await fetch("/api/setup/init", {
+      // 1. Create the first account
+      const setupRes = await fetch("/api/setup/init", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({ fullName, username, password, role }),
       });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.message || "حدث خطأ");
+      const setupData = await setupRes.json();
+      if (!setupRes.ok) {
+        setError(setupData.message || "حدث خطأ");
         return;
       }
-      setLocation("/login");
+
+      // 2. Auto-login with the new credentials
+      const loginRes = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ username, password }),
+      });
+      if (!loginRes.ok) {
+        // If auto-login fails, go to login page
+        setLocation("/login");
+        return;
+      }
+
+      // 3. Refresh all queries (setup status + current user)
+      await queryClient.invalidateQueries();
+      await queryClient.refetchQueries({ queryKey: ["/api/setup/status"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/auth/me"] });
+
+      // 4. Go directly to the dashboard
+      setLocation("/");
     } catch {
       setError("حدث خطأ في الاتصال بالخادم");
     } finally {
@@ -177,7 +200,7 @@ export default function Setup() {
         </div>
 
         <p className="text-center text-slate-600 text-xs mt-6">
-          بعد إنشاء الحساب سيُطلب منك تسجيل الدخول في كل مرة
+          ستدخل مباشرة بعد الإنشاء · في المرات القادمة يطلب تسجيل الدخول
         </p>
       </motion.div>
     </div>
