@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, ReactNode } from "react";
 import { useGetCurrentUser, useLogin, useLogout, type Employee } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -13,9 +13,7 @@ const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
-  const [autoLoggingIn, setAutoLoggingIn] = useState(true);
-
-  const { data: user, isLoading: userLoading } = useGetCurrentUser({
+  const { data: user, isLoading } = useGetCurrentUser({
     query: { retry: false, staleTime: Infinity }
   });
 
@@ -34,17 +32,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }
   });
-
-  useEffect(() => {
-    if (!userLoading && !user) {
-      loginMutation.mutateAsync({ data: { username: "admin", password: "admin123" } })
-        .finally(() => setAutoLoggingIn(false));
-    } else if (!userLoading) {
-      setAutoLoggingIn(false);
-    }
-  }, [userLoading]);
-
-  const isLoading = userLoading || autoLoggingIn;
 
   return (
     <AuthContext.Provider value={{
