@@ -1,0 +1,20 @@
+packages:
+  "date-fns": "For date formatting, parsing, and manipulation"
+  "recharts": "For rendering attendance and leave statistics charts"
+  "lucide-react": "Icons for UI"
+  "framer-motion": "For page transitions and micro-animations"
+  "clsx": "Utility for constructing className strings conditionally"
+  "tailwind-merge": "Utility for merging tailwind classes"
+
+images:
+  - path: "artifacts/attendance-system/public/images/login-bg.png"
+    description: "Abstract modern professional enterprise background with deep navy and subtle gold gradients, suitable for an Arabic attendance system login page"
+    aspect_ratio: "16:9"
+  - path: "artifacts/attendance-system/public/images/logo.png"
+    description: "Minimal geometric logo for an attendance and HR system, blue and gold colors, transparent background, highly polished"
+    aspect_ratio: "1:1"
+
+notes:
+  - "RTL layout applied globally via body dir='rtl'"
+  - "Using iframe for Google Maps based on GPS coordinates for simplicity and reliability without extra map libraries"
+  - "Assuming @workspace/api-client-react exports all hooks and types from the generated orval output"
