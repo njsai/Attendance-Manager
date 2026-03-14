@@ -1,5 +1,5 @@
-import { Switch, Route, Router as WouterRouter, Redirect } from "wouter";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Switch, Route, Router as WouterRouter, Redirect, useLocation } from "wouter";
+import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/lib/auth";
@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from "@/lib/auth";
 // Layout & Pages
 import AppLayout from "@/components/layout/AppLayout";
 import Login from "@/pages/Login";
+import Setup from "@/pages/Setup";
 import AdminDashboard from "@/pages/admin/Dashboard";
 import EmployeeDashboard from "@/pages/employee/Dashboard";
 import Employees from "@/pages/admin/Employees";
@@ -26,7 +27,7 @@ function ProtectedRoute({ component: Component, adminOnly = false }: { component
   const { user, isLoading } = useAuth();
 
   if (isLoading) return <div className="flex h-screen items-center justify-center bg-background"><Loader2 className="w-12 h-12 animate-spin text-primary" /></div>;
-  
+
   if (!user) return <Redirect to="/login" />;
 
   if (adminOnly && user.role !== "admin" && user.role !== "manager") return <Redirect to="/" />;
@@ -37,14 +38,43 @@ function ProtectedRoute({ component: Component, adminOnly = false }: { component
 function Router() {
   const { user } = useAuth();
 
+  // Check if system is set up
+  const { data: setupStatus, isLoading: setupLoading } = useQuery<{ isSetup: boolean }>({
+    queryKey: ["/api/setup/status"],
+    queryFn: async () => {
+      const res = await fetch("/api/setup/status", { credentials: "include" });
+      return res.json();
+    },
+    staleTime: 0,
+  });
+
+  if (setupLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-background">
+        <Loader2 className="w-12 h-12 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // Not set up yet → show setup page
+  if (setupStatus && !setupStatus.isSetup) {
+    return (
+      <Switch>
+        <Route path="/setup" component={Setup} />
+        <Route>{() => <Redirect to="/setup" />}</Route>
+      </Switch>
+    );
+  }
+
   return (
     <Switch>
       <Route path="/login" component={Login} />
-      
+      <Route path="/setup">{() => <Redirect to="/" />}</Route>
+
       <Route path="/">
         {() => (
-          <ProtectedRoute 
-            component={user?.role === "admin" || user?.role === "manager" ? AdminDashboard : EmployeeDashboard} 
+          <ProtectedRoute
+            component={user?.role === "admin" || user?.role === "manager" ? AdminDashboard : EmployeeDashboard}
           />
         )}
       </Route>
