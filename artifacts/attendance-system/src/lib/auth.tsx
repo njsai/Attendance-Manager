@@ -19,8 +19,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loginMutation = useLogin({
     mutation: {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: [`/api/auth/me`] });
+      onSuccess: async () => {
+        // resetQueries puts the query back to 'pending' state so isLoading=true
+        // while the new user data is being fetched — prevents redirect back to /login
+        await queryClient.resetQueries({ queryKey: [`/api/auth/me`] });
       }
     }
   });
