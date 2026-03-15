@@ -51,10 +51,7 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
     user.role === "manager" ? MANAGER_NAV :
     EMPLOYEE_NAV;
 
-  const handleLogout = async () => {
-    await logout();
-    window.location.href = "/login";
-  };
+  const handleLogout = () => logout();
 
   return (
     <div className="flex flex-col h-full">

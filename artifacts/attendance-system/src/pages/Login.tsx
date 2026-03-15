@@ -1,12 +1,30 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { useAuth } from "@/lib/auth";
+import { useQueryClient } from "@tanstack/react-query";
 import { Loader2, User, KeyRound } from "lucide-react";
 import { motion } from "framer-motion";
 
+async function apiPost(url: string, body: object) {
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(body),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data?.message || "خطأ");
+  return data;
+}
+
+async function apiFetch(url: string) {
+  const res = await fetch(url, { credentials: "include" });
+  if (!res.ok) throw new Error("unauthorized");
+  return res.json();
+}
+
 export default function Login() {
-  const { login } = useAuth();
   const [, setLocation] = useLocation();
+  const queryClient = useQueryClient();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -17,10 +35,19 @@ export default function Login() {
     setError("");
     setIsPending(true);
     try {
-      await login({ data: { username, password } });
+      // 1. Login — sets the session cookie
+      await apiPost("/api/auth/login", { username, password });
+
+      // 2. Fetch the actual user from /api/auth/me with the new cookie
+      const user = await apiFetch("/api/auth/me");
+
+      // 3. Populate the React Query cache so the app knows the user immediately
+      queryClient.setQueryData(["/api/auth/me"], user);
+
+      // 4. Navigate based on role
       setLocation("/");
-    } catch {
-      setError("اسم المستخدم أو الرمز غير صحيح");
+    } catch (err: any) {
+      setError(err?.message || "اسم المستخدم أو الرمز غير صحيح");
     } finally {
       setIsPending(false);
     }
@@ -34,7 +61,6 @@ export default function Login() {
         transition={{ duration: 0.4 }}
         className="w-full max-w-md"
       >
-        {/* Card */}
         <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl shadow-2xl overflow-hidden">
           {/* Header */}
           <div className="bg-gradient-to-bl from-primary/80 to-primary px-8 py-10 text-center relative overflow-hidden">
