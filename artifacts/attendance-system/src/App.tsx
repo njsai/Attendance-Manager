@@ -1,12 +1,14 @@
-import { Switch, Route, Router as WouterRouter } from "wouter";
+import { Switch, Route, Router as WouterRouter, Redirect } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { AuthProvider } from "@/lib/auth";
+import { AuthProvider, useAuth } from "@/lib/auth";
+import { Loader2 } from "lucide-react";
 
-// Layout & Pages
 import AppLayout from "@/components/layout/AppLayout";
+import Login from "@/pages/Login";
 import AdminDashboard from "@/pages/admin/Dashboard";
+import ManagerDashboard from "@/pages/manager/Dashboard";
 import EmployeeDashboard from "@/pages/employee/Dashboard";
 import Employees from "@/pages/admin/Employees";
 import AdminAttendance from "@/pages/admin/Attendance";
@@ -20,39 +22,55 @@ const queryClient = new QueryClient({
   defaultOptions: { queries: { refetchOnWindowFocus: false, retry: false } }
 });
 
-function wrap(Component: React.ComponentType) {
-  return () => (
-    <AppLayout>
-      <Component />
-    </AppLayout>
+function Guard({ children, adminOnly = false }: { children: React.ReactNode; adminOnly?: boolean }) {
+  const { user, isLoading } = useAuth();
+  if (isLoading) return (
+    <div className="flex h-screen items-center justify-center bg-background">
+      <Loader2 className="w-12 h-12 animate-spin text-primary" />
+    </div>
   );
+  if (!user) return <Redirect to="/login" />;
+  if (adminOnly && user.role !== "admin" && user.role !== "manager") return <Redirect to="/" />;
+  return <AppLayout>{children}</AppLayout>;
+}
+
+function RootRedirect() {
+  const { user, isLoading } = useAuth();
+  if (isLoading) return (
+    <div className="flex h-screen items-center justify-center bg-background">
+      <Loader2 className="w-12 h-12 animate-spin text-primary" />
+    </div>
+  );
+  if (!user) return <Redirect to="/login" />;
+  if (user.role === "admin") return <Guard><AdminDashboard /></Guard>;
+  if (user.role === "manager") return <Guard><ManagerDashboard /></Guard>;
+  return <Guard><EmployeeDashboard /></Guard>;
 }
 
 function Router() {
   return (
     <Switch>
-      {/* Default → Admin Dashboard */}
-      <Route path="/" component={wrap(AdminDashboard)} />
+      <Route path="/login" component={Login} />
+      <Route path="/" component={RootRedirect} />
 
-      {/* Admin Routes */}
-      <Route path="/employees" component={wrap(Employees)} />
-      <Route path="/attendance" component={wrap(AdminAttendance)} />
-      <Route path="/leaves" component={wrap(AdminLeaves)} />
-      <Route path="/reports" component={wrap(AdminReports)} />
-      <Route path="/departments" component={wrap(DepartmentsAndShifts)} />
-      <Route path="/shifts" component={wrap(DepartmentsAndShifts)} />
-      <Route path="/settings" component={wrap(AdminDashboard)} />
+      {/* Admin-only */}
+      <Route path="/employees">{() => <Guard adminOnly><Employees /></Guard>}</Route>
+      <Route path="/attendance">{() => <Guard adminOnly><AdminAttendance /></Guard>}</Route>
+      <Route path="/leaves">{() => <Guard adminOnly><AdminLeaves /></Guard>}</Route>
+      <Route path="/reports">{() => <Guard adminOnly><AdminReports /></Guard>}</Route>
+      <Route path="/departments">{() => <Guard adminOnly><DepartmentsAndShifts /></Guard>}</Route>
+      <Route path="/shifts">{() => <Guard adminOnly><DepartmentsAndShifts /></Guard>}</Route>
 
-      {/* Employee Routes */}
-      <Route path="/my-attendance" component={wrap(EmployeeDashboard)} />
-      <Route path="/my-leaves" component={wrap(MyLeaves)} />
+      {/* Employee */}
+      <Route path="/my-attendance">{() => <Guard><EmployeeDashboard /></Guard>}</Route>
+      <Route path="/my-leaves">{() => <Guard><MyLeaves /></Guard>}</Route>
 
       <Route component={NotFound} />
     </Switch>
   );
 }
 
-function App() {
+export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
@@ -66,5 +84,3 @@ function App() {
     </QueryClientProvider>
   );
 }
-
-export default App;

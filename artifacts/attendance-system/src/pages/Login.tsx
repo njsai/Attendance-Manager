@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/lib/auth";
-import { Loader2, Lock, User } from "lucide-react";
+import { Loader2, User, KeyRound } from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function Login() {
@@ -19,73 +19,79 @@ export default function Login() {
     try {
       await login({ data: { username, password } });
       setLocation("/");
-    } catch (err: any) {
-      setError("اسم المستخدم أو كلمة المرور غير صحيحة");
+    } catch {
+      setError("اسم المستخدم أو الرمز غير صحيح");
     } finally {
       setIsPending(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex bg-background" dir="rtl">
-      <div className="flex-1 flex flex-col justify-center px-4 sm:px-6 lg:flex-none lg:px-20 xl:px-24">
-        <motion.div 
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="mx-auto w-full max-w-sm lg:w-96"
-        >
-          <div className="text-center">
-            <img 
-              className="h-16 w-auto mx-auto drop-shadow-md" 
-              src={`${import.meta.env.BASE_URL}images/logo.png`} 
-              alt="شعار النظام" 
-            />
-            <h2 className="mt-8 text-3xl font-extrabold text-foreground">تسجيل الدخول</h2>
-            <p className="mt-2 text-sm text-muted-foreground">أدخل بياناتك للوصول لنظام الحضور</p>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4" dir="rtl">
+      <motion.div
+        initial={{ opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="w-full max-w-md"
+      >
+        {/* Card */}
+        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl shadow-2xl overflow-hidden">
+          {/* Header */}
+          <div className="bg-gradient-to-bl from-primary/80 to-primary px-8 py-10 text-center relative overflow-hidden">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(255,255,255,0.15),transparent_60%)]" />
+            <div className="relative z-10">
+              <div className="w-20 h-20 mx-auto rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center shadow-xl mb-4 border border-white/30">
+                <User className="w-10 h-10 text-white" />
+              </div>
+              <h1 className="text-2xl font-bold text-white">نظام الحضور والانصراف</h1>
+              <p className="text-white/70 mt-1 text-sm">أدخل بياناتك للدخول</p>
+            </div>
           </div>
 
-          <div className="mt-8">
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {error && (
-                <div className="p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-sm text-center font-medium animate-in fade-in slide-in-from-top-2">
-                  {error}
-                </div>
-              )}
+          {/* Form */}
+          <div className="p-8 space-y-5">
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex items-center gap-3 p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm font-medium"
+              >
+                <span className="w-2 h-2 rounded-full bg-red-400 flex-shrink-0" />
+                {error}
+              </motion.div>
+            )}
 
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-slate-300">
                   اسم المستخدم
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 right-0 ps-3 flex items-center pointer-events-none">
-                    <User className="h-5 w-5 text-muted-foreground ml-3" />
-                  </div>
+                  <User className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
                   <input
                     type="text"
                     required
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    className="block w-full pe-10 py-3 rounded-xl border-2 border-border bg-background focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all duration-200 sm:text-sm"
                     placeholder="أدخل اسم المستخدم"
+                    className="w-full pr-12 pl-4 py-3.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all"
                   />
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  كلمة المرور
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-slate-300">
+                  الرمز
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 right-0 ps-3 flex items-center pointer-events-none">
-                    <Lock className="h-5 w-5 text-muted-foreground ml-3" />
-                  </div>
+                  <KeyRound className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
                   <input
                     type="password"
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="block w-full pe-10 py-3 rounded-xl border-2 border-border bg-background focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all duration-200 sm:text-sm"
                     placeholder="••••••••"
+                    className="w-full pr-12 pl-4 py-3.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all"
                   />
                 </div>
               </div>
@@ -93,27 +99,22 @@ export default function Login() {
               <button
                 type="submit"
                 disabled={isPending}
-                className="w-full flex justify-center py-3.5 px-4 border border-transparent rounded-xl shadow-lg shadow-primary/25 text-sm font-bold text-primary-foreground bg-primary hover:bg-primary/90 hover:-translate-y-0.5 active:translate-y-0 active:shadow-md focus:outline-none focus:ring-4 focus:ring-primary/20 transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none"
+                className="w-full py-4 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-base shadow-lg shadow-primary/30 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                {isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : "دخول"}
+                {isPending ? (
+                  <><Loader2 className="w-5 h-5 animate-spin" /> جاري الدخول...</>
+                ) : "دخول"}
               </button>
             </form>
+
+            <div className="text-center pt-2">
+              <p className="text-xs text-slate-600">
+                تواصل مع مدير النظام إذا نسيت بياناتك
+              </p>
+            </div>
           </div>
-        </motion.div>
-      </div>
-      <div className="hidden lg:block relative w-0 flex-1 bg-primary">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary to-primary/80 mix-blend-multiply" />
-        <img
-          className="absolute inset-0 h-full w-full object-cover opacity-60"
-          src={`${import.meta.env.BASE_URL}images/login-bg.png`}
-          alt="خلفية النظام"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-primary/90 via-primary/20 to-transparent" />
-        <div className="absolute bottom-12 right-12 text-white max-w-lg">
-          <h2 className="text-4xl font-bold mb-4">نظام إدارة الموارد البشرية</h2>
-          <p className="text-lg opacity-80 leading-relaxed">قم بإدارة الحضور، الانصراف، الإجازات وتقارير الأداء بكل سهولة وفعالية من خلال لوحة تحكم واحدة متكاملة.</p>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }

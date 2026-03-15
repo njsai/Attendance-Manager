@@ -1,179 +1,298 @@
 import { useState, useEffect } from "react";
-import { useCheckIn, useCheckOut, useStartBreak, useEndBreak, useGetTodayAttendance } from "@workspace/api-client-react";
 import { useAuth } from "@/lib/auth";
-import { LogIn, LogOut, Coffee, MapPin, AlertCircle, CheckCircle2 } from "lucide-react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useCheckIn, useCheckOut, useStartBreak, useEndBreak, useGetTodayAttendance } from "@workspace/api-client-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { motion } from "framer-motion";
 import { format } from "date-fns";
 import { arSA } from "date-fns/locale";
+import {
+  LogIn, LogOut, Coffee, Clock, CalendarCheck,
+  CalendarX, AlarmClock, Timer, CheckCircle2, AlertCircle, MapPin
+} from "lucide-react";
+
+interface MyStats {
+  presentDays: number;
+  absentDays: number;
+  lateDays: number;
+  totalWorkingHours: number;
+  totalLateMinutes: number;
+  recentRecords: Array<{
+    date: string;
+    status: string;
+    workingHours: number | null;
+    lateMinutes: number | null;
+    checkInTime: string | null;
+    checkOutTime: string | null;
+  }>;
+}
+
+const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> = {
+  present: { label: "حاضر", color: "text-emerald-700", bg: "bg-emerald-100" },
+  late:    { label: "متأخر", color: "text-amber-700",  bg: "bg-amber-100"  },
+  absent:  { label: "غائب",  color: "text-red-700",    bg: "bg-red-100"    },
+  on_leave:{ label: "إجازة", color: "text-purple-700", bg: "bg-purple-100" },
+};
 
 export default function EmployeeDashboard() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const { data: todayRecord, isLoading } = useGetTodayAttendance();
-  const [time, setTime] = useState(new Date());
-  
-  const [locationError, setLocationError] = useState("");
+  const { data: todayRecord, isLoading: todayLoading } = useGetTodayAttendance();
+  const [now, setNow] = useState(new Date());
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [locationError, setLocationError] = useState("");
+  const [actionError, setActionError] = useState("");
 
-  const checkInMut = useCheckIn({ mutation: { onSuccess: () => invalidate() } });
-  const checkOutMut = useCheckOut({ mutation: { onSuccess: () => invalidate() } });
-  const startBreakMut = useStartBreak({ mutation: { onSuccess: () => invalidate() } });
-  const endBreakMut = useEndBreak({ mutation: { onSuccess: () => invalidate() } });
+  const { data: stats } = useQuery<MyStats>({
+    queryKey: ["/api/attendance/my-stats"],
+    queryFn: async () => {
+      const res = await fetch("/api/attendance/my-stats", { credentials: "include" });
+      if (!res.ok) throw new Error("failed");
+      return res.json();
+    },
+  });
 
   useEffect(() => {
-    const timer = setInterval(() => setTime(new Date()), 1000);
-    return () => clearInterval(timer);
+    const t = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(t);
   }, []);
 
   useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-        (err) => setLocationError("يرجى تفعيل الموقع الجغرافي لتتمكن من تسجيل الحضور")
-      );
-    } else {
-      setLocationError("المتصفح لا يدعم تحديد الموقع");
-    }
+    if (!navigator.geolocation) { setLocationError("المتصفح لا يدعم تحديد الموقع"); return; }
+    navigator.geolocation.getCurrentPosition(
+      (p) => setCoords({ lat: p.coords.latitude, lng: p.coords.longitude }),
+      () => setLocationError("يرجى تفعيل الموقع الجغرافي")
+    );
   }, []);
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ["/api/attendance/today"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/attendance/my-stats"] });
   };
 
-  const handleAction = async (action: 'checkin' | 'checkout' | 'startbreak' | 'endbreak') => {
-    if (!coords && (action === 'checkin' || action === 'checkout')) {
-      alert("لم يتم تحديد الموقع الجغرافي");
-      return;
-    }
+  const checkInMut  = useCheckIn ({ mutation: { onSuccess: invalidate } });
+  const checkOutMut = useCheckOut({ mutation: { onSuccess: invalidate } });
+  const startBreak  = useStartBreak({ mutation: { onSuccess: invalidate } });
+  const endBreak    = useEndBreak  ({ mutation: { onSuccess: invalidate } });
 
+  const handleAction = async (action: "in" | "out" | "sb" | "eb") => {
+    setActionError("");
     try {
-      if (action === 'checkin') await checkInMut.mutateAsync({ data: { latitude: coords?.lat, longitude: coords?.lng } });
-      if (action === 'checkout') await checkOutMut.mutateAsync({ data: { latitude: coords?.lat, longitude: coords?.lng } });
-      if (action === 'startbreak') await startBreakMut.mutateAsync();
-      if (action === 'endbreak') await endBreakMut.mutateAsync();
+      if (action === "in")  await checkInMut.mutateAsync({ data: { latitude: coords?.lat, longitude: coords?.lng } });
+      if (action === "out") await checkOutMut.mutateAsync({ data: { latitude: coords?.lat, longitude: coords?.lng } });
+      if (action === "sb")  await startBreak.mutateAsync();
+      if (action === "eb")  await endBreak.mutateAsync();
     } catch (e: any) {
-      alert(e.message || "حدث خطأ");
+      setActionError(e?.message ?? "حدث خطأ");
     }
   };
 
-  const isCheckedIn = !!todayRecord?.checkInTime;
-  const isCheckedOut = !!todayRecord?.checkOutTime;
-  const isOnBreak = !!todayRecord?.breakStartTime && !todayRecord?.breakEndTime;
+  const isIn    = !!todayRecord?.checkInTime;
+  const isOut   = !!todayRecord?.checkOutTime;
+  const onBreak = !!todayRecord?.breakStartTime && !todayRecord?.breakEndTime;
+
+  const statCards = [
+    { label: "أيام الحضور",     value: stats?.presentDays ?? 0,     icon: CalendarCheck, color: "from-emerald-500 to-emerald-600", sub: "هذا الشهر" },
+    { label: "أيام الغياب",     value: stats?.absentDays  ?? 0,     icon: CalendarX,     color: "from-red-500 to-red-600",         sub: "هذا الشهر" },
+    { label: "أيام التأخير",    value: stats?.lateDays    ?? 0,     icon: AlarmClock,    color: "from-amber-500 to-amber-600",     sub: "هذا الشهر" },
+    { label: "ساعات العمل",     value: `${stats?.totalWorkingHours ?? 0}`, icon: Timer, color: "from-blue-500 to-blue-600",    sub: "هذا الشهر" },
+  ];
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
-      <div className="text-center space-y-4 py-8">
-        <h2 className="text-5xl font-bold text-foreground" style={{ fontVariantNumeric: 'tabular-nums' }}>
-          {format(time, 'HH:mm:ss')}
-        </h2>
-        <p className="text-xl text-muted-foreground font-medium">
-          {format(time, 'EEEE، d MMMM yyyy', { locale: arSA })}
-        </p>
+    <div className="space-y-8" dir="rtl">
+      {/* Greeting */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">مرحباً، {user?.fullName} 👋</h1>
+          <p className="text-muted-foreground mt-1">
+            {format(now, "EEEE، d MMMM yyyy", { locale: arSA })}
+          </p>
+        </div>
+        <div className="text-4xl font-bold text-primary tabular-nums">
+          {format(now, "HH:mm:ss")}
+        </div>
       </div>
 
-      {locationError && (
-        <div className="flex items-center p-4 bg-destructive/10 text-destructive rounded-xl border border-destructive/20">
-          <AlertCircle className="w-5 h-5 me-3" />
-          <p className="font-semibold">{locationError}</p>
-        </div>
-      )}
+      {/* Stat Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {statCards.map((c, i) => (
+          <motion.div
+            key={c.label}
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.07 }}
+            className={`bg-gradient-to-br ${c.color} rounded-2xl p-5 text-white shadow-lg`}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <c.icon className="w-6 h-6 opacity-80" />
+              <span className="text-xs opacity-70">{c.sub}</span>
+            </div>
+            <div className="text-3xl font-bold">{c.value}</div>
+            <div className="text-sm opacity-80 mt-1">{c.label}</div>
+          </motion.div>
+        ))}
+      </div>
 
+      {/* Attendance Actions */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-card rounded-3xl p-8 shadow-xl shadow-black/5 border border-border text-center flex flex-col items-center justify-center">
-          <div className="mb-6 flex gap-4">
+        {/* Action card */}
+        <div className="bg-card rounded-3xl p-7 border border-border shadow-lg space-y-6">
+          <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
+            <Clock className="w-5 h-5 text-primary" />
+            تسجيل الحضور والانصراف
+          </h2>
+
+          {locationError && (
+            <div className="flex items-center gap-2 p-3 bg-amber-50 text-amber-700 rounded-xl text-sm border border-amber-200">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              {locationError}
+            </div>
+          )}
+          {actionError && (
+            <div className="flex items-center gap-2 p-3 bg-red-50 text-red-700 rounded-xl text-sm border border-red-200">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              {actionError}
+            </div>
+          )}
+
+          {/* Check in / out buttons */}
+          <div className="flex gap-4 justify-center">
             <button
-              disabled={isCheckedIn || !!locationError || checkInMut.isPending}
-              onClick={() => handleAction('checkin')}
-              className={`flex flex-col items-center justify-center w-32 h-32 rounded-2xl shadow-lg transition-all duration-300 ${
-                isCheckedIn 
-                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed opacity-60' 
-                  : 'bg-emerald-500 text-white hover:bg-emerald-600 hover:-translate-y-1 hover:shadow-emerald-500/25 active:translate-y-0'
+              disabled={isIn || checkInMut.isPending}
+              onClick={() => handleAction("in")}
+              className={`flex flex-col items-center justify-center w-36 h-36 rounded-2xl shadow-lg text-white font-bold text-lg transition-all duration-200 ${
+                isIn
+                  ? "bg-gray-200 text-gray-400 cursor-not-allowed shadow-none"
+                  : "bg-gradient-to-b from-emerald-400 to-emerald-600 hover:-translate-y-1 hover:shadow-emerald-500/30 active:translate-y-0"
               }`}
             >
-              {isCheckedIn ? <CheckCircle2 className="w-10 h-10 mb-2" /> : <LogIn className="w-10 h-10 mb-2" />}
-              <span className="font-bold text-lg">حضور</span>
+              {isIn ? <CheckCircle2 className="w-10 h-10 mb-2 text-gray-400" /> : <LogIn className="w-10 h-10 mb-2" />}
+              حضور
             </button>
 
             <button
-              disabled={!isCheckedIn || isCheckedOut || !!locationError || checkOutMut.isPending}
-              onClick={() => handleAction('checkout')}
-              className={`flex flex-col items-center justify-center w-32 h-32 rounded-2xl shadow-lg transition-all duration-300 ${
-                !isCheckedIn || isCheckedOut 
-                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed opacity-60' 
-                  : 'bg-rose-500 text-white hover:bg-rose-600 hover:-translate-y-1 hover:shadow-rose-500/25 active:translate-y-0'
+              disabled={!isIn || isOut || checkOutMut.isPending}
+              onClick={() => handleAction("out")}
+              className={`flex flex-col items-center justify-center w-36 h-36 rounded-2xl shadow-lg text-white font-bold text-lg transition-all duration-200 ${
+                !isIn || isOut
+                  ? "bg-gray-200 text-gray-400 cursor-not-allowed shadow-none"
+                  : "bg-gradient-to-b from-rose-400 to-rose-600 hover:-translate-y-1 hover:shadow-rose-500/30 active:translate-y-0"
               }`}
             >
-              {isCheckedOut ? <CheckCircle2 className="w-10 h-10 mb-2" /> : <LogOut className="w-10 h-10 mb-2" />}
-              <span className="font-bold text-lg">انصراف</span>
+              {isOut ? <CheckCircle2 className="w-10 h-10 mb-2 text-gray-400" /> : <LogOut className="w-10 h-10 mb-2" />}
+              انصراف
             </button>
           </div>
 
-          <div className="flex gap-4 w-full justify-center">
-            {!isOnBreak ? (
+          {/* Break */}
+          <div className="flex justify-center">
+            {!onBreak ? (
               <button
-                disabled={!isCheckedIn || isCheckedOut || startBreakMut.isPending}
-                onClick={() => handleAction('startbreak')}
-                className="flex items-center px-6 py-3 rounded-xl bg-amber-100 text-amber-700 font-bold hover:bg-amber-200 transition-colors disabled:opacity-50"
+                disabled={!isIn || isOut || startBreak.isPending}
+                onClick={() => handleAction("sb")}
+                className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-amber-100 text-amber-700 font-semibold hover:bg-amber-200 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                <Coffee className="w-5 h-5 me-2" />
+                <Coffee className="w-4 h-4" />
                 بدء استراحة
               </button>
             ) : (
               <button
-                disabled={endBreakMut.isPending}
-                onClick={() => handleAction('endbreak')}
-                className="flex items-center px-6 py-3 rounded-xl bg-amber-500 text-white font-bold hover:bg-amber-600 transition-colors shadow-lg shadow-amber-500/25"
+                onClick={() => handleAction("eb")}
+                disabled={endBreak.isPending}
+                className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-amber-500 text-white font-semibold hover:bg-amber-600 transition-colors shadow-lg shadow-amber-500/25"
               >
-                <Coffee className="w-5 h-5 me-2" />
-                إنهاء استراحة
+                <Coffee className="w-4 h-4" />
+                إنهاء الاستراحة
               </button>
             )}
           </div>
+
+          {/* Today summary */}
+          {todayRecord && (
+            <div className="grid grid-cols-3 gap-3 pt-2 border-t border-border">
+              <div className="text-center">
+                <p className="text-xs text-muted-foreground">الحضور</p>
+                <p className="font-bold text-foreground">{todayRecord.checkInTime ? format(new Date(todayRecord.checkInTime), "HH:mm") : "--:--"}</p>
+              </div>
+              <div className="text-center">
+                <p className="text-xs text-muted-foreground">الانصراف</p>
+                <p className="font-bold text-foreground">{todayRecord.checkOutTime ? format(new Date(todayRecord.checkOutTime), "HH:mm") : "--:--"}</p>
+              </div>
+              <div className="text-center">
+                <p className="text-xs text-muted-foreground">ساعات العمل</p>
+                <p className="font-bold text-foreground">{todayRecord.workingHours?.toFixed(1) ?? "0.0"}</p>
+              </div>
+            </div>
+          )}
         </div>
 
-        <div className="bg-card rounded-3xl p-6 shadow-xl shadow-black/5 border border-border overflow-hidden flex flex-col">
-          <h3 className="text-lg font-bold text-foreground flex items-center mb-4">
-            <MapPin className="w-5 h-5 me-2 text-primary" />
+        {/* Location */}
+        <div className="bg-card rounded-3xl p-7 border border-border shadow-lg flex flex-col">
+          <h2 className="text-lg font-bold text-foreground flex items-center gap-2 mb-4">
+            <MapPin className="w-5 h-5 text-primary" />
             موقعي الحالي
-          </h3>
-          <div className="flex-1 rounded-2xl overflow-hidden bg-gray-100 relative min-h-[250px]">
+          </h2>
+          <div className="flex-1 min-h-[220px] rounded-2xl overflow-hidden bg-gray-100 relative">
             {coords ? (
-              <iframe 
-                width="100%" 
-                height="100%" 
-                frameBorder="0" 
-                scrolling="no" 
-                marginHeight={0} 
-                marginWidth={0} 
+              <iframe
+                width="100%" height="100%"
+                frameBorder="0" scrolling="no"
                 src={`https://maps.google.com/maps?q=${coords.lat},${coords.lng}&z=16&output=embed`}
                 className="absolute inset-0"
-              ></iframe>
+              />
             ) : (
-              <div className="absolute inset-0 flex items-center justify-center text-muted-foreground font-medium">
-                جاري تحديد الموقع...
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground gap-2">
+                <MapPin className="w-8 h-8 opacity-30" />
+                <span className="text-sm">{locationError || "جاري تحديد الموقع..."}</span>
               </div>
             )}
           </div>
         </div>
       </div>
 
-      {todayRecord && (
-        <div className="bg-primary/5 rounded-2xl p-6 border border-primary/10 flex flex-wrap gap-8 justify-center">
-          <div className="text-center">
-            <p className="text-sm text-primary/60 font-medium">وقت الحضور</p>
-            <p className="text-xl font-bold text-primary">{todayRecord.checkInTime ? format(new Date(todayRecord.checkInTime), 'HH:mm') : '--:--'}</p>
-          </div>
-          <div className="text-center">
-            <p className="text-sm text-primary/60 font-medium">وقت الانصراف</p>
-            <p className="text-xl font-bold text-primary">{todayRecord.checkOutTime ? format(new Date(todayRecord.checkOutTime), 'HH:mm') : '--:--'}</p>
-          </div>
-          <div className="text-center">
-            <p className="text-sm text-primary/60 font-medium">ساعات العمل</p>
-            <p className="text-xl font-bold text-primary">{todayRecord.workingHours ? todayRecord.workingHours.toFixed(2) : '0.00'}</p>
-          </div>
-          <div className="text-center">
-            <p className="text-sm text-primary/60 font-medium">الحالة</p>
-            <p className="text-xl font-bold text-primary capitalize">{todayRecord.status}</p>
+      {/* Recent Records */}
+      {stats?.recentRecords && stats.recentRecords.length > 0 && (
+        <div className="bg-card rounded-3xl p-7 border border-border shadow-lg">
+          <h2 className="text-lg font-bold text-foreground mb-5">سجل الحضور الأخير</h2>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border text-right">
+                  <th className="pb-3 text-muted-foreground font-medium">التاريخ</th>
+                  <th className="pb-3 text-muted-foreground font-medium">الحالة</th>
+                  <th className="pb-3 text-muted-foreground font-medium">وقت الحضور</th>
+                  <th className="pb-3 text-muted-foreground font-medium">وقت الانصراف</th>
+                  <th className="pb-3 text-muted-foreground font-medium">ساعات العمل</th>
+                  <th className="pb-3 text-muted-foreground font-medium">التأخير</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {stats.recentRecords.map((r) => {
+                  const s = STATUS_MAP[r.status] ?? { label: r.status, color: "text-gray-600", bg: "bg-gray-100" };
+                  return (
+                    <tr key={r.date} className="hover:bg-muted/30 transition-colors">
+                      <td className="py-3 font-medium">{r.date}</td>
+                      <td className="py-3">
+                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${s.bg} ${s.color}`}>
+                          {s.label}
+                        </span>
+                      </td>
+                      <td className="py-3 tabular-nums">
+                        {r.checkInTime ? format(new Date(r.checkInTime), "HH:mm") : "--"}
+                      </td>
+                      <td className="py-3 tabular-nums">
+                        {r.checkOutTime ? format(new Date(r.checkOutTime), "HH:mm") : "--"}
+                      </td>
+                      <td className="py-3 tabular-nums">
+                        {r.workingHours != null ? `${r.workingHours.toFixed(1)} س` : "--"}
+                      </td>
+                      <td className="py-3 tabular-nums">
+                        {r.lateMinutes ? <span className="text-amber-600">{r.lateMinutes} د</span> : <span className="text-emerald-600">في الوقت</span>}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         </div>
       )}

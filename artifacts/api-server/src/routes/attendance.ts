@@ -318,6 +318,56 @@ router.post("/break-end", requireAuth, async (req, res) => {
   }
 });
 
+// My monthly stats for employee dashboard
+router.get("/my-stats", requireAuth, async (req, res) => {
+  try {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const startDate = `${year}-${month}-01`;
+    const lastDay = new Date(year, now.getMonth() + 1, 0).getDate();
+    const endDate = `${year}-${month}-${String(lastDay).padStart(2, "0")}`;
+
+    const records = await db
+      .select({
+        status: attendanceTable.status,
+        workingHours: attendanceTable.workingHours,
+        lateMinutes: attendanceTable.lateMinutes,
+        date: attendanceTable.date,
+        checkInTime: attendanceTable.checkInTime,
+        checkOutTime: attendanceTable.checkOutTime,
+      })
+      .from(attendanceTable)
+      .where(
+        and(
+          eq(attendanceTable.employeeId, req.session.userId!),
+          gte(attendanceTable.date, startDate),
+          lte(attendanceTable.date, endDate)
+        )
+      )
+      .orderBy(desc(attendanceTable.date));
+
+    const presentDays = records.filter((r) => r.status === "present" || r.status === "late").length;
+    const absentDays = records.filter((r) => r.status === "absent").length;
+    const lateDays = records.filter((r) => r.status === "late").length;
+    const totalWorkingHours = records.reduce((sum, r) => sum + (r.workingHours ?? 0), 0);
+    const totalLateMinutes = records.reduce((sum, r) => sum + (r.lateMinutes ?? 0), 0);
+
+    res.json({
+      presentDays,
+      absentDays,
+      lateDays,
+      totalWorkingHours: Math.round(totalWorkingHours * 10) / 10,
+      totalLateMinutes,
+      recentRecords: records.slice(0, 10),
+      month: `${year}-${month}`,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 router.put("/:id", requireAdmin, async (req, res) => {
   try {
     const id = parseInt(req.params.id);
