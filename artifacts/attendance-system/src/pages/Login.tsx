@@ -29,6 +29,7 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isPending, setIsPending] = useState(false);
+  const BASE = import.meta.env.BASE_URL;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,10 +37,10 @@ export default function Login() {
     setIsPending(true);
     try {
       // 1. Login — sets the session cookie
-      await apiPost("/api/auth/login", { username, password });
+      await apiPost(`${BASE}api/auth/login`, { username, password });
 
       // 2. Fetch the actual user from /api/auth/me with the new cookie
-      const user = await apiFetch("/api/auth/me");
+      const user = await apiFetch(`${BASE}api/auth/me`);
 
       // 3. Populate the React Query cache so the app knows the user immediately
       queryClient.setQueryData(["/api/auth/me"], user);
