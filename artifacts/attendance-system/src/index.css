@@ -148,3 +148,12 @@
     @apply bg-white/70 backdrop-blur-md border border-white/20 shadow-xl;
   }
 }
+
+@media print {
+  .no-print { display: none !important; }
+  aside, header, nav { display: none !important; }
+  main { padding: 0 !important; }
+  body { background: white !important; color: black !important; }
+  table { border-collapse: collapse; }
+  th, td { border: 1px solid #ccc; padding: 4px 8px; color: black !important; }
+}

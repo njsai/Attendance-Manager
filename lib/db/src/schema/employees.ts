@@ -1,8 +1,9 @@
-import { pgTable, serial, text, integer, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, integer, boolean, timestamp, real } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { departmentsTable } from "./departments";
 import { shiftsTable } from "./shifts";
+import { branchesTable } from "./branches";
 
 export const employeesTable = pgTable("employees", {
   id: serial("id").primaryKey(),
@@ -11,10 +12,13 @@ export const employeesTable = pgTable("employees", {
   fullName: text("full_name").notNull(),
   email: text("email"),
   phone: text("phone"),
+  address: text("address"),
+  jobTitle: text("job_title"),
   role: text("role").notNull().default("employee"),
   departmentId: integer("department_id").references(() => departmentsTable.id, { onDelete: "set null" }),
   shiftId: integer("shift_id").references(() => shiftsTable.id, { onDelete: "set null" }),
-  jobTitle: text("job_title"),
+  branchId: integer("branch_id").references(() => branchesTable.id, { onDelete: "set null" }),
+  salary: real("salary"),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });

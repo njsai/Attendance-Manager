@@ -15,6 +15,7 @@ import AdminAttendance from "@/pages/admin/Attendance";
 import AdminLeaves from "@/pages/admin/Leaves";
 import AdminReports from "@/pages/admin/Reports";
 import DepartmentsAndShifts from "@/pages/admin/DepartmentsAndShifts";
+import AdminBranches from "@/pages/admin/Branches";
 import MyLeaves from "@/pages/employee/MyLeaves";
 import NotFound from "@/pages/not-found";
 
@@ -30,7 +31,7 @@ function Guard({ children, adminOnly = false }: { children: React.ReactNode; adm
     </div>
   );
   if (!user) return <Redirect to="/login" />;
-  if (adminOnly && user.role !== "admin" && user.role !== "manager") return <Redirect to="/" />;
+  if (adminOnly && user.role !== "admin") return <Redirect to="/" />;
   return <AppLayout>{children}</AppLayout>;
 }
 
@@ -55,6 +56,7 @@ function Router() {
 
       {/* Admin-only */}
       <Route path="/employees">{() => <Guard adminOnly><Employees /></Guard>}</Route>
+      <Route path="/branches">{() => <Guard adminOnly><AdminBranches /></Guard>}</Route>
       <Route path="/attendance">{() => <Guard adminOnly><AdminAttendance /></Guard>}</Route>
       <Route path="/leaves">{() => <Guard adminOnly><AdminLeaves /></Guard>}</Route>
       <Route path="/reports">{() => <Guard adminOnly><AdminReports /></Guard>}</Route>

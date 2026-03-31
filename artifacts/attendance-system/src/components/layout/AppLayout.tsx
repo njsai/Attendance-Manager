@@ -15,6 +15,7 @@ function cn(...inputs: ClassValue[]) {
 const ADMIN_NAV = [
   { name: "لوحة التحكم", path: "/", icon: LayoutDashboard },
   { name: "الموظفين", path: "/employees", icon: Users },
+  { name: "الفروع", path: "/branches", icon: Building2 },
   { name: "الأقسام والشفتات", path: "/departments", icon: Building2 },
   { name: "سجل الحضور", path: "/attendance", icon: CalendarCheck },
   { name: "الإجازات", path: "/leaves", icon: Clock },
@@ -22,11 +23,8 @@ const ADMIN_NAV = [
 ];
 
 const MANAGER_NAV = [
-  { name: "لوحة التحكم", path: "/", icon: LayoutDashboard },
-  { name: "الموظفين", path: "/employees", icon: Users },
-  { name: "سجل الحضور", path: "/attendance", icon: CalendarCheck },
-  { name: "الإجازات", path: "/leaves", icon: Clock },
-  { name: "التقارير", path: "/reports", icon: FileBarChart },
+  { name: "الرئيسية", path: "/", icon: Home },
+  { name: "إجازاتي", path: "/my-leaves", icon: Clock },
 ];
 
 const EMPLOYEE_NAV = [
