@@ -66,6 +66,18 @@ export default defineConfig({
       strict: true,
       deny: ["**/.*"],
     },
+    proxy: {
+      "/api": {
+        target: "http://localhost:8080",
+        changeOrigin: true,
+        secure: false,
+        configure: (proxy) => {
+          proxy.on("error", (err) => {
+            console.log("API proxy error:", err.message);
+          });
+        },
+      },
+    },
   },
   preview: {
     port,

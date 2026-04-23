@@ -18,7 +18,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   });
 
   const logout = async () => {
-    await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
+    try {
+      await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
+    } catch {
+      // ignore
+    }
     queryClient.clear();
     window.location.href = "/login";
   };

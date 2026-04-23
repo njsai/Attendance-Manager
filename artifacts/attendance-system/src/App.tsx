@@ -16,6 +16,7 @@ import AdminLeaves from "@/pages/admin/Leaves";
 import AdminReports from "@/pages/admin/Reports";
 import DepartmentsAndShifts from "@/pages/admin/DepartmentsAndShifts";
 import AdminBranches from "@/pages/admin/Branches";
+import AdminSettings from "@/pages/admin/Settings";
 import MyLeaves from "@/pages/employee/MyLeaves";
 import NotFound from "@/pages/not-found";
 
@@ -62,6 +63,7 @@ function Router() {
       <Route path="/reports">{() => <Guard adminOnly><AdminReports /></Guard>}</Route>
       <Route path="/departments">{() => <Guard adminOnly><DepartmentsAndShifts /></Guard>}</Route>
       <Route path="/shifts">{() => <Guard adminOnly><DepartmentsAndShifts /></Guard>}</Route>
+      <Route path="/settings">{() => <Guard adminOnly><AdminSettings /></Guard>}</Route>
 
       {/* Employee */}
       <Route path="/my-attendance">{() => <Guard><EmployeeDashboard /></Guard>}</Route>

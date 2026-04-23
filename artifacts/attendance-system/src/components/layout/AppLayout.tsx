@@ -3,7 +3,7 @@ import { Link, useLocation } from "wouter";
 import { useAuth } from "@/lib/auth";
 import {
   LayoutDashboard, Users, Building2, Clock,
-  CalendarCheck, FileBarChart, LogOut, Menu, X, Home
+  CalendarCheck, FileBarChart, LogOut, Menu, X, Home, Settings
 } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -20,6 +20,7 @@ const ADMIN_NAV = [
   { name: "سجل الحضور", path: "/attendance", icon: CalendarCheck },
   { name: "الإجازات", path: "/leaves", icon: Clock },
   { name: "التقارير", path: "/reports", icon: FileBarChart },
+  { name: "الإعدادات", path: "/settings", icon: Settings },
 ];
 
 const MANAGER_NAV = [
