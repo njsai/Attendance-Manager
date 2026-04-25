@@ -75,6 +75,7 @@
     "zod": "catalog:"
   },
   "dependencies": {
+    "face-api.js": "^0.22.2",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.7",
     "xlsx": "^0.18.5"

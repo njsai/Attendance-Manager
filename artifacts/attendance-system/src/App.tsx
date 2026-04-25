@@ -7,6 +7,8 @@ import { Loader2 } from "lucide-react";
 
 import AppLayout from "@/components/layout/AppLayout";
 import Login from "@/pages/Login";
+import SuperAdminLogin from "@/pages/super-admin/Login";
+import SuperAdminDashboard from "@/pages/super-admin/Dashboard";
 import AdminDashboard from "@/pages/admin/Dashboard";
 import ManagerDashboard from "@/pages/manager/Dashboard";
 import EmployeeDashboard from "@/pages/employee/Dashboard";
@@ -24,26 +26,33 @@ const queryClient = new QueryClient({
   defaultOptions: { queries: { refetchOnWindowFocus: false, retry: false } }
 });
 
+const Spinner = () => (
+  <div className="flex h-screen items-center justify-center bg-background">
+    <Loader2 className="w-12 h-12 animate-spin text-primary" />
+  </div>
+);
+
 function Guard({ children, adminOnly = false }: { children: React.ReactNode; adminOnly?: boolean }) {
   const { user, isLoading } = useAuth();
-  if (isLoading) return (
-    <div className="flex h-screen items-center justify-center bg-background">
-      <Loader2 className="w-12 h-12 animate-spin text-primary" />
-    </div>
-  );
+  if (isLoading) return <Spinner />;
   if (!user) return <Redirect to="/login" />;
+  if (user.role === "super_admin") return <Redirect to="/super-admin" />;
   if (adminOnly && user.role !== "admin") return <Redirect to="/" />;
   return <AppLayout>{children}</AppLayout>;
 }
 
+function SuperAdminGuard({ children }: { children: React.ReactNode }) {
+  const { user, isLoading } = useAuth();
+  if (isLoading) return <Spinner />;
+  if (!user || user.role !== "super_admin") return <Redirect to="/super-admin/login" />;
+  return <>{children}</>;
+}
+
 function RootRedirect() {
   const { user, isLoading } = useAuth();
-  if (isLoading) return (
-    <div className="flex h-screen items-center justify-center bg-background">
-      <Loader2 className="w-12 h-12 animate-spin text-primary" />
-    </div>
-  );
+  if (isLoading) return <Spinner />;
   if (!user) return <Redirect to="/login" />;
+  if (user.role === "super_admin") return <Redirect to="/super-admin" />;
   if (user.role === "admin") return <Guard><AdminDashboard /></Guard>;
   if (user.role === "manager") return <Guard><ManagerDashboard /></Guard>;
   return <Guard><EmployeeDashboard /></Guard>;
@@ -52,6 +61,11 @@ function RootRedirect() {
 function Router() {
   return (
     <Switch>
+      {/* Super Admin */}
+      <Route path="/super-admin/login" component={SuperAdminLogin} />
+      <Route path="/super-admin">{() => <SuperAdminGuard><SuperAdminDashboard /></SuperAdminGuard>}</Route>
+
+      {/* Company */}
       <Route path="/login" component={Login} />
       <Route path="/" component={RootRedirect} />
 

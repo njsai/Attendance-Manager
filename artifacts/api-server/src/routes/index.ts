@@ -10,12 +10,14 @@ import attendanceRouter from "./attendance.js";
 import leavesRouter from "./leaves.js";
 import reportsRouter from "./reports.js";
 import settingsRouter from "./settings.js";
+import superAdminRouter from "./super-admin.js";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
 router.use("/setup", setupRouter);
 router.use("/auth", authRouter);
+router.use("/super-admin", superAdminRouter);
 router.use("/branches", branchesRouter);
 router.use("/departments", departmentsRouter);
 router.use("/shifts", shiftsRouter);

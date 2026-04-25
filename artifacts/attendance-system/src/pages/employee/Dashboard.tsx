@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/lib/auth";
-import { Clock, MapPin, LogIn, LogOut, AlertTriangle, Calendar, CheckCircle, XCircle, Timer, Camera } from "lucide-react";
+import { Clock, MapPin, LogIn, LogOut, AlertTriangle, Calendar, CheckCircle, XCircle, Timer, Camera, ScanFace } from "lucide-react";
+import FaceCapture from "@/components/FaceCapture";
 
 interface AttendanceRecord {
   id: number;
@@ -33,17 +34,21 @@ interface TodayRecord {
   checkInLng: number | null;
 }
 
+interface KnownDescriptor {
+  id: number;
+  fullName: string;
+  faceDescriptor: number[];
+}
+
 function fmt12(dateStr: string | null | undefined): string {
   if (!dateStr) return "—";
-  try {
-    return new Date(dateStr).toLocaleTimeString("ar-IQ", { hour: "2-digit", minute: "2-digit", hour12: true });
-  } catch { return "—"; }
+  try { return new Date(dateStr).toLocaleTimeString("ar-IQ", { hour: "2-digit", minute: "2-digit", hour12: true }); }
+  catch { return "—"; }
 }
 
 function fmtDate(dateStr: string): string {
-  try {
-    return new Date(dateStr).toLocaleDateString("ar-IQ", { year: "numeric", month: "short", day: "numeric" });
-  } catch { return dateStr; }
+  try { return new Date(dateStr).toLocaleDateString("ar-IQ", { year: "numeric", month: "short", day: "numeric" }); }
+  catch { return dateStr; }
 }
 
 function statusLabel(s: string) {
@@ -83,6 +88,9 @@ export default function EmployeeDashboard() {
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [showFace, setShowFace] = useState(false);
+  const [faceMode, setFaceMode] = useState<"check-in" | "check-out">("check-in");
+  const [knownDescriptors, setKnownDescriptors] = useState<KnownDescriptor[]>([]);
   const BASE = import.meta.env.BASE_URL;
 
   const fetchData = useCallback(async () => {
@@ -126,8 +134,36 @@ export default function EmployeeDashboard() {
     finally { setActionLoading(false); }
   };
 
+  const openFace = async (mode: "check-in" | "check-out") => {
+    setFaceMode(mode);
+    // Load face descriptors for matching
+    try {
+      const res = await fetch(`${BASE}api/employees/face-descriptors/all`, { credentials: "include" });
+      if (res.ok) {
+        const data = await res.json();
+        setKnownDescriptors(data);
+      }
+    } catch { }
+    setShowFace(true);
+  };
+
+  const handleFaceVerified = async (result: { matched: boolean; employeeId?: number; employeeName?: string }) => {
+    setShowFace(false);
+    if (!result.matched || !result.employeeId) {
+      setError("لم يتم التعرف على الوجه — حاول مجدداً أو استخدم الدخول اليدوي");
+      return;
+    }
+    // Check if the verified employee matches the logged in user
+    if (result.employeeId !== user?.id) {
+      setError(`تم التعرف على: ${result.employeeName}، لكنها ليست بياناتك`);
+      return;
+    }
+    await doAction(faceMode);
+  };
+
   const isCheckedIn = !!today?.checkInTime && !today?.checkOutTime;
   const isCheckedOut = !!today?.checkOutTime;
+  const hasFaceDescriptor = !!(user as any)?.faceDescriptor;
 
   if (loading) return (
     <div className="flex items-center justify-center h-64">
@@ -137,6 +173,15 @@ export default function EmployeeDashboard() {
 
   return (
     <div className="p-4 space-y-4 max-w-2xl mx-auto" dir="rtl">
+      {showFace && (
+        <FaceCapture
+          mode="verify"
+          knownDescriptors={knownDescriptors}
+          onVerify={handleFaceVerified}
+          onClose={() => setShowFace(false)}
+        />
+      )}
+
       <div className="text-center mb-2">
         <h1 className="text-xl font-bold text-white">مرحباً، {user?.fullName}</h1>
         <p className="text-sm text-gray-400">{new Date().toLocaleDateString("ar-IQ", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</p>
@@ -190,6 +235,7 @@ export default function EmployeeDashboard() {
           </div>
         )}
 
+        {/* Manual buttons */}
         <div className="grid grid-cols-2 gap-3 pt-2">
           <button onClick={() => doAction("check-in")} disabled={actionLoading || isCheckedIn || isCheckedOut}
             className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-500 disabled:bg-gray-700 disabled:text-gray-500 text-white font-bold py-3 rounded-xl transition-all">
@@ -201,9 +247,31 @@ export default function EmployeeDashboard() {
           </button>
         </div>
 
-        <button className="w-full flex items-center justify-center gap-2 border border-white/10 hover:border-blue-400/50 text-gray-400 hover:text-blue-300 py-2 rounded-xl text-sm transition-all">
-          <Camera size={16} /><span>التحقق ببصمة الوجه (قريباً)</span>
-        </button>
+        {/* Face recognition */}
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            onClick={() => openFace("check-in")}
+            disabled={actionLoading || isCheckedIn || isCheckedOut}
+            className="flex items-center justify-center gap-2 border border-blue-500/30 hover:border-blue-400/60 bg-blue-500/10 hover:bg-blue-500/20 disabled:opacity-40 disabled:cursor-not-allowed text-blue-300 py-2.5 rounded-xl text-sm transition-all"
+          >
+            <ScanFace size={16} />
+            <span>حضور بالوجه</span>
+          </button>
+          <button
+            onClick={() => openFace("check-out")}
+            disabled={actionLoading || !isCheckedIn || isCheckedOut}
+            className="flex items-center justify-center gap-2 border border-orange-500/30 hover:border-orange-400/60 bg-orange-500/10 hover:bg-orange-500/20 disabled:opacity-40 disabled:cursor-not-allowed text-orange-300 py-2.5 rounded-xl text-sm transition-all"
+          >
+            <ScanFace size={16} />
+            <span>انصراف بالوجه</span>
+          </button>
+        </div>
+
+        {!hasFaceDescriptor && (
+          <p className="text-xs text-center text-yellow-500/70">
+            ⚠️ لم يتم تسجيل بصمة وجهك بعد — تواصل مع المدير لتسجيلها
+          </p>
+        )}
       </div>
 
       {/* Monthly Stats */}

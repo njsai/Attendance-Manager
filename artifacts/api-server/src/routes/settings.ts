@@ -1,46 +1,67 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { companyLocationTable } from "@workspace/db";
-import { requireAuth, requireAdmin } from "../lib/auth.js";
+import { companyLocationTable, companiesTable } from "@workspace/db";
+import { eq, and } from "drizzle-orm";
+import { requireAdmin } from "../lib/auth.js";
 
 const router = Router();
 
-router.get("/company-location", requireAuth, async (_req, res) => {
+router.get("/company-location", requireAdmin, async (req, res) => {
   try {
-    const [location] = await db.select().from(companyLocationTable).limit(1);
-    if (!location) {
-      res.json({ id: 1, name: "المقر الرئيسي", latitude: 24.7136, longitude: 46.6753, radiusMeters: 200, updatedAt: new Date().toISOString() });
-      return;
+    const companyId = req.session.companyId!;
+    let [loc] = await db.select().from(companyLocationTable)
+      .where(eq(companyLocationTable.companyId, companyId));
+    if (!loc) {
+      [loc] = await db.insert(companyLocationTable).values({
+        companyId, name: "المقر الرئيسي", latitude: 33.3152, longitude: 44.3661, radiusMeters: 200,
+      }).returning();
     }
-    res.json(location);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Server error" });
-  }
+    res.json(loc);
+  } catch (err) { console.error(err); res.status(500).json({ message: "Server error" }); }
 });
 
 router.put("/company-location", requireAdmin, async (req, res) => {
   try {
-    const { latitude, longitude, radiusMeters, name } = req.body;
+    const companyId = req.session.companyId!;
+    const { name, latitude, longitude, radiusMeters } = req.body;
+    const [existing] = await db.select({ id: companyLocationTable.id }).from(companyLocationTable)
+      .where(eq(companyLocationTable.companyId, companyId));
 
-    const [existing] = await db.select().from(companyLocationTable).limit(1);
-    let location;
+    let loc;
     if (existing) {
-      [location] = await db
-        .update(companyLocationTable)
-        .set({ latitude, longitude, radiusMeters, name, updatedAt: new Date() })
+      [loc] = await db.update(companyLocationTable)
+        .set({ name, latitude, longitude, radiusMeters, updatedAt: new Date() })
+        .where(and(eq(companyLocationTable.id, existing.id), eq(companyLocationTable.companyId, companyId)))
         .returning();
     } else {
-      [location] = await db
-        .insert(companyLocationTable)
-        .values({ latitude, longitude, radiusMeters, name })
+      [loc] = await db.insert(companyLocationTable)
+        .values({ companyId, name, latitude, longitude, radiusMeters })
         .returning();
     }
-    res.json(location);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Server error" });
-  }
+    res.json(loc);
+  } catch (err) { console.error(err); res.status(500).json({ message: "Server error" }); }
+});
+
+// Get company info
+router.get("/company", requireAdmin, async (req, res) => {
+  try {
+    const companyId = req.session.companyId!;
+    const [company] = await db.select().from(companiesTable).where(eq(companiesTable.id, companyId));
+    if (!company) { res.status(404).json({ message: "Company not found" }); return; }
+    res.json(company);
+  } catch (err) { console.error(err); res.status(500).json({ message: "Server error" }); }
+});
+
+router.put("/company", requireAdmin, async (req, res) => {
+  try {
+    const companyId = req.session.companyId!;
+    const { name, address, phone, email } = req.body;
+    const [updated] = await db.update(companiesTable)
+      .set({ name, address, phone, email })
+      .where(eq(companiesTable.id, companyId))
+      .returning();
+    res.json(updated);
+  } catch (err) { console.error(err); res.status(500).json({ message: "Server error" }); }
 });
 
 export default router;

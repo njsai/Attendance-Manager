@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback } from "react";
-import { Plus, Search, Edit2, Trash2, ToggleLeft, ToggleRight, X, User, Mail, Phone, MapPin, Briefcase, Building, Clock, DollarSign, Shield } from "lucide-react";
+import { Plus, Search, Edit2, Trash2, ToggleLeft, ToggleRight, X, User, Mail, Phone, MapPin, Briefcase, Building, Clock, DollarSign, Shield, ScanFace } from "lucide-react";
+import FaceCapture from "@/components/FaceCapture";
 
 interface Employee {
   id: number; username: string; fullName: string; email: string | null; phone: string | null;
   address: string | null; jobTitle: string | null; role: string; departmentId: number | null;
   shiftId: number | null; branchId: number | null; salary: number | null; isActive: boolean;
   departmentName: string | null; shiftName: string | null; branchName: string | null;
-  shiftStart: string | null; shiftEnd: string | null; createdAt: string;
+  shiftStart: string | null; shiftEnd: string | null; createdAt: string; hasFace: boolean;
 }
 interface Department { id: number; name: string; }
 interface Shift { id: number; name: string; startTime: string; endTime: string; }
@@ -163,7 +164,7 @@ function EmployeeModal({ emp, depts, shifts, branches, onClose, onSave }: {
   );
 }
 
-function EmployeeCard({ emp, onEdit, onDelete, onToggle }: { emp: Employee; onEdit: () => void; onDelete: () => void; onToggle: () => void; }) {
+function EmployeeCard({ emp, onEdit, onDelete, onToggle, onFaceEnroll }: { emp: Employee; onEdit: () => void; onDelete: () => void; onToggle: () => void; onFaceEnroll: () => void; }) {
   const [open, setOpen] = useState(false);
   const roleLabel = emp.role === "admin" ? "إدارة عليا" : emp.role === "manager" ? "مدير" : "موظف";
   const roleColor = emp.role === "admin" ? "text-purple-400 bg-purple-900/30" : emp.role === "manager" ? "text-blue-400 bg-blue-900/30" : "text-gray-400 bg-gray-700/30";
@@ -211,12 +212,15 @@ function EmployeeCard({ emp, onEdit, onDelete, onToggle }: { emp: Employee; onEd
               </div>
             ))}
           </div>
-          <div className="flex gap-2 pt-1">
+          <div className="flex gap-2 pt-1 flex-wrap">
             <button onClick={onEdit} className="flex items-center gap-1 bg-blue-600/20 text-blue-400 hover:bg-blue-600/40 px-3 py-2 rounded-lg text-xs font-medium transition-all">
               <Edit2 size={14} />تعديل
             </button>
             <button onClick={onToggle} className={`flex items-center gap-1 px-3 py-2 rounded-lg text-xs font-medium transition-all ${emp.isActive ? "bg-yellow-600/20 text-yellow-400 hover:bg-yellow-600/40" : "bg-green-600/20 text-green-400 hover:bg-green-600/40"}`}>
               {emp.isActive ? <><ToggleLeft size={14} />إيقاف</> : <><ToggleRight size={14} />تفعيل</>}
+            </button>
+            <button onClick={onFaceEnroll} className={`flex items-center gap-1 px-3 py-2 rounded-lg text-xs font-medium transition-all ${emp.hasFace ? "bg-green-600/20 text-green-400 hover:bg-green-600/40" : "bg-purple-600/20 text-purple-400 hover:bg-purple-600/40"}`}>
+              <ScanFace size={14} />{emp.hasFace ? "بصمة مسجلة ✓" : "تسجيل بصمة"}
             </button>
             <button onClick={onDelete} className="flex items-center gap-1 bg-red-600/20 text-red-400 hover:bg-red-600/40 px-3 py-2 rounded-lg text-xs font-medium transition-all">
               <Trash2 size={14} />حذف
@@ -239,6 +243,8 @@ export default function AdminEmployees() {
   const [filterStatus, setFilterStatus] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [editEmp, setEditEmp] = useState<Partial<Employee> | null>(null);
+  const [faceEnrollEmp, setFaceEnrollEmp] = useState<Employee | null>(null);
+  const [faceMsg, setFaceMsg] = useState("");
   const BASE = import.meta.env.BASE_URL;
 
   const fetchAll = useCallback(async () => {
@@ -282,6 +288,23 @@ export default function AdminEmployees() {
     setShowModal(false);
   };
 
+  const handleFaceCapture = async (descriptor: number[]) => {
+    if (!faceEnrollEmp) return;
+    try {
+      const res = await fetch(`${BASE}api/employees/${faceEnrollEmp.id}/face-descriptor`, {
+        method: "PUT", credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ faceDescriptor: descriptor }),
+      });
+      if (res.ok) {
+        setEmployees(e => e.map(x => x.id === faceEnrollEmp.id ? { ...x, hasFace: true } : x));
+        setFaceMsg(`✓ تم تسجيل بصمة وجه ${faceEnrollEmp.fullName} بنجاح`);
+      } else { setFaceMsg("فشل حفظ البصمة"); }
+    } catch { setFaceMsg("خطأ في الاتصال"); }
+    setFaceEnrollEmp(null);
+    setTimeout(() => setFaceMsg(""), 4000);
+  };
+
   const activeCount = employees.filter(e => e.isActive).length;
 
   if (loading) return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" /></div>;
@@ -291,6 +314,14 @@ export default function AdminEmployees() {
       {showModal && (
         <EmployeeModal emp={editEmp} depts={depts} shifts={shifts} branches={branches}
           onClose={() => setShowModal(false)} onSave={handleSave} />
+      )}
+      {faceEnrollEmp && (
+        <FaceCapture mode="enroll" onCapture={handleFaceCapture} onClose={() => setFaceEnrollEmp(null)} />
+      )}
+      {faceMsg && (
+        <div className={`fixed bottom-6 right-6 px-5 py-3 rounded-2xl text-sm font-bold shadow-xl z-50 ${faceMsg.startsWith("✓") ? "bg-green-600 text-white" : "bg-red-600 text-white"}`}>
+          {faceMsg}
+        </div>
       )}
 
       <div className="flex items-center justify-between">
@@ -336,7 +367,8 @@ export default function AdminEmployees() {
             <EmployeeCard key={emp.id} emp={emp}
               onEdit={() => { setEditEmp(emp); setShowModal(true); }}
               onDelete={() => handleDelete(emp.id)}
-              onToggle={() => handleToggle(emp.id)} />
+              onToggle={() => handleToggle(emp.id)}
+              onFaceEnroll={() => setFaceEnrollEmp(emp)} />
           ))
         )}
       </div>

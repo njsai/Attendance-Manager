@@ -134,10 +134,13 @@ export default function Login() {
               </button>
             </form>
 
-            <div className="text-center pt-2">
+            <div className="text-center pt-2 space-y-2">
               <p className="text-xs text-slate-600">
                 تواصل مع مدير النظام إذا نسيت بياناتك
               </p>
+              <a href="/super-admin/login" className="text-xs text-indigo-500/60 hover:text-indigo-400 transition-colors">
+                دخول مدير النظام العام →
+              </a>
             </div>
           </div>
         </div>

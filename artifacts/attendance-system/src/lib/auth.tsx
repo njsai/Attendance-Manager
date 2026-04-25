@@ -1,38 +1,82 @@
-import { createContext, useContext, ReactNode } from "react";
-import { useGetCurrentUser, type Employee } from "@workspace/api-client-react";
+import { createContext, useContext, ReactNode, useState, useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
+export interface AppUser {
+  id: number;
+  username: string;
+  fullName: string;
+  role: "admin" | "manager" | "employee" | "super_admin";
+  companyId?: number;
+  faceDescriptor?: string | null;
+}
+
 interface AuthContextType {
-  user: Employee | null;
+  user: AppUser | null;
   isLoading: boolean;
   logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
+const BASE = import.meta.env.BASE_URL;
+
+async function fetchMe(): Promise<AppUser | null> {
+  try {
+    const res = await fetch(`${BASE}api/auth/me`, { credentials: "include" });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
+  const [user, setUser] = useState<AppUser | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const initialized = useRef(false);
 
-  const { data: user, isLoading } = useGetCurrentUser({
-    query: { retry: false, staleTime: Infinity }
-  });
+  useEffect(() => {
+    if (initialized.current) return;
+    initialized.current = true;
+
+    const cached = queryClient.getQueryData<AppUser>(["/api/auth/me"]);
+    if (cached) {
+      setUser(cached);
+      setIsLoading(false);
+      return;
+    }
+
+    fetchMe().then(u => {
+      if (u) queryClient.setQueryData(["/api/auth/me"], u);
+      setUser(u);
+      setIsLoading(false);
+    });
+  }, [queryClient]);
+
+  useEffect(() => {
+    const unsubscribe = queryClient.getQueryCache().subscribe(event => {
+      const key = event.query.queryKey;
+      if (Array.isArray(key) && key[0] === "/api/auth/me") {
+        const data = event.query.state.data as AppUser | undefined;
+        setUser(data ?? null);
+      }
+    });
+    return unsubscribe;
+  }, [queryClient]);
 
   const logout = async () => {
     try {
-      await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
-    } catch {
-      // ignore
-    }
+      await fetch(`${BASE}api/auth/logout`, { method: "POST", credentials: "include" });
+    } catch { }
     queryClient.clear();
-    window.location.href = "/login";
+    setUser(null);
+    const loginPath = `${BASE}login`.replace(/\/\//g, "/");
+    window.location.href = loginPath;
   };
 
   return (
-    <AuthContext.Provider value={{
-      user: user ?? null,
-      isLoading,
-      logout,
-    }}>
+    <AuthContext.Provider value={{ user, isLoading, logout }}>
       {children}
     </AuthContext.Provider>
   );

@@ -10,8 +10,7 @@ function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: numbe
   const R = 6371000;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
   const dLng = ((lng2 - lng1) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) ** 2 +
+  const a = Math.sin(dLat / 2) ** 2 +
     Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
@@ -48,10 +47,10 @@ const recordSelect = {
 
 router.get("/", requireAuth, async (req, res) => {
   try {
-    const { employeeId, date, startDate, endDate, departmentId } = req.query;
-    const conditions: any[] = [];
+    const companyId = req.session.companyId!;
+    const { employeeId, date, startDate, endDate } = req.query;
+    const conditions: any[] = [eq(employeesTable.companyId, companyId)];
 
-    // Non-admin can only see their own records
     if (req.session.role === "employee") {
       conditions.push(eq(attendanceTable.employeeId, req.session.userId!));
     } else if (employeeId) {
@@ -62,129 +61,86 @@ router.get("/", requireAuth, async (req, res) => {
     if (startDate) conditions.push(gte(attendanceTable.date, startDate as string));
     if (endDate) conditions.push(lte(attendanceTable.date, endDate as string));
 
-    let query = db
-      .select(recordSelect)
-      .from(attendanceTable)
+    const records = await db.select(recordSelect).from(attendanceTable)
       .leftJoin(employeesTable, eq(attendanceTable.employeeId, employeesTable.id))
-      .leftJoin(departmentsTable, eq(employeesTable.departmentId, departmentsTable.id));
-
-    let records;
-    if (conditions.length > 0) {
-      records = await query.where(and(...conditions)).orderBy(desc(attendanceTable.date));
-    } else {
-      records = await query.orderBy(desc(attendanceTable.date));
-    }
-
-    if (departmentId) {
-      const deptId = parseInt(departmentId as string);
-      records = records.filter((r) => {
-        const emp = r as any;
-        return emp.departmentId === deptId;
-      });
-    }
+      .leftJoin(departmentsTable, eq(employeesTable.departmentId, departmentsTable.id))
+      .where(and(...conditions)).orderBy(desc(attendanceTable.date));
 
     res.json(records);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Server error" });
-  }
+  } catch (err) { console.error(err); res.status(500).json({ message: "Server error" }); }
 });
 
 router.get("/today", requireAuth, async (req, res) => {
   try {
+    const companyId = req.session.companyId!;
     const today = new Date().toISOString().split("T")[0];
-    const [record] = await db
-      .select(recordSelect)
-      .from(attendanceTable)
+    const [record] = await db.select(recordSelect).from(attendanceTable)
       .leftJoin(employeesTable, eq(attendanceTable.employeeId, employeesTable.id))
       .leftJoin(departmentsTable, eq(employeesTable.departmentId, departmentsTable.id))
-      .where(and(eq(attendanceTable.employeeId, req.session.userId!), eq(attendanceTable.date, today)));
-
+      .where(and(
+        eq(attendanceTable.employeeId, req.session.userId!),
+        eq(attendanceTable.date, today),
+        eq(employeesTable.companyId, companyId)
+      ));
     res.json(record || null);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Server error" });
-  }
+  } catch (err) { console.error(err); res.status(500).json({ message: "Server error" }); }
 });
 
 router.post("/check-in", requireAuth, async (req, res) => {
   try {
-    const { latitude, longitude, notes } = req.body;
+    const companyId = req.session.companyId!;
+    const { latitude, longitude, faceVerified } = req.body;
     const today = new Date().toISOString().split("T")[0];
+    const now = new Date();
 
-    // Check if already checked in today
-    const [existing] = await db
-      .select()
-      .from(attendanceTable)
+    // Validate location
+    const [location] = await db.select().from(companyLocationTable)
+      .where(eq(companyLocationTable.companyId, companyId));
+
+    if (location && latitude && longitude) {
+      const dist = calculateDistance(latitude, longitude, location.latitude, location.longitude);
+      if (dist > location.radiusMeters) {
+        res.status(400).json({ message: `أنت خارج النطاق المسموح به (${Math.round(dist)} م)` });
+        return;
+      }
+    }
+
+    const [existing] = await db.select({ id: attendanceTable.id }).from(attendanceTable)
       .where(and(eq(attendanceTable.employeeId, req.session.userId!), eq(attendanceTable.date, today)));
-
     if (existing) {
-      res.status(400).json({ message: "لقد سجلت حضورك اليوم مسبقاً" });
+      res.status(400).json({ message: "تم تسجيل الحضور مسبقاً لهذا اليوم" });
       return;
     }
 
-    // Check location if provided
-    if (latitude && longitude) {
-      const [location] = await db.select().from(companyLocationTable).limit(1);
-      if (location) {
-        const dist = calculateDistance(latitude, longitude, location.latitude, location.longitude);
-        if (dist > location.radiusMeters) {
-          res.status(400).json({
-            message: `أنت خارج نطاق الشركة (المسافة: ${Math.round(dist)} متر، المسموح: ${location.radiusMeters} متر)`,
-          });
-          return;
-        }
-      }
-    }
-
-    // Get employee shift to calculate late minutes
-    const [emp] = await db
-      .select({ shiftId: employeesTable.shiftId })
+    // Calculate late minutes
+    const [shift] = await db.select({ startTime: shiftsTable.startTime, lateGraceMinutes: shiftsTable.lateGraceMinutes })
       .from(employeesTable)
+      .leftJoin(shiftsTable, eq(employeesTable.shiftId, shiftsTable.id))
       .where(eq(employeesTable.id, req.session.userId!));
 
     let lateMinutes = 0;
-    let status = "present";
-    const now = new Date();
-
-    if (emp?.shiftId) {
-      const [shift] = await db.select().from(shiftsTable).where(eq(shiftsTable.id, emp.shiftId));
-      if (shift) {
-        const shiftStart = parseTime(shift.startTime, now);
-        const diffMs = now.getTime() - shiftStart.getTime() - shift.lateGraceMinutes * 60000;
-        if (diffMs > 0) {
-          lateMinutes = Math.floor(diffMs / 60000);
-          status = "late";
-        }
-      }
+    if (shift?.startTime) {
+      const shiftStart = parseTime(shift.startTime, now);
+      const graceEnd = new Date(shiftStart.getTime() + (shift.lateGraceMinutes || 15) * 60000);
+      if (now > graceEnd) lateMinutes = Math.floor((now.getTime() - shiftStart.getTime()) / 60000);
     }
 
-    const [record] = await db
-      .insert(attendanceTable)
-      .values({
-        employeeId: req.session.userId!,
-        date: today,
-        checkInTime: now,
-        checkInLat: latitude || null,
-        checkInLng: longitude || null,
-        lateMinutes,
-        status,
-        notes,
-      })
-      .returning();
+    const [record] = await db.insert(attendanceTable).values({
+      employeeId: req.session.userId!,
+      date: today,
+      checkInTime: now,
+      checkInLat: latitude || null,
+      checkInLng: longitude || null,
+      lateMinutes,
+      status: lateMinutes > 0 ? "late" : "present",
+    }).returning();
 
-    const [full] = await db
-      .select(recordSelect)
-      .from(attendanceTable)
+    const [full] = await db.select(recordSelect).from(attendanceTable)
       .leftJoin(employeesTable, eq(attendanceTable.employeeId, employeesTable.id))
       .leftJoin(departmentsTable, eq(employeesTable.departmentId, departmentsTable.id))
       .where(eq(attendanceTable.id, record.id));
-
     res.status(201).json(full);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Server error" });
-  }
+  } catch (err) { console.error(err); res.status(500).json({ message: "Server error" }); }
 });
 
 router.post("/check-out", requireAuth, async (req, res) => {
@@ -193,203 +149,77 @@ router.post("/check-out", requireAuth, async (req, res) => {
     const today = new Date().toISOString().split("T")[0];
     const now = new Date();
 
-    const [record] = await db
-      .select()
-      .from(attendanceTable)
+    const [record] = await db.select().from(attendanceTable)
       .where(and(eq(attendanceTable.employeeId, req.session.userId!), eq(attendanceTable.date, today)));
+    if (!record) { res.status(404).json({ message: "لم يتم تسجيل حضور لهذا اليوم" }); return; }
+    if (record.checkOutTime) { res.status(400).json({ message: "تم تسجيل الانصراف مسبقاً" }); return; }
 
-    if (!record) {
-      res.status(400).json({ message: "لم تسجل حضورك اليوم بعد" });
-      return;
+    const checkIn = new Date(record.checkInTime!);
+    let breakMs = 0;
+    if (record.breakStartTime && record.breakEndTime) {
+      breakMs = new Date(record.breakEndTime).getTime() - new Date(record.breakStartTime).getTime();
     }
+    const totalMs = now.getTime() - checkIn.getTime() - breakMs;
+    const workingHours = Math.max(0, totalMs / 3600000);
+    const breakHours = breakMs / 3600000;
 
-    if (record.checkOutTime) {
-      res.status(400).json({ message: "لقد سجلت انصرافك مسبقاً" });
-      return;
-    }
+    const [updated] = await db.update(attendanceTable).set({
+      checkOutTime: now,
+      checkOutLat: latitude || null,
+      checkOutLng: longitude || null,
+      workingHours: Math.round(workingHours * 100) / 100,
+      breakHours: Math.round(breakHours * 100) / 100,
+      status: record.lateMinutes! > 0 ? "late" : "present",
+    }).where(eq(attendanceTable.id, record.id)).returning();
 
-    // Calculate working hours
-    let workingHours = 0;
-    if (record.checkInTime) {
-      const diffMs = now.getTime() - record.checkInTime.getTime();
-      workingHours = diffMs / 3600000;
-    }
-
-    // Calculate overtime
-    let overtimeMinutes = 0;
-    const [emp] = await db.select({ shiftId: employeesTable.shiftId }).from(employeesTable).where(eq(employeesTable.id, req.session.userId!));
-    if (emp?.shiftId) {
-      const [shift] = await db.select().from(shiftsTable).where(eq(shiftsTable.id, emp.shiftId));
-      if (shift) {
-        const shiftEnd = parseTime(shift.endTime, now);
-        const diffMs = now.getTime() - shiftEnd.getTime();
-        if (diffMs > 0) {
-          overtimeMinutes = Math.floor(diffMs / 60000);
-        }
-      }
-    }
-
-    await db
-      .update(attendanceTable)
-      .set({
-        checkOutTime: now,
-        checkOutLat: latitude || null,
-        checkOutLng: longitude || null,
-        workingHours,
-        overtimeMinutes,
-      })
-      .where(eq(attendanceTable.id, record.id));
-
-    const [full] = await db
-      .select(recordSelect)
-      .from(attendanceTable)
+    const [full] = await db.select(recordSelect).from(attendanceTable)
       .leftJoin(employeesTable, eq(attendanceTable.employeeId, employeesTable.id))
       .leftJoin(departmentsTable, eq(employeesTable.departmentId, departmentsTable.id))
-      .where(eq(attendanceTable.id, record.id));
-
+      .where(eq(attendanceTable.id, updated.id));
     res.json(full);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Server error" });
-  }
+  } catch (err) { console.error(err); res.status(500).json({ message: "Server error" }); }
 });
 
 router.post("/break-start", requireAuth, async (req, res) => {
   try {
     const today = new Date().toISOString().split("T")[0];
-    const [record] = await db
-      .select()
-      .from(attendanceTable)
+    const [record] = await db.select().from(attendanceTable)
       .where(and(eq(attendanceTable.employeeId, req.session.userId!), eq(attendanceTable.date, today)));
-
-    if (!record || !record.checkInTime) {
-      res.status(400).json({ message: "يجب تسجيل الحضور أولاً" });
-      return;
-    }
-
+    if (!record || record.checkOutTime) { res.status(400).json({ message: "لا يوجد حضور نشط" }); return; }
+    if (record.breakStartTime) { res.status(400).json({ message: "الاستراحة بدأت مسبقاً" }); return; }
     await db.update(attendanceTable).set({ breakStartTime: new Date() }).where(eq(attendanceTable.id, record.id));
-
-    const [full] = await db
-      .select(recordSelect)
-      .from(attendanceTable)
-      .leftJoin(employeesTable, eq(attendanceTable.employeeId, employeesTable.id))
-      .leftJoin(departmentsTable, eq(employeesTable.departmentId, departmentsTable.id))
-      .where(eq(attendanceTable.id, record.id));
-
-    res.json(full);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Server error" });
-  }
+    res.json({ message: "بدأت الاستراحة" });
+  } catch (err) { console.error(err); res.status(500).json({ message: "Server error" }); }
 });
 
 router.post("/break-end", requireAuth, async (req, res) => {
   try {
     const today = new Date().toISOString().split("T")[0];
-    const [record] = await db
-      .select()
-      .from(attendanceTable)
+    const [record] = await db.select().from(attendanceTable)
       .where(and(eq(attendanceTable.employeeId, req.session.userId!), eq(attendanceTable.date, today)));
-
-    if (!record || !record.breakStartTime) {
-      res.status(400).json({ message: "لم تبدأ الاستراحة بعد" });
+    if (!record || !record.breakStartTime || record.breakEndTime) {
+      res.status(400).json({ message: "لا توجد استراحة نشطة" });
       return;
     }
-
-    const now = new Date();
-    const breakHours = (now.getTime() - record.breakStartTime.getTime()) / 3600000;
-
-    await db
-      .update(attendanceTable)
-      .set({ breakEndTime: now, breakHours })
-      .where(eq(attendanceTable.id, record.id));
-
-    const [full] = await db
-      .select(recordSelect)
-      .from(attendanceTable)
-      .leftJoin(employeesTable, eq(attendanceTable.employeeId, employeesTable.id))
-      .leftJoin(departmentsTable, eq(employeesTable.departmentId, departmentsTable.id))
-      .where(eq(attendanceTable.id, record.id));
-
-    res.json(full);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Server error" });
-  }
+    await db.update(attendanceTable).set({ breakEndTime: new Date() }).where(eq(attendanceTable.id, record.id));
+    res.json({ message: "انتهت الاستراحة" });
+  } catch (err) { console.error(err); res.status(500).json({ message: "Server error" }); }
 });
 
-// My monthly stats for employee dashboard
-router.get("/my-stats", requireAuth, async (req, res) => {
+router.get("/all-today", requireAdmin, async (req, res) => {
   try {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, "0");
-    const startDate = `${year}-${month}-01`;
-    const lastDay = new Date(year, now.getMonth() + 1, 0).getDate();
-    const endDate = `${year}-${month}-${String(lastDay).padStart(2, "0")}`;
-
-    const records = await db
-      .select({
-        status: attendanceTable.status,
-        workingHours: attendanceTable.workingHours,
-        lateMinutes: attendanceTable.lateMinutes,
-        date: attendanceTable.date,
-        checkInTime: attendanceTable.checkInTime,
-        checkOutTime: attendanceTable.checkOutTime,
-      })
-      .from(attendanceTable)
-      .where(
-        and(
-          eq(attendanceTable.employeeId, req.session.userId!),
-          gte(attendanceTable.date, startDate),
-          lte(attendanceTable.date, endDate)
-        )
-      )
-      .orderBy(desc(attendanceTable.date));
-
-    const presentDays = records.filter((r) => r.status === "present" || r.status === "late").length;
-    const absentDays = records.filter((r) => r.status === "absent").length;
-    const lateDays = records.filter((r) => r.status === "late").length;
-    const totalWorkingHours = records.reduce((sum, r) => sum + (r.workingHours ?? 0), 0);
-    const totalLateMinutes = records.reduce((sum, r) => sum + (r.lateMinutes ?? 0), 0);
-
-    res.json({
-      presentDays,
-      absentDays,
-      lateDays,
-      totalWorkingHours: Math.round(totalWorkingHours * 10) / 10,
-      totalLateMinutes,
-      recentRecords: records.slice(0, 10),
-      month: `${year}-${month}`,
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Server error" });
-  }
-});
-
-router.put("/:id", requireAdmin, async (req, res) => {
-  try {
-    const id = parseInt(req.params.id);
-    const { checkInTime, checkOutTime, status, notes } = req.body;
-    await db.update(attendanceTable).set({ checkInTime: checkInTime ? new Date(checkInTime) : undefined, checkOutTime: checkOutTime ? new Date(checkOutTime) : undefined, status, notes }).where(eq(attendanceTable.id, id));
-
-    const [full] = await db
-      .select(recordSelect)
-      .from(attendanceTable)
-      .leftJoin(employeesTable, eq(attendanceTable.employeeId, employeesTable.id))
+    const companyId = req.session.companyId!;
+    const today = new Date().toISOString().split("T")[0];
+    const records = await db.select({
+      ...recordSelect,
+      branchId: employeesTable.branchId,
+    }).from(attendanceTable)
+      .leftJoin(employeesTable, and(eq(attendanceTable.employeeId, employeesTable.id), eq(employeesTable.companyId, companyId)))
       .leftJoin(departmentsTable, eq(employeesTable.departmentId, departmentsTable.id))
-      .where(eq(attendanceTable.id, id));
-
-    if (!full) {
-      res.status(404).json({ message: "Not found" });
-      return;
-    }
-    res.json(full);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Server error" });
-  }
+      .where(eq(attendanceTable.date, today))
+      .orderBy(desc(attendanceTable.checkInTime));
+    res.json(records);
+  } catch (err) { console.error(err); res.status(500).json({ message: "Server error" }); }
 });
 
 export default router;
