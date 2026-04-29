@@ -13,7 +13,11 @@ const router = Router();
 
 router.get("/dashboard", requireAuth, async (req, res) => {
   try {
-    const companyId = req.session.companyId!;
+    const companyId = req.session.companyId;
+    if (!companyId) {
+      res.status(403).json({ message: "يجب تحديد الشركة" });
+      return;
+    }
     const today = new Date().toISOString().split("T")[0];
 
     const [totalResult] = await db.select({ count: count() }).from(employeesTable)
@@ -57,7 +61,11 @@ router.get("/dashboard", requireAuth, async (req, res) => {
 
 router.get("/daily", requireAdmin, async (req, res) => {
   try {
-    const companyId = req.session.companyId!;
+    const companyId = req.session.companyId;
+    if (!companyId) {
+      res.status(403).json({ message: "يجب تحديد الشركة" });
+      return;
+    }
     const date = (req.query.date as string) || new Date().toISOString().split("T")[0];
 
     const records = await db
@@ -98,7 +106,11 @@ router.get("/daily", requireAdmin, async (req, res) => {
 
 router.get("/monthly", requireAdmin, async (req, res) => {
   try {
-    const companyId = req.session.companyId!;
+    const companyId = req.session.companyId;
+    if (!companyId) {
+      res.status(403).json({ message: "يجب تحديد الشركة" });
+      return;
+    }
     const month = parseInt((req.query.month as string) || String(new Date().getMonth() + 1));
     const year = parseInt((req.query.year as string) || String(new Date().getFullYear()));
     const employeeIdFilter = req.query.employeeId ? parseInt(req.query.employeeId as string) : null;
