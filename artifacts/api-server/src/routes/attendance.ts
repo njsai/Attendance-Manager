@@ -206,6 +206,49 @@ router.post("/break-end", requireAuth, async (req, res) => {
   } catch (err) { console.error(err); res.status(500).json({ message: "Server error" }); }
 });
 
+router.get("/my-stats", requireAuth, async (req, res) => {
+  try {
+    const employeeId = req.session.userId!;
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth() + 1;
+    const startDate = `${year}-${String(month).padStart(2, "0")}-01`;
+    const endDay = new Date(year, month, 0).getDate();
+    const endDate = `${year}-${String(month).padStart(2, "0")}-${String(endDay).padStart(2, "0")}`;
+
+    const records = await db.select().from(attendanceTable)
+      .where(and(
+        eq(attendanceTable.employeeId, employeeId),
+        gte(attendanceTable.date, startDate),
+        lte(attendanceTable.date, endDate)
+      )).orderBy(desc(attendanceTable.date));
+
+    const presentDays = records.filter(r => r.status === "present").length;
+    const lateDays = records.filter(r => r.status === "late").length;
+    const absentDays = records.filter(r => r.status === "absent").length;
+    const totalWorkingHours = records.reduce((s, r) => s + (r.workingHours || 0), 0);
+    const totalLateMinutes = records.reduce((s, r) => s + (r.lateMinutes || 0), 0);
+
+    res.json({
+      presentDays,
+      lateDays,
+      absentDays,
+      totalWorkingHours: Math.round(totalWorkingHours * 10) / 10,
+      totalLateMinutes,
+      recentRecords: records.slice(0, 10).map(r => ({
+        id: r.id,
+        date: r.date,
+        checkInTime: r.checkInTime,
+        checkOutTime: r.checkOutTime,
+        workingHours: r.workingHours,
+        lateMinutes: r.lateMinutes,
+        status: r.status,
+      })),
+      month: `${year}-${String(month).padStart(2, "0")}`,
+    });
+  } catch (err) { console.error(err); res.status(500).json({ message: "Server error" }); }
+});
+
 router.get("/all-today", requireAdmin, async (req, res) => {
   try {
     const companyId = req.session.companyId!;

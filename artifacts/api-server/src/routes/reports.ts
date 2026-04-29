@@ -5,7 +5,6 @@ import {
   employeesTable,
   departmentsTable,
   leavesTable,
-  companyLocationTable,
 } from "@workspace/db";
 import { eq, and, gte, lte, count, desc } from "drizzle-orm";
 import { requireAuth, requireAdmin } from "../lib/auth.js";
@@ -14,15 +13,18 @@ const router = Router();
 
 router.get("/dashboard", requireAuth, async (req, res) => {
   try {
+    const companyId = req.session.companyId!;
     const today = new Date().toISOString().split("T")[0];
 
-    const [totalResult] = await db.select({ count: count() }).from(employeesTable).where(eq(employeesTable.isActive, true));
+    const [totalResult] = await db.select({ count: count() }).from(employeesTable)
+      .where(and(eq(employeesTable.isActive, true), eq(employeesTable.companyId, companyId)));
     const totalEmployees = totalResult?.count ?? 0;
 
     const todayRecords = await db
       .select({ status: attendanceTable.status })
       .from(attendanceTable)
-      .where(eq(attendanceTable.date, today));
+      .leftJoin(employeesTable, eq(attendanceTable.employeeId, employeesTable.id))
+      .where(and(eq(attendanceTable.date, today), eq(employeesTable.companyId, companyId)));
 
     const presentToday = todayRecords.filter((r) => r.status === "present" || r.status === "late").length;
     const lateToday = todayRecords.filter((r) => r.status === "late").length;
@@ -32,7 +34,8 @@ router.get("/dashboard", requireAuth, async (req, res) => {
     const [pendingResult] = await db
       .select({ count: count() })
       .from(leavesTable)
-      .where(eq(leavesTable.status, "pending"));
+      .leftJoin(employeesTable, eq(leavesTable.employeeId, employeesTable.id))
+      .where(and(eq(leavesTable.status, "pending"), eq(employeesTable.companyId, companyId)));
     const pendingLeaves = pendingResult?.count ?? 0;
 
     const attendanceRate = totalEmployees > 0 ? (presentToday / totalEmployees) * 100 : 0;
@@ -54,6 +57,7 @@ router.get("/dashboard", requireAuth, async (req, res) => {
 
 router.get("/daily", requireAdmin, async (req, res) => {
   try {
+    const companyId = req.session.companyId!;
     const date = (req.query.date as string) || new Date().toISOString().split("T")[0];
 
     const records = await db
@@ -63,12 +67,6 @@ router.get("/daily", requireAdmin, async (req, res) => {
         date: attendanceTable.date,
         checkInTime: attendanceTable.checkInTime,
         checkOutTime: attendanceTable.checkOutTime,
-        breakStartTime: attendanceTable.breakStartTime,
-        breakEndTime: attendanceTable.breakEndTime,
-        checkInLat: attendanceTable.checkInLat,
-        checkInLng: attendanceTable.checkInLng,
-        checkOutLat: attendanceTable.checkOutLat,
-        checkOutLng: attendanceTable.checkOutLng,
         workingHours: attendanceTable.workingHours,
         breakHours: attendanceTable.breakHours,
         lateMinutes: attendanceTable.lateMinutes,
@@ -80,9 +78,9 @@ router.get("/daily", requireAdmin, async (req, res) => {
         departmentName: departmentsTable.name,
       })
       .from(attendanceTable)
-      .leftJoin(employeesTable, eq(attendanceTable.employeeId, employeesTable.id))
+      .leftJoin(employeesTable, and(eq(attendanceTable.employeeId, employeesTable.id), eq(employeesTable.companyId, companyId)))
       .leftJoin(departmentsTable, eq(employeesTable.departmentId, departmentsTable.id))
-      .where(eq(attendanceTable.date, date));
+      .where(and(eq(attendanceTable.date, date), eq(employeesTable.companyId, companyId)));
 
     const summary = {
       present: records.filter((r) => r.status === "present").length,
@@ -100,6 +98,7 @@ router.get("/daily", requireAdmin, async (req, res) => {
 
 router.get("/monthly", requireAdmin, async (req, res) => {
   try {
+    const companyId = req.session.companyId!;
     const month = parseInt((req.query.month as string) || String(new Date().getMonth() + 1));
     const year = parseInt((req.query.year as string) || String(new Date().getFullYear()));
     const employeeIdFilter = req.query.employeeId ? parseInt(req.query.employeeId as string) : null;
@@ -116,12 +115,19 @@ router.get("/monthly", requireAdmin, async (req, res) => {
       })
       .from(employeesTable)
       .leftJoin(departmentsTable, eq(employeesTable.departmentId, departmentsTable.id))
-      .where(eq(employeesTable.isActive, true));
+      .where(and(eq(employeesTable.isActive, true), eq(employeesTable.companyId, companyId)));
 
-    const records = await db
-      .select()
+    const empIds = employees.map(e => e.id);
+    const records = empIds.length > 0 ? await db
+      .select({
+        employeeId: attendanceTable.employeeId,
+        status: attendanceTable.status,
+        workingHours: attendanceTable.workingHours,
+        overtimeMinutes: attendanceTable.overtimeMinutes,
+        lateMinutes: attendanceTable.lateMinutes,
+      })
       .from(attendanceTable)
-      .where(and(gte(attendanceTable.date, startDate), lte(attendanceTable.date, endDate)));
+      .where(and(gte(attendanceTable.date, startDate), lte(attendanceTable.date, endDate))) : [];
 
     const totalWorkDays = endDay;
 
