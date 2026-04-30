@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import { Loader2, User, KeyRound } from "lucide-react";
 import { motion } from "framer-motion";
+import { getAndClearCompanyInactiveFlag } from "@/lib/auth";
 
 async function apiPost(url: string, body: object) {
   const res = await fetch(url, {
@@ -30,6 +31,12 @@ export default function Login() {
   const [error, setError] = useState("");
   const [isPending, setIsPending] = useState(false);
   const BASE = import.meta.env.BASE_URL;
+
+  useEffect(() => {
+    if (getAndClearCompanyInactiveFlag()) {
+      setError("تم إيقاف شركتك من قِبل مزود الخدمة، يرجى التواصل مع الدعم");
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

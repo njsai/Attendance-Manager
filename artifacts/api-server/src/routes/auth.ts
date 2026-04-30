@@ -1,8 +1,8 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { employeesTable, departmentsTable, shiftsTable, superAdminsTable } from "@workspace/db";
+import { employeesTable, departmentsTable, shiftsTable, superAdminsTable, companiesTable } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
-import { hashPassword, requireCompanyAuth, requireSuperAdmin } from "../lib/auth.js";
+import { hashPassword, requireCompanyAuth } from "../lib/auth.js";
 
 const router = Router();
 
@@ -37,14 +37,20 @@ router.post("/login", async (req, res) => {
         shiftName: shiftsTable.name,
         shiftStart: shiftsTable.startTime,
         shiftEnd: shiftsTable.endTime,
+        companyIsActive: companiesTable.isActive,
       })
       .from(employeesTable)
       .leftJoin(departmentsTable, eq(employeesTable.departmentId, departmentsTable.id))
       .leftJoin(shiftsTable, eq(employeesTable.shiftId, shiftsTable.id))
+      .leftJoin(companiesTable, eq(employeesTable.companyId, companiesTable.id))
       .where(eq(employeesTable.username, username.trim()));
 
     if (!employee) {
       res.status(401).json({ message: "اسم المستخدم أو كلمة المرور غير صحيحة" });
+      return;
+    }
+    if (employee.companyIsActive === false) {
+      res.status(403).json({ message: "الشركة موقوفة، تواصل مع مزود الخدمة" });
       return;
     }
     if (!employee.isActive) {
@@ -63,7 +69,7 @@ router.post("/login", async (req, res) => {
 
     req.session.save((err) => {
       if (err) { res.status(500).json({ message: "خطأ في حفظ الجلسة" }); return; }
-      const { passwordHash: _, ...data } = employee;
+      const { passwordHash: _, companyIsActive: __, ...data } = employee;
       res.json({ employee: data, message: "تم تسجيل الدخول بنجاح" });
     });
   } catch (err) {
@@ -110,7 +116,7 @@ router.post("/super-admin/login", async (req, res) => {
 router.post("/logout", (req, res) => {
   req.session.destroy((err) => {
     if (err) console.error("Logout error:", err);
-    res.clearCookie("connect.sid");
+    res.clearCookie("attend.sid");
     res.json({ message: "تم تسجيل الخروج" });
   });
 });
@@ -188,24 +194,39 @@ router.get("/me", async (req, res) => {
         shiftName: shiftsTable.name,
         shiftStart: shiftsTable.startTime,
         shiftEnd: shiftsTable.endTime,
+        companyIsActive: companiesTable.isActive,
       })
       .from(employeesTable)
       .leftJoin(departmentsTable, eq(employeesTable.departmentId, departmentsTable.id))
       .leftJoin(shiftsTable, eq(employeesTable.shiftId, shiftsTable.id))
+      .leftJoin(companiesTable, eq(employeesTable.companyId, companiesTable.id))
       .where(and(
         eq(employeesTable.id, req.session.userId!),
         eq(employeesTable.companyId, req.session.companyId!)
       ));
 
-    if (!employee) { res.status(401).json({ message: "Unauthorized" }); return; }
+    if (!employee) {
+      req.session.destroy(() => {});
+      res.status(401).json({ message: "Unauthorized" });
+      return;
+    }
+
+    // Block if company is deactivated — destroy session immediately
+    if (employee.companyIsActive === false) {
+      req.session.destroy(() => {});
+      res.status(403).json({ message: "company_inactive" });
+      return;
+    }
+
     if (!employee.isActive) {
       req.session.destroy(() => {});
       res.status(401).json({ message: "Unauthorized" });
       return;
     }
 
+    const { companyIsActive: _, ...empData } = employee;
     res.json({
-      ...employee,
+      ...empData,
       hasFace: !!employee.hasFace,
     });
   } catch (err) {

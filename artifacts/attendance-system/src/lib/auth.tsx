@@ -20,9 +20,24 @@ const AuthContext = createContext<AuthContextType | null>(null);
 
 const BASE = import.meta.env.BASE_URL;
 
+const COMPANY_INACTIVE_KEY = "attend_company_inactive";
+
+export function getAndClearCompanyInactiveFlag(): boolean {
+  const flag = sessionStorage.getItem(COMPANY_INACTIVE_KEY);
+  if (flag) { sessionStorage.removeItem(COMPANY_INACTIVE_KEY); return true; }
+  return false;
+}
+
 async function fetchMe(): Promise<AppUser | null> {
   try {
     const res = await fetch(`${BASE}api/auth/me`, { credentials: "include" });
+    if (res.status === 403) {
+      const data = await res.json().catch(() => ({}));
+      if (data?.message === "company_inactive") {
+        sessionStorage.setItem(COMPANY_INACTIVE_KEY, "1");
+      }
+      return null;
+    }
     if (!res.ok) return null;
     return await res.json();
   } catch {
