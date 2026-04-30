@@ -37,7 +37,7 @@ export default defineConfig({
       ? [
           await import("@replit/vite-plugin-cartographer").then((m) =>
             m.cartographer({
-              root: path.resolve(import.meta.dirname, ".."),
+              root: path.resolve(import.meta.dirname),
             }),
           ),
           await import("@replit/vite-plugin-dev-banner").then((m) =>
@@ -62,6 +62,14 @@ export default defineConfig({
     port,
     host: "0.0.0.0",
     allowedHosts: true,
+    watch: {
+      ignored: [
+        "**/api-server/**",
+        "**/mockup-sandbox/**",
+        "**/node_modules/**",
+        "**/.git/**",
+      ],
+    },
     fs: {
       strict: true,
       deny: ["**/.*"],
