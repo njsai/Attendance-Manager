@@ -3,7 +3,7 @@ import { Link, useLocation } from "wouter";
 import { useAuth } from "@/lib/auth";
 import {
   LayoutDashboard, Users, Building2, Clock,
-  CalendarCheck, FileBarChart, LogOut, Menu, X, Home, Settings
+  CalendarCheck, FileBarChart, LogOut, Menu, X, Home, Settings, MessageCircle
 } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -20,17 +20,20 @@ const ADMIN_NAV = [
   { name: "سجل الحضور", path: "/attendance", icon: CalendarCheck },
   { name: "الإجازات", path: "/leaves", icon: Clock },
   { name: "التقارير", path: "/reports", icon: FileBarChart },
+  { name: "الدردشة", path: "/chat", icon: MessageCircle },
   { name: "الإعدادات", path: "/settings", icon: Settings },
 ];
 
 const MANAGER_NAV = [
   { name: "الرئيسية", path: "/", icon: Home },
   { name: "إجازاتي", path: "/my-leaves", icon: Clock },
+  { name: "الدردشة", path: "/chat", icon: MessageCircle },
 ];
 
 const EMPLOYEE_NAV = [
   { name: "الرئيسية", path: "/", icon: Home },
   { name: "إجازاتي", path: "/my-leaves", icon: Clock },
+  { name: "الدردشة", path: "/chat", icon: MessageCircle },
 ];
 
 const ROLE_LABEL: Record<string, string> = {

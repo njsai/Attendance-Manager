@@ -20,6 +20,7 @@ import DepartmentsAndShifts from "@/pages/admin/DepartmentsAndShifts";
 import AdminBranches from "@/pages/admin/Branches";
 import AdminSettings from "@/pages/admin/Settings";
 import MyLeaves from "@/pages/employee/MyLeaves";
+import ChatPage from "@/pages/Chat";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient({
@@ -82,6 +83,9 @@ function Router() {
       {/* Employee */}
       <Route path="/my-attendance">{() => <Guard><EmployeeDashboard /></Guard>}</Route>
       <Route path="/my-leaves">{() => <Guard><MyLeaves /></Guard>}</Route>
+
+      {/* Chat */}
+      <Route path="/chat">{() => <Guard><ChatPage /></Guard>}</Route>
 
       <Route component={NotFound} />
     </Switch>

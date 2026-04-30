@@ -11,6 +11,7 @@ import leavesRouter from "./leaves.js";
 import reportsRouter from "./reports.js";
 import settingsRouter from "./settings.js";
 import superAdminRouter from "./super-admin.js";
+import messagesRouter from "./messages.js";
 
 const router: IRouter = Router();
 
@@ -26,5 +27,6 @@ router.use("/attendance", attendanceRouter);
 router.use("/leaves", leavesRouter);
 router.use("/reports", reportsRouter);
 router.use("/settings", settingsRouter);
+router.use("/messages", messagesRouter);
 
 export default router;

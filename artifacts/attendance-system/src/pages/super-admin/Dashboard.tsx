@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
-import { Shield, Building2, Plus, Trash2, Edit, Users, LogOut, ChevronDown, ChevronUp, CheckCircle, XCircle, Eye, EyeOff, Key, Loader2, RefreshCw } from "lucide-react";
+import { Shield, Building2, Plus, Trash2, Edit, Users, LogOut, ChevronDown, ChevronUp, CheckCircle, XCircle, Eye, EyeOff, Key, Loader2, RefreshCw, MessageCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import SuperAdminChat from "./Chat";
 
 const BASE = import.meta.env.BASE_URL;
 
@@ -228,6 +229,17 @@ export default function SuperAdminDashboard() {
                 </AnimatePresence>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* Chat Section */}
+        {!loading && companies.length > 0 && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-3">
+              <MessageCircle className="w-5 h-5 text-indigo-400" />
+              <h2 className="text-white font-bold text-xl">مركز الدعم</h2>
+            </div>
+            <SuperAdminChat companies={companies.map(c => ({ id: c.id, name: c.name, isActive: c.isActive }))} />
           </div>
         )}
       </div>
