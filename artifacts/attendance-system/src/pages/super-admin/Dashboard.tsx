@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
-import { Shield, Building2, Plus, Trash2, Edit, Users, LogOut, ChevronDown, ChevronUp, CheckCircle, XCircle, Eye, EyeOff, Key, Loader2, RefreshCw, MessageCircle, ShieldAlert, HardDrive, Download, Archive, Activity, CreditCard, Bell, Globe } from "lucide-react";
+import { Shield, Building2, Plus, Trash2, Edit, Users, LogOut, ChevronDown, ChevronUp, CheckCircle, XCircle, Eye, EyeOff, Key, Loader2, RefreshCw, MessageCircle, ShieldAlert, HardDrive, Download, Archive, Activity, CreditCard, Bell, Globe, Settings } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import SuperAdminChat from "./Chat";
 import { useI18n } from "@/lib/i18n";
@@ -169,6 +169,9 @@ export default function SuperAdminDashboard() {
             </button>
             <button onClick={() => setLocation("/super-admin/security")} style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(16,185,129,0.2)", background: "rgba(16,185,129,0.06)", color: "#10b981", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
               <ShieldAlert size={14} /> {T.security}
+            </button>
+            <button onClick={() => setLocation("/super-admin/settings")} style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(168,85,247,0.25)", background: "rgba(168,85,247,0.08)", color: "#a855f7", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+              <Settings size={14} /> {lang === "ar" ? "الإعدادات" : "Settings"}
             </button>
             <button onClick={() => setLang(lang === "ar" ? "en" : "ar")}
               title={lang === "ar" ? "Switch to English" : "التبديل للعربية"}

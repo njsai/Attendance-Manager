@@ -2,7 +2,7 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import { companiesTable, employeesTable, superAdminsTable, branchesTable, departmentsTable, shiftsTable, companyLocationTable } from "@workspace/db";
 import { eq, count, sql } from "drizzle-orm";
-import { requireSuperAdmin, hashPassword } from "../lib/auth.js";
+import { requireSuperAdmin, hashPassword, verifyPassword } from "../lib/auth.js";
 import { hashPasswordBcrypt } from "../lib/security.js";
 import { existsSync, statSync, readdirSync, unlinkSync, createReadStream } from "fs";
 import { join } from "path";
@@ -219,15 +219,58 @@ router.post("/change-password", requireSuperAdmin, async (req, res) => {
   try {
     const { oldPassword, newPassword } = req.body;
     if (!oldPassword || !newPassword) { res.status(400).json({ message: "جميع الحقول مطلوبة" }); return; }
+    if (newPassword.length < 6) { res.status(400).json({ message: "كلمة المرور الجديدة يجب أن تكون 6 أحرف على الأقل" }); return; }
     const [sa] = await db.select({ passwordHash: superAdminsTable.passwordHash }).from(superAdminsTable)
       .where(eq(superAdminsTable.id, req.session.superAdminId!));
-    if (!sa || sa.passwordHash !== hashPassword(oldPassword)) {
+    const valid = sa ? await verifyPassword(oldPassword, sa.passwordHash) : false;
+    if (!valid) {
       res.status(401).json({ message: "كلمة المرور الحالية غير صحيحة" });
       return;
     }
-    await db.update(superAdminsTable).set({ passwordHash: hashPassword(newPassword) })
+    const newHash = await hashPasswordBcrypt(newPassword);
+    await db.update(superAdminsTable).set({ passwordHash: newHash })
       .where(eq(superAdminsTable.id, req.session.superAdminId!));
     res.json({ message: "تم تغيير كلمة المرور بنجاح" });
+  } catch (err) { console.error(err); res.status(500).json({ message: "Server error" }); }
+});
+
+// ─── Update super admin username ───────────────────────────────────────────────
+router.put("/profile", requireSuperAdmin, async (req, res) => {
+  try {
+    const { newUsername, currentPassword } = req.body;
+    if (!newUsername || !currentPassword) {
+      res.status(400).json({ message: "اسم المستخدم الجديد وكلمة المرور الحالية مطلوبان" });
+      return;
+    }
+    const trimmed = newUsername.trim().toLowerCase();
+    if (trimmed.length < 3) {
+      res.status(400).json({ message: "اسم المستخدم يجب أن يكون 3 أحرف على الأقل" });
+      return;
+    }
+    if (!/^[a-z0-9_.-]+$/.test(trimmed)) {
+      res.status(400).json({ message: "اسم المستخدم يجب أن يحتوي على أحرف إنجليزية وأرقام فقط" });
+      return;
+    }
+    // Verify current password using bcrypt
+    const [sa] = await db.select({ id: superAdminsTable.id, passwordHash: superAdminsTable.passwordHash })
+      .from(superAdminsTable).where(eq(superAdminsTable.id, req.session.superAdminId!));
+    const valid = sa ? await verifyPassword(currentPassword, sa.passwordHash) : false;
+    if (!valid) {
+      res.status(401).json({ message: "كلمة المرور الحالية غير صحيحة" });
+      return;
+    }
+    // Check uniqueness
+    const [existing] = await db.select({ id: superAdminsTable.id }).from(superAdminsTable)
+      .where(eq(superAdminsTable.username, trimmed));
+    if (existing && existing.id !== sa.id) {
+      res.status(409).json({ message: "اسم المستخدم مستخدم بالفعل" });
+      return;
+    }
+    const [updated] = await db.update(superAdminsTable)
+      .set({ username: trimmed })
+      .where(eq(superAdminsTable.id, sa.id))
+      .returning({ id: superAdminsTable.id, username: superAdminsTable.username, fullName: superAdminsTable.fullName, email: superAdminsTable.email });
+    res.json({ ...updated, message: "تم تغيير اسم المستخدم بنجاح" });
   } catch (err) { console.error(err); res.status(500).json({ message: "Server error" }); }
 });
 

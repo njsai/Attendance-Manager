@@ -23,6 +23,7 @@ const SecurityDashboard    = lazy(() => import("@/pages/super-admin/Security"));
 const MonitoringPage       = lazy(() => import("@/pages/super-admin/Monitoring"));
 const SubscriptionsPage    = lazy(() => import("@/pages/super-admin/Subscriptions"));
 const NotificationsPage    = lazy(() => import("@/pages/super-admin/Notifications"));
+const AccountSettingsPage  = lazy(() => import("@/pages/super-admin/AccountSettings"));
 const Employees            = lazy(() => import("@/pages/admin/Employees"));
 const AdminAttendance      = lazy(() => import("@/pages/admin/Attendance"));
 const AdminLeaves          = lazy(() => import("@/pages/admin/Leaves"));
@@ -92,6 +93,7 @@ function Router() {
         <Route path="/super-admin/monitoring">{() => <SuperAdminGuard><MonitoringPage /></SuperAdminGuard>}</Route>
         <Route path="/super-admin/subscriptions">{() => <SuperAdminGuard><SubscriptionsPage /></SuperAdminGuard>}</Route>
         <Route path="/super-admin/notifications">{() => <SuperAdminGuard><NotificationsPage /></SuperAdminGuard>}</Route>
+        <Route path="/super-admin/settings">{() => <SuperAdminGuard><AccountSettingsPage /></SuperAdminGuard>}</Route>
         <Route path="/super-admin">{() => <SuperAdminGuard><SuperAdminDashboard /></SuperAdminGuard>}</Route>
 
         {/* Company */}
