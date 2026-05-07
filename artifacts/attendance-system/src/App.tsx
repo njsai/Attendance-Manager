@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { Switch, Route, Router as WouterRouter, Redirect } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -6,35 +6,46 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/lib/auth";
 import { I18nProvider } from "@/lib/i18n";
 import { ThemeProvider } from "@/lib/theme";
-import { Loader2 } from "lucide-react";
 
 import AppLayout from "@/components/layout/AppLayout";
 
-// ─── Eagerly loaded pages (critical path — no lazy delay) ────────────────────
+// ─── Eagerly loaded (critical path + frequently visited) ─────────────────────
 import AdminDashboard    from "@/pages/admin/Dashboard";
 import EmployeeDashboard from "@/pages/employee/Dashboard";
 import ManagerDashboard  from "@/pages/manager/Dashboard";
 import Login             from "@/pages/Login";
 import SuperAdminLogin   from "@/pages/super-admin/Login";
+import Employees         from "@/pages/admin/Employees";
+import AdminAttendance   from "@/pages/admin/Attendance";
+import AdminLeaves       from "@/pages/admin/Leaves";
+import AdminReports      from "@/pages/admin/Reports";
+import DepartmentsAndShifts from "@/pages/admin/DepartmentsAndShifts";
+import AdminBranches     from "@/pages/admin/Branches";
+import AdminSettings     from "@/pages/admin/Settings";
+import AdminPayroll      from "@/pages/admin/Payroll";
+import MyLeaves          from "@/pages/employee/MyLeaves";
+import ChatPage          from "@/pages/Chat";
 
-// ─── Lazy-loaded pages (less frequently visited) ──────────────────────────────
+// ─── Lazy-loaded (super admin + rarely visited) ───────────────────────────────
 const SuperAdminDashboard  = lazy(() => import("@/pages/super-admin/Dashboard"));
 const SecurityDashboard    = lazy(() => import("@/pages/super-admin/Security"));
 const MonitoringPage       = lazy(() => import("@/pages/super-admin/Monitoring"));
 const SubscriptionsPage    = lazy(() => import("@/pages/super-admin/Subscriptions"));
 const NotificationsPage    = lazy(() => import("@/pages/super-admin/Notifications"));
 const AccountSettingsPage  = lazy(() => import("@/pages/super-admin/AccountSettings"));
-const Employees            = lazy(() => import("@/pages/admin/Employees"));
-const AdminAttendance      = lazy(() => import("@/pages/admin/Attendance"));
-const AdminLeaves          = lazy(() => import("@/pages/admin/Leaves"));
-const AdminReports         = lazy(() => import("@/pages/admin/Reports"));
-const DepartmentsAndShifts = lazy(() => import("@/pages/admin/DepartmentsAndShifts"));
-const AdminBranches        = lazy(() => import("@/pages/admin/Branches"));
-const AdminSettings        = lazy(() => import("@/pages/admin/Settings"));
-const AdminPayroll         = lazy(() => import("@/pages/admin/Payroll"));
-const MyLeaves             = lazy(() => import("@/pages/employee/MyLeaves"));
-const ChatPage             = lazy(() => import("@/pages/Chat"));
 const NotFound             = lazy(() => import("@/pages/not-found"));
+
+// ─── Prefetch super-admin chunks after app is idle ────────────────────────────
+function prefetchSuperAdminChunks() {
+  requestIdleCallback(() => {
+    import("@/pages/super-admin/Dashboard");
+    import("@/pages/super-admin/Security");
+    import("@/pages/super-admin/Monitoring");
+    import("@/pages/super-admin/Subscriptions");
+    import("@/pages/super-admin/Notifications");
+    import("@/pages/super-admin/AccountSettings");
+  });
+}
 
 // ─── Query client ─────────────────────────────────────────────────────────────
 const queryClient = new QueryClient({
@@ -42,23 +53,29 @@ const queryClient = new QueryClient({
     queries: {
       refetchOnWindowFocus: false,
       retry: false,
-      staleTime: 30_000,
-      gcTime:    120_000,
+      staleTime: 60_000,
+      gcTime:    300_000,
     },
   },
 });
 
-// ─── Spinner ──────────────────────────────────────────────────────────────────
-const Spinner = () => (
-  <div className="flex h-screen items-center justify-center bg-[#0f1623]">
-    <Loader2 className="w-10 h-10 animate-spin text-blue-400" />
+// ─── Thin progress bar shown only during lazy-chunk loading ──────────────────
+// Shown for super-admin pages (the only remaining lazy ones)
+const LazyFallback = () => (
+  <div style={{
+    position: "fixed", top: 0, left: 0, right: 0, height: 2, zIndex: 9999,
+    background: "linear-gradient(90deg, #a855f7, #00f5ff, #a855f7)",
+    backgroundSize: "200% 100%",
+    animation: "shimmer 1s linear infinite",
+  }}>
+    <style>{`@keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }`}</style>
   </div>
 );
 
 // ─── Guards ───────────────────────────────────────────────────────────────────
 function Guard({ children, adminOnly = false }: { children: React.ReactNode; adminOnly?: boolean }) {
   const { user, isLoading } = useAuth();
-  if (isLoading) return <Spinner />;
+  if (isLoading) return null;                                   // invisible — avoids flash
   if (!user) return <Redirect to="/login" />;
   if (user.role === "super_admin") return <Redirect to="/super-admin" />;
   if (adminOnly && user.role !== "admin") return <Redirect to="/" />;
@@ -67,14 +84,14 @@ function Guard({ children, adminOnly = false }: { children: React.ReactNode; adm
 
 function SuperAdminGuard({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
-  if (isLoading) return <Spinner />;
+  if (isLoading) return null;
   if (!user || user.role !== "super_admin") return <Redirect to="/super-admin/login" />;
   return <>{children}</>;
 }
 
 function RootRedirect() {
   const { user, isLoading } = useAuth();
-  if (isLoading) return <Spinner />;
+  if (isLoading) return null;
   if (!user) return <Redirect to="/login" />;
   if (user.role === "super_admin") return <Redirect to="/super-admin" />;
   if (user.role === "admin")   return <Guard><AdminDashboard /></Guard>;
@@ -84,8 +101,13 @@ function RootRedirect() {
 
 // ─── Router ───────────────────────────────────────────────────────────────────
 function Router() {
+  // Prefetch lazy chunks once app is idle
+  useEffect(() => {
+    prefetchSuperAdminChunks();
+  }, []);
+
   return (
-    <Suspense fallback={<Spinner />}>
+    <Suspense fallback={<LazyFallback />}>
       <Switch>
         {/* Super Admin */}
         <Route path="/super-admin/login" component={SuperAdminLogin} />
@@ -124,8 +146,7 @@ function Router() {
   );
 }
 
-// ─── Inner app — ThemeProvider + I18nProvider live INSIDE AuthProvider ─────────
-// This allows them to read user.preferredTheme / user.preferredLang from the DB.
+// ─── Inner app ────────────────────────────────────────────────────────────────
 function InnerApp() {
   return (
     <ThemeProvider>

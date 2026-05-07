@@ -24,11 +24,26 @@ const AuthContext = createContext<AuthContextType | null>(null);
 const BASE = import.meta.env.BASE_URL;
 
 const COMPANY_INACTIVE_KEY = "attend_company_inactive";
+const USER_CACHE_KEY = "attend_user_v1";
 
 export function getAndClearCompanyInactiveFlag(): boolean {
   const flag = sessionStorage.getItem(COMPANY_INACTIVE_KEY);
   if (flag) { sessionStorage.removeItem(COMPANY_INACTIVE_KEY); return true; }
   return false;
+}
+
+function readCachedUser(): AppUser | null {
+  try {
+    const raw = sessionStorage.getItem(USER_CACHE_KEY);
+    return raw ? (JSON.parse(raw) as AppUser) : null;
+  } catch { return null; }
+}
+
+function writeCachedUser(u: AppUser | null) {
+  try {
+    if (u) sessionStorage.setItem(USER_CACHE_KEY, JSON.stringify(u));
+    else sessionStorage.removeItem(USER_CACHE_KEY);
+  } catch { }
 }
 
 async function fetchMe(): Promise<AppUser | null> {
@@ -50,22 +65,21 @@ async function fetchMe(): Promise<AppUser | null> {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
-  const [user, setUser] = useState<AppUser | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+
+  // ── Start from cache so the UI renders immediately — no spinner on load ───
+  const initialUser = readCachedUser();
+  const [user, setUser] = useState<AppUser | null>(initialUser);
+  const [isLoading, setIsLoading] = useState(initialUser === null); // false if cached
   const initialized = useRef(false);
 
   useEffect(() => {
     if (initialized.current) return;
     initialized.current = true;
 
-    const cached = queryClient.getQueryData<AppUser>(["/api/auth/me"]);
-    if (cached) {
-      setUser(cached);
-      setIsLoading(false);
-      return;
-    }
-
+    // If we had a cached user, sync quietly in the background
+    // If no cache, we must wait for the fetch before rendering (isLoading=true)
     fetchMe().then(u => {
+      writeCachedUser(u);
       if (u) queryClient.setQueryData(["/api/auth/me"], u);
       setUser(u);
       setIsLoading(false);
@@ -77,7 +91,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const key = event.query.queryKey;
       if (Array.isArray(key) && key[0] === "/api/auth/me") {
         const data = event.query.state.data as AppUser | undefined;
-        setUser(data ?? null);
+        const u = data ?? null;
+        writeCachedUser(u);
+        setUser(u);
       }
     });
     return unsubscribe;
@@ -87,6 +103,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await fetch(`${BASE}api/auth/logout`, { method: "POST", credentials: "include" });
     } catch { }
+    writeCachedUser(null);
     queryClient.clear();
     setUser(null);
     const loginPath = `${BASE}login`.replace(/\/\//g, "/");
@@ -94,7 +111,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const updateUserPrefs = (prefs: { theme?: string; lang?: string }) => {
-    setUser(prev => prev ? { ...prev, ...prefs.theme && { preferredTheme: prefs.theme as "dark" | "light" }, ...prefs.lang && { preferredLang: prefs.lang as "ar" | "en" } } : prev);
+    setUser(prev => {
+      if (!prev) return prev;
+      const updated = {
+        ...prev,
+        ...(prefs.theme && { preferredTheme: prefs.theme as "dark" | "light" }),
+        ...(prefs.lang  && { preferredLang:  prefs.lang  as "ar"   | "en"   }),
+      };
+      writeCachedUser(updated);
+      return updated;
+    });
   };
 
   return (
