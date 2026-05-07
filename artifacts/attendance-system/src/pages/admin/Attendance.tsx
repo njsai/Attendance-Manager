@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { getCachedStale, setCached } from "@/lib/pageCache";
 import { MapPin, Clock, Search, UserCheck, AlertTriangle, Plus, Edit2, Trash2, X, Check } from "lucide-react";
 import { useTheme } from "@/lib/theme";
 
@@ -62,9 +63,11 @@ const EMPTY_FORM = {
 export default function AdminAttendance() {
   const { theme } = useTheme();
   const isDark = theme === "dark";
-  const [records, setRecords] = useState<AttRecord[]>([]);
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [loading, setLoading] = useState(true);
+  const _today0 = new Date().toISOString().split("T")[0];
+  const _ac = getCachedStale<{ records: AttRecord[]; employees: Employee[] }>(`att-${_today0}`);
+  const [records, setRecords] = useState<AttRecord[]>(_ac?.records ?? []);
+  const [employees, setEmployees] = useState<Employee[]>(_ac?.employees ?? []);
+  const [loading, setLoading] = useState(!_ac);
   const [filterDate, setFilterDate] = useState(new Date().toISOString().split("T")[0]);
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState<"all" | "present">("present");
@@ -111,13 +114,21 @@ export default function AdminAttendance() {
 
   // ── Data fetching ──────────────────────────────────────────────────────────
   const fetchRecords = useCallback(async () => {
-    setLoading(true);
+    const cacheKey = `att-${filterDate}`;
+    const hasCached = !!getCachedStale(cacheKey);
+    if (!hasCached) setLoading(true);
     try {
       const params = new URLSearchParams();
       if (filterDate) params.set("date", filterDate);
-      const res = await fetch(`${BASE}api/attendance?${params}`, { credentials: "include" });
-      const data = await res.json();
-      setRecords(Array.isArray(data) ? data : []);
+      const [attRes, empRes] = await Promise.all([
+        fetch(`${BASE}api/attendance?${params}`, { credentials: "include" }).then(r => r.json()),
+        fetch(`${BASE}api/employees`, { credentials: "include" }).then(r => r.json()),
+      ]);
+      const recs = Array.isArray(attRes) ? attRes : [];
+      const emps = Array.isArray(empRes) ? empRes : [];
+      setRecords(recs);
+      setEmployees(emps);
+      setCached(cacheKey, { records: recs, employees: emps });
     } catch {
       setRecords([]);
     } finally {
@@ -126,13 +137,6 @@ export default function AdminAttendance() {
   }, [BASE, filterDate]);
 
   useEffect(() => { fetchRecords(); }, [fetchRecords]);
-
-  useEffect(() => {
-    fetch(`${BASE}api/employees`, { credentials: "include" })
-      .then((r) => r.json())
-      .then((d) => setEmployees(Array.isArray(d) ? d : []))
-      .catch(() => {});
-  }, [BASE]);
 
   // ── Filtering ──────────────────────────────────────────────────────────────
   const filtered = records.filter((r) => {

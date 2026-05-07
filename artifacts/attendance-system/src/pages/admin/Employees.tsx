@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { getCachedStale, setCached, invalidatePrefix } from "@/lib/pageCache";
 import { Plus, Search, Edit2, Trash2, ToggleLeft, ToggleRight, X, User, Mail, Phone, MapPin, Briefcase, Building, Clock, DollarSign, Shield, ScanFace } from "lucide-react";
 import FaceCapture from "@/components/FaceCapture";
 import { useI18n } from "@/lib/i18n";
@@ -266,11 +267,12 @@ export default function AdminEmployees() {
   const { theme } = useTheme();
   const isDark = theme === "dark";
 
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [depts, setDepts] = useState<Department[]>([]);
-  const [shifts, setShifts] = useState<Shift[]>([]);
-  const [branches, setBranches] = useState<Branch[]>([]);
-  const [loading, setLoading] = useState(true);
+  const _ec = getCachedStale<{ employees: Employee[]; depts: Department[]; shifts: Shift[]; branches: Branch[] }>('employees-list');
+  const [employees, setEmployees] = useState<Employee[]>(_ec?.employees ?? []);
+  const [depts, setDepts] = useState<Department[]>(_ec?.depts ?? []);
+  const [shifts, setShifts] = useState<Shift[]>(_ec?.shifts ?? []);
+  const [branches, setBranches] = useState<Branch[]>(_ec?.branches ?? []);
+  const [loading, setLoading] = useState(!_ec);
   const [search, setSearch] = useState("");
   const [filterBranch, setFilterBranch] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
@@ -281,21 +283,29 @@ export default function AdminEmployees() {
   const BASE = import.meta.env.BASE_URL;
 
   const fetchAll = useCallback(async () => {
+    const cacheKey = `employees-list-${search}-${filterBranch}-${filterStatus}`;
+    const hasCached = !!getCachedStale(cacheKey);
+    if (!hasCached) setLoading(true);
     const params = new URLSearchParams();
     if (search) params.set("search", search);
     if (filterBranch) params.set("branchId", filterBranch);
     if (filterStatus) params.set("status", filterStatus);
-    const [empRes, deptRes, shiftRes, branchRes] = await Promise.all([
-      fetch(`${BASE}api/employees?${params}`, { credentials: "include" }).then(r => r.json()),
-      fetch(`${BASE}api/departments`, { credentials: "include" }).then(r => r.json()),
-      fetch(`${BASE}api/shifts`, { credentials: "include" }).then(r => r.json()),
-      fetch(`${BASE}api/branches`, { credentials: "include" }).then(r => r.json()),
-    ]);
-    setEmployees(Array.isArray(empRes) ? empRes : []);
-    setDepts(Array.isArray(deptRes) ? deptRes : []);
-    setShifts(Array.isArray(shiftRes) ? shiftRes : []);
-    setBranches(Array.isArray(branchRes) ? branchRes : []);
-    setLoading(false);
+    try {
+      const [empRes, deptRes, shiftRes, branchRes] = await Promise.all([
+        fetch(`${BASE}api/employees?${params}`, { credentials: "include" }).then(r => r.json()),
+        fetch(`${BASE}api/departments`, { credentials: "include" }).then(r => r.json()),
+        fetch(`${BASE}api/shifts`, { credentials: "include" }).then(r => r.json()),
+        fetch(`${BASE}api/branches`, { credentials: "include" }).then(r => r.json()),
+      ]);
+      const e = Array.isArray(empRes) ? empRes : [];
+      const d = Array.isArray(deptRes) ? deptRes : [];
+      const s = Array.isArray(shiftRes) ? shiftRes : [];
+      const b = Array.isArray(branchRes) ? branchRes : [];
+      setEmployees(e); setDepts(d); setShifts(s); setBranches(b);
+      setCached(cacheKey, { employees: e, depts: d, shifts: s, branches: b });
+      setCached('employees-list', { employees: e, depts: d, shifts: s, branches: b });
+    } catch { /* keep stale */ }
+    finally { setLoading(false); }
   }, [BASE, search, filterBranch, filterStatus]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { getCachedStale, setCached } from "@/lib/pageCache";
 import {
   Users, UserCheck, UserX, Clock, Plane, CalendarDays,
   Loader2, X, Briefcase, RefreshCw, Building2,
@@ -80,11 +81,12 @@ export default function AdminDashboard() {
   const { theme } = useTheme();
   const isDark = theme === "dark";
 
-  const [stats, setStats]             = useState<Stats | null>(null);
-  const [employees, setEmployees]     = useState<Employee[]>([]);
-  const [todayAtt, setTodayAtt]       = useState<AttRecord[]>([]);
-  const [pendingLeaves, setPendingLeaves] = useState<LeaveRecord[]>([]);
-  const [loading, setLoading]         = useState(true);
+  const _dc = getCachedStale<{ stats: Stats; employees: Employee[]; todayAtt: AttRecord[]; pendingLeaves: LeaveRecord[] }>('dash');
+  const [stats, setStats]             = useState<Stats | null>(_dc?.stats ?? null);
+  const [employees, setEmployees]     = useState<Employee[]>(_dc?.employees ?? []);
+  const [todayAtt, setTodayAtt]       = useState<AttRecord[]>(_dc?.todayAtt ?? []);
+  const [pendingLeaves, setPendingLeaves] = useState<LeaveRecord[]>(_dc?.pendingLeaves ?? []);
+  const [loading, setLoading]         = useState(!_dc);
   const [refreshing, setRefreshing]   = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [activeFilter, setActiveFilter] = useState<FilterKey | null>(null);
@@ -116,7 +118,8 @@ export default function AdminDashboard() {
   };
 
   const fetchAll = useCallback(async (silent = false) => {
-    if (!silent) setLoading(true); else setRefreshing(true);
+    const hasCached = !!getCachedStale('dash');
+    if (!silent && !hasCached) setLoading(true); else if (silent) setRefreshing(true);
     try {
       const today = new Date().toISOString().split("T")[0];
       const [s, emps, att, leaves] = await Promise.all([
@@ -125,11 +128,15 @@ export default function AdminDashboard() {
         fetch(`${BASE}api/attendance?date=${today}`, { credentials: "include" }).then(r => r.json()),
         fetch(`${BASE}api/leaves?status=pending`,    { credentials: "include" }).then(r => r.json()),
       ]);
+      const filteredEmps = Array.isArray(emps) ? emps.filter((e: Employee) => e.isActive) : [];
+      const filteredAtt  = Array.isArray(att)    ? att    : [];
+      const filteredLeaves = Array.isArray(leaves) ? leaves : [];
       setStats(s);
-      setEmployees(Array.isArray(emps) ? emps.filter((e: Employee) => e.isActive) : []);
-      setTodayAtt(Array.isArray(att) ? att : []);
-      setPendingLeaves(Array.isArray(leaves) ? leaves : []);
+      setEmployees(filteredEmps);
+      setTodayAtt(filteredAtt);
+      setPendingLeaves(filteredLeaves);
       setLastUpdated(new Date());
+      setCached('dash', { stats: s, employees: filteredEmps, todayAtt: filteredAtt, pendingLeaves: filteredLeaves });
     } catch (e) { console.error(e); }
     finally { setLoading(false); setRefreshing(false); }
   }, [BASE]);

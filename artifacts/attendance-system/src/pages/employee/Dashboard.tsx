@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { getCachedStale, setCached } from "@/lib/pageCache";
 import { useAuth } from "@/lib/auth";
 import { Clock, MapPin, LogIn, LogOut, AlertTriangle, Calendar, CheckCircle, XCircle, Timer, ScanFace } from "lucide-react";
 import FaceCapture from "@/components/FaceCapture";
@@ -76,13 +77,14 @@ export default function EmployeeDashboard() {
   const { theme } = useTheme();
   const isDark = theme === "dark";
 
-  const [today, setToday] = useState<TodayRecord | null>(null);
-  const [stats, setStats] = useState<Stats>({
+  const _edc = getCachedStale<{ today: TodayRecord | null; stats: Stats }>('emp-dash');
+  const [today, setToday] = useState<TodayRecord | null>(_edc?.today ?? null);
+  const [stats, setStats] = useState<Stats>(_edc?.stats ?? {
     presentDays: 0, absentDays: 0, lateDays: 0,
     totalWorkingHours: 0, totalLateMinutes: 0,
     recentRecords: [], month: "",
   });
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!_edc);
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -113,6 +115,8 @@ export default function EmployeeDashboard() {
   }
 
   const fetchData = useCallback(async () => {
+    const hasCached = !!getCachedStale('emp-dash');
+    if (!hasCached) setLoading(true);
     try {
       const [todayRes, statsRes] = await Promise.all([
         fetch(`${BASE}api/attendance/today`, { credentials: "include" }),
@@ -120,8 +124,8 @@ export default function EmployeeDashboard() {
       ]);
       const todayData = await todayRes.json();
       const statsData = await statsRes.json();
-      setToday(todayRes.ok ? todayData : null);
-      setStats(statsRes.ok ? {
+      const newToday = todayRes.ok ? todayData : null;
+      const newStats = statsRes.ok ? {
         presentDays: statsData.presentDays ?? 0,
         absentDays: statsData.absentDays ?? 0,
         lateDays: statsData.lateDays ?? 0,
@@ -129,7 +133,10 @@ export default function EmployeeDashboard() {
         totalLateMinutes: statsData.totalLateMinutes ?? 0,
         recentRecords: Array.isArray(statsData.recentRecords) ? statsData.recentRecords : [],
         month: statsData.month ?? "",
-      } : { presentDays: 0, absentDays: 0, lateDays: 0, totalWorkingHours: 0, totalLateMinutes: 0, recentRecords: [], month: "" });
+      } : { presentDays: 0, absentDays: 0, lateDays: 0, totalWorkingHours: 0, totalLateMinutes: 0, recentRecords: [], month: "" };
+      setToday(newToday);
+      setStats(newStats);
+      setCached('emp-dash', { today: newToday, stats: newStats });
     } catch { setError(t("failedLoad")); }
     finally { setLoading(false); }
   }, [BASE, locale]);

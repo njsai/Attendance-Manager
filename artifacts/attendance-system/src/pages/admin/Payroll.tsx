@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { getCachedStale, setCached, invalidatePrefix } from "@/lib/pageCache";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus, Search,
@@ -619,10 +620,12 @@ export default function Payroll() {
   const [empFilter, setEmpFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [search, setSearch] = useState("");
-  const [records, setRecords] = useState<PayrollRecord[]>([]);
-  const [stats, setStats] = useState<Stats | null>(null);
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [loading, setLoading] = useState(false);
+  const _pck = `payroll-${now.getMonth() + 1}-${now.getFullYear()}`;
+  const _pc = getCachedStale<{ records: PayrollRecord[]; stats: Stats | null; employees: Employee[] }>(_pck);
+  const [records, setRecords] = useState<PayrollRecord[]>(_pc?.records ?? []);
+  const [stats, setStats] = useState<Stats | null>(_pc?.stats ?? null);
+  const [employees, setEmployees] = useState<Employee[]>(_pc?.employees ?? []);
+  const [loading, setLoading] = useState(!_pc);
   const [showAdd, setShowAdd] = useState(false);
   const [showGenerate, setShowGenerate] = useState(false);
   const [showSlip, setShowSlip] = useState<PayrollRecord | null>(null);
@@ -661,24 +664,27 @@ export default function Payroll() {
   };
 
   const fetchAll = useCallback(async () => {
-    setLoading(true);
+    const cacheKey = `payroll-${month}-${year}-${empFilter}-${statusFilter}`;
+    const hasCached = !!getCachedStale(cacheKey);
+    if (!hasCached) setLoading(true);
     try {
       const params = new URLSearchParams({ month: String(month), year: String(year) });
       if (empFilter) params.set("employeeId", empFilter);
       if (statusFilter) params.set("status", statusFilter);
-      const [recs, st] = await Promise.all([
+      const [recs, st, emps] = await Promise.all([
         fetch(`${api("?")}${params}`, { credentials: "include" }).then(r => r.json()),
         fetch(`${api("/stats?")}${params}`, { credentials: "include" }).then(r => r.json()),
+        fetch(`${BASE}api/employees`, { credentials: "include" }).then(r => r.json()),
       ]);
-      setRecords(Array.isArray(recs) ? recs : []);
+      const r = Array.isArray(recs) ? recs : [];
+      const e = Array.isArray(emps) ? emps : [];
+      setRecords(r);
       setStats(st);
+      setEmployees(e);
+      setCached(cacheKey, { records: r, stats: st, employees: e });
+      setCached(`payroll-${month}-${year}`, { records: r, stats: st, employees: e });
     } finally { setLoading(false); }
   }, [month, year, empFilter, statusFilter]);
-
-  useEffect(() => {
-    fetch(`${BASE}api/employees`, { credentials: "include" })
-      .then(r => r.json()).then(d => setEmployees(Array.isArray(d) ? d : []));
-  }, []);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { getCachedStale, setCached, invalidate } from "@/lib/pageCache";
 import { Check, X, Clock, Calendar, Loader2, Search } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useTheme } from "@/lib/theme";
@@ -25,8 +26,9 @@ export default function AdminLeaves() {
   const { theme } = useTheme();
   const isDark = theme === "dark";
 
-  const [leaves, setLeaves] = useState<Leave[]>([]);
-  const [loading, setLoading] = useState(true);
+  const _lc = getCachedStale<Leave[]>('leaves');
+  const [leaves, setLeaves] = useState<Leave[]>(_lc ?? []);
+  const [loading, setLoading] = useState(!_lc);
   const [statusFilter, setStatusFilter] = useState<"all" | "pending" | "approved" | "rejected">("pending");
   const [search, setSearch] = useState("");
   const [actionId, setActionId] = useState<number | null>(null);
@@ -57,11 +59,14 @@ export default function AdminLeaves() {
   };
 
   const fetchLeaves = useCallback(async () => {
-    setLoading(true);
+    const hasCached = !!getCachedStale('leaves');
+    if (!hasCached) setLoading(true);
     try {
       const res = await fetch(`${BASE}api/leaves`, { credentials: "include" });
       const data = await res.json();
-      setLeaves(Array.isArray(data) ? data : []);
+      const arr = Array.isArray(data) ? data : [];
+      setLeaves(arr);
+      setCached('leaves', arr);
     } catch {
       showToast(t("failedLoadLeaves"), "error");
     } finally {
