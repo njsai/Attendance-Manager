@@ -1,54 +1,195 @@
 import { useState, useEffect, useCallback } from "react";
-import { Plus, Building2, Edit2, Trash2, X, MapPin, Phone } from "lucide-react";
+import { Plus, Building2, Edit2, Trash2, X, MapPin, Phone, Navigation, Globe } from "lucide-react";
 
-interface Branch { id: number; name: string; address: string | null; city: string | null; phone: string | null; isActive: boolean; createdAt: string; }
+interface Branch {
+  id: number;
+  name: string;
+  address: string | null;
+  city: string | null;
+  phone: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  radiusMeters: number | null;
+  isActive: boolean;
+  createdAt: string;
+}
 
-function BranchModal({ branch, onClose, onSave }: { branch: Partial<Branch> | null; onClose: () => void; onSave: (b: Branch) => void; }) {
-  const [form, setForm] = useState({ name: branch?.name || "", address: branch?.address || "", city: branch?.city || "", phone: branch?.phone || "" });
+function BranchModal({ branch, onClose, onSave }: {
+  branch: Partial<Branch> | null;
+  onClose: () => void;
+  onSave: (b: Branch) => void;
+}) {
+  const [form, setForm] = useState({
+    name: branch?.name || "",
+    address: branch?.address || "",
+    city: branch?.city || "",
+    phone: branch?.phone || "",
+    latitude: branch?.latitude != null ? String(branch.latitude) : "",
+    longitude: branch?.longitude != null ? String(branch.longitude) : "",
+    radiusMeters: branch?.radiusMeters != null ? String(branch.radiusMeters) : "200",
+  });
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
+  const [locating, setLocating] = useState(false);
   const BASE = import.meta.env.BASE_URL;
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }));
+
+  const detectLocation = () => {
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setForm(f => ({
+          ...f,
+          latitude: String(pos.coords.latitude.toFixed(6)),
+          longitude: String(pos.coords.longitude.toFixed(6)),
+        }));
+        setLocating(false);
+      },
+      () => { setErr("فشل تحديد الموقع. تحقق من أذونات الموقع."); setLocating(false); }
+    );
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); setSaving(true); setErr("");
     try {
       const url = branch?.id ? `${BASE}api/branches/${branch.id}` : `${BASE}api/branches`;
       const method = branch?.id ? "PUT" : "POST";
-      const res = await fetch(url, { method, headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify(form) });
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          name: form.name,
+          address: form.address || null,
+          city: form.city || null,
+          phone: form.phone || null,
+          latitude: form.latitude !== "" ? parseFloat(form.latitude) : null,
+          longitude: form.longitude !== "" ? parseFloat(form.longitude) : null,
+          radiusMeters: form.radiusMeters !== "" ? parseInt(form.radiusMeters) : 200,
+        }),
+      });
       const data = await res.json();
-      if (!res.ok) { setErr(data.message || "فشل"); return; }
+      if (!res.ok) { setErr(data.message || "فشل الحفظ"); return; }
       onSave(data);
-    } catch { setErr("خطأ"); }
+    } catch { setErr("خطأ في الاتصال"); }
     finally { setSaving(false); }
   };
 
   return (
     <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" dir="rtl">
-      <div className="bg-[#1a2234] border border-white/10 rounded-2xl w-full max-w-sm">
-        <div className="flex items-center justify-between p-5 border-b border-white/10">
-          <h2 className="text-white font-bold">{branch?.id ? "تعديل فرع" : "إضافة فرع جديد"}</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-white"><X size={20} /></button>
+      <div className="bg-[#1a2234] border border-white/10 rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between p-5 border-b border-white/10 sticky top-0 bg-[#1a2234] z-10">
+          <h2 className="text-white font-bold">{branch?.id ? "تعديل الفرع" : "إضافة فرع جديد"}</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors"><X size={20} /></button>
         </div>
-        <form onSubmit={handleSubmit} className="p-5 space-y-3">
+        <form onSubmit={handleSubmit} className="p-5 space-y-4">
           {err && <div className="bg-red-900/50 border border-red-500/50 rounded-lg p-2 text-red-300 text-sm">{err}</div>}
-          {[
-            { key: "name", label: "اسم الفرع *", required: true },
-            { key: "city", label: "المدينة" },
-            { key: "address", label: "العنوان" },
-            { key: "phone", label: "رقم الهاتف" },
-          ].map(f => (
-            <div key={f.key}>
-              <label className="text-gray-400 text-xs mb-1 block">{f.label}</label>
-              <input value={(form as any)[f.key]} onChange={e => set(f.key, e.target.value)} required={f.required}
-                className="w-full bg-gray-800 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:border-blue-500 outline-none" />
+
+          {/* Basic Info */}
+          <div className="space-y-3">
+            <h3 className="text-gray-400 text-xs font-semibold uppercase tracking-wide">المعلومات الأساسية</h3>
+            {[
+              { key: "name", label: "اسم الفرع *", required: true },
+              { key: "city", label: "المدينة" },
+              { key: "address", label: "العنوان" },
+              { key: "phone", label: "رقم الهاتف" },
+            ].map(f => (
+              <div key={f.key}>
+                <label className="text-gray-400 text-xs mb-1 block">{f.label}</label>
+                <input
+                  value={(form as any)[f.key]}
+                  onChange={e => set(f.key, e.target.value)}
+                  required={f.required}
+                  className="w-full bg-gray-800 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:border-blue-500 outline-none"
+                />
+              </div>
+            ))}
+          </div>
+
+          {/* GPS Section */}
+          <div className="space-y-3 border-t border-white/10 pt-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-gray-400 text-xs font-semibold uppercase tracking-wide flex items-center gap-1">
+                <MapPin size={12} className="text-blue-400" />
+                موقع GPS (للتحقق من الحضور)
+              </h3>
+              <button
+                type="button"
+                onClick={detectLocation}
+                disabled={locating}
+                className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 disabled:opacity-50 transition-colors"
+              >
+                <Navigation size={12} />
+                {locating ? "جاري التحديد..." : "تحديد موقعي"}
+              </button>
             </div>
-          ))}
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-gray-400 text-xs mb-1 block">خط العرض (Latitude)</label>
+                <input
+                  value={form.latitude}
+                  onChange={e => set("latitude", e.target.value)}
+                  placeholder="e.g. 24.6877"
+                  type="number"
+                  step="any"
+                  className="w-full bg-gray-800 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:border-blue-500 outline-none"
+                />
+              </div>
+              <div>
+                <label className="text-gray-400 text-xs mb-1 block">خط الطول (Longitude)</label>
+                <input
+                  value={form.longitude}
+                  onChange={e => set("longitude", e.target.value)}
+                  placeholder="e.g. 46.7219"
+                  type="number"
+                  step="any"
+                  className="w-full bg-gray-800 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:border-blue-500 outline-none"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-gray-400 text-xs mb-1 block">النطاق المسموح به (متر)</label>
+              <input
+                value={form.radiusMeters}
+                onChange={e => set("radiusMeters", e.target.value)}
+                type="number"
+                min="50"
+                max="5000"
+                className="w-full bg-gray-800 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:border-blue-500 outline-none"
+              />
+              <p className="text-gray-500 text-xs mt-1">يُنصح بـ 100-500 متر للمكاتب، 500-2000 متر للمواقع الواسعة</p>
+            </div>
+
+            {form.latitude && form.longitude && (
+              <a
+                href={`https://www.google.com/maps?q=${form.latitude},${form.longitude}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 text-xs text-emerald-400 hover:text-emerald-300 transition-colors"
+              >
+                <Globe size={12} />
+                عرض الموقع على خرائط Google
+              </a>
+            )}
+          </div>
+
           <div className="flex gap-3 pt-2">
-            <button type="submit" disabled={saving} className="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 rounded-xl text-sm transition-all disabled:opacity-50">
+            <button
+              type="submit"
+              disabled={saving}
+              className="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 rounded-xl text-sm transition-all disabled:opacity-50"
+            >
               {saving ? "جاري الحفظ..." : "حفظ"}
             </button>
-            <button type="button" onClick={onClose} className="flex-1 bg-gray-700 text-white font-bold py-2 rounded-xl text-sm">إلغاء</button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 rounded-xl text-sm transition-colors"
+            >
+              إلغاء
+            </button>
           </div>
         </form>
       </div>
@@ -73,7 +214,7 @@ export default function AdminBranches() {
   useEffect(() => { fetch_(); }, [fetch_]);
 
   const handleDelete = async (id: number) => {
-    if (!confirm("حذف الفرع؟")) return;
+    if (!confirm("حذف الفرع؟ سيتم إلغاء ربط الموظفين بهذا الفرع.")) return;
     await fetch(`${BASE}api/branches/${id}`, { method: "DELETE", credentials: "include" });
     setBranches(b => b.filter(x => x.id !== id));
   };
@@ -87,19 +228,31 @@ export default function AdminBranches() {
     setShowModal(false);
   };
 
-  if (loading) return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" /></div>;
+  if (loading) return (
+    <div className="flex items-center justify-center h-64">
+      <div className="w-8 h-8 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
 
   return (
     <div className="p-4 space-y-4 max-w-2xl mx-auto" dir="rtl">
-      {showModal && <BranchModal branch={editBranch} onClose={() => setShowModal(false)} onSave={handleSave} />}
+      {showModal && (
+        <BranchModal
+          branch={editBranch}
+          onClose={() => { setShowModal(false); setEditBranch(null); }}
+          onSave={handleSave}
+        />
+      )}
 
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-white">إدارة الفروع</h1>
-          <p className="text-gray-400 text-sm">{branches.length} فرع</p>
+          <p className="text-gray-400 text-sm">{branches.length} فرع · يمكن إضافة موقع GPS لكل فرع</p>
         </div>
-        <button onClick={() => { setEditBranch(null); setShowModal(true); }}
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-bold px-4 py-2 rounded-xl text-sm transition-all">
+        <button
+          onClick={() => { setEditBranch(null); setShowModal(true); }}
+          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-bold px-4 py-2 rounded-xl text-sm transition-all"
+        >
           <Plus size={16} />إضافة فرع
         </button>
       </div>
@@ -114,31 +267,64 @@ export default function AdminBranches() {
           <div key={b.id} className="bg-[#1a2234] border border-white/10 rounded-2xl p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-blue-600/20 flex items-center justify-center">
-                  <Building2 size={18} className="text-blue-400" />
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                  b.latitude != null ? "bg-emerald-600/20" : "bg-blue-600/20"
+                }`}>
+                  <Building2 size={18} className={b.latitude != null ? "text-emerald-400" : "text-blue-400"} />
                 </div>
                 <div>
-                  <p className="text-white font-semibold">{b.name}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-white font-semibold">{b.name}</p>
+                    {b.latitude != null ? (
+                      <span className="text-xs bg-emerald-600/20 text-emerald-400 px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                        <MapPin size={9} />GPS
+                      </span>
+                    ) : (
+                      <span className="text-xs bg-gray-700 text-gray-400 px-1.5 py-0.5 rounded-full">بدون GPS</span>
+                    )}
+                  </div>
                   {b.city && <p className="text-gray-400 text-xs">{b.city}</p>}
                 </div>
               </div>
               <div className="flex gap-2">
-                <button onClick={() => { setEditBranch(b); setShowModal(true); }}
-                  className="p-2 rounded-lg bg-blue-600/20 text-blue-400 hover:bg-blue-600/40 transition-all">
+                <button
+                  onClick={() => { setEditBranch(b); setShowModal(true); }}
+                  className="p-2 rounded-lg bg-blue-600/20 text-blue-400 hover:bg-blue-600/40 transition-all"
+                >
                   <Edit2 size={14} />
                 </button>
-                <button onClick={() => handleDelete(b.id)}
-                  className="p-2 rounded-lg bg-red-600/20 text-red-400 hover:bg-red-600/40 transition-all">
+                <button
+                  onClick={() => handleDelete(b.id)}
+                  className="p-2 rounded-lg bg-red-600/20 text-red-400 hover:bg-red-600/40 transition-all"
+                >
                   <Trash2 size={14} />
                 </button>
               </div>
             </div>
-            {(b.address || b.phone) && (
-              <div className="mt-3 flex gap-3 flex-wrap">
-                {b.address && <div className="flex items-center gap-1 text-xs text-gray-400"><MapPin size={12} className="text-blue-400" />{b.address}</div>}
-                {b.phone && <div className="flex items-center gap-1 text-xs text-gray-400"><Phone size={12} className="text-blue-400" />{b.phone}</div>}
-              </div>
-            )}
+
+            <div className="mt-3 flex gap-3 flex-wrap">
+              {b.address && (
+                <div className="flex items-center gap-1 text-xs text-gray-400">
+                  <MapPin size={12} className="text-blue-400 flex-shrink-0" />{b.address}
+                </div>
+              )}
+              {b.phone && (
+                <div className="flex items-center gap-1 text-xs text-gray-400">
+                  <Phone size={12} className="text-blue-400 flex-shrink-0" />{b.phone}
+                </div>
+              )}
+              {b.latitude != null && b.longitude != null && (
+                <a
+                  href={`https://www.google.com/maps?q=${b.latitude},${b.longitude}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1 text-xs text-emerald-400 hover:text-emerald-300 transition-colors"
+                >
+                  <Navigation size={12} />
+                  {b.latitude.toFixed(4)}, {b.longitude.toFixed(4)} · نطاق {b.radiusMeters ?? 200}م
+                </a>
+              )}
+            </div>
           </div>
         ))}
       </div>

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import {
   Settings, Users, Key, MapPin, Save, Plus, Edit2, Trash2,
-  Eye, EyeOff, Shield, CheckCircle, XCircle, RefreshCw, Lock
+  Eye, EyeOff, Shield, CheckCircle, XCircle, RefreshCw, Lock, Navigation, ToggleLeft, ToggleRight
 } from "lucide-react";
 
 const BASE = import.meta.env.BASE_URL;
@@ -263,7 +263,7 @@ function AddAccountModal({ onClose, onSaved }: { onClose: () => void; onSaved: (
 }
 
 export default function AdminSettings() {
-  const [tab, setTab] = useState<"accounts" | "location" | "password">("accounts");
+  const [tab, setTab] = useState<"accounts" | "location" | "locationMode" | "password">("accounts");
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<{ msg: string; type: "success" | "error" } | null>(null);
@@ -274,6 +274,10 @@ export default function AdminSettings() {
   // Location state
   const [location, setLocation] = useState<CompanyLocation>({ name: "المقر الرئيسي", latitude: 33.3152, longitude: 44.3661, radiusMeters: 300 });
   const [locLoading, setLocLoading] = useState(false);
+
+  // Location mode state
+  const [locationMode, setLocationMode] = useState<"enabled" | "disabled">("disabled");
+  const [locModeLoading, setLocModeLoading] = useState(false);
 
   // Change own password state
   const [selfPass, setSelfPass] = useState({ old: "", newP: "", confirm: "" });
@@ -305,7 +309,30 @@ export default function AdminSettings() {
     } catch {}
   };
 
-  useEffect(() => { loadAccounts(); loadLocation(); }, []);
+  const loadLocationMode = async () => {
+    try {
+      const res = await fetch(`${BASE}api/settings/location-mode`, { credentials: "include" });
+      if (res.ok) { const d = await res.json(); setLocationMode(d.mode ?? "disabled"); }
+    } catch {}
+  };
+
+  const handleSaveLocationMode = async () => {
+    setLocModeLoading(true);
+    try {
+      const res = await fetch(`${BASE}api/settings/location-mode`, {
+        method: "PUT", credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mode: locationMode }),
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.message);
+      showToast("تم حفظ وضع التحقق من الموقع");
+    } catch (e: any) {
+      showToast(e.message || "فشل الحفظ", "error");
+    } finally { setLocModeLoading(false); }
+  };
+
+  useEffect(() => { loadAccounts(); loadLocation(); loadLocationMode(); }, []);
 
   const handleToggle = async (id: number, current: boolean) => {
     try {
@@ -384,6 +411,7 @@ export default function AdminSettings() {
   const TABS = [
     { key: "accounts", label: "إدارة الحسابات", icon: Users },
     { key: "location", label: "موقع الشركة", icon: MapPin },
+    { key: "locationMode", label: "وضع التحقق من الموقع", icon: Navigation },
     { key: "password", label: "تغيير كلمتي المرور", icon: Key },
   ] as const;
 
@@ -615,6 +643,88 @@ export default function AdminSettings() {
           >
             {locLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             حفظ الموقع
+          </button>
+        </div>
+      )}
+
+      {/* Location Mode Tab */}
+      {tab === "locationMode" && (
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 max-w-lg">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center">
+              <Navigation className="w-5 h-5 text-indigo-600" />
+            </div>
+            <div>
+              <h2 className="text-base font-bold text-slate-800">وضع التحقق من الموقع الجغرافي</h2>
+              <p className="text-xs text-slate-500">تحكم في إلزامية الموقع عند تسجيل الحضور</p>
+            </div>
+          </div>
+
+          {/* Toggle */}
+          <div className="space-y-4">
+            <button
+              onClick={() => setLocationMode(m => m === "enabled" ? "disabled" : "enabled")}
+              className={`w-full flex items-center justify-between p-5 rounded-2xl border-2 transition-all ${
+                locationMode === "enabled"
+                  ? "border-indigo-500 bg-indigo-50"
+                  : "border-slate-200 bg-slate-50 hover:border-slate-300"
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                {locationMode === "enabled"
+                  ? <ToggleRight className="w-8 h-8 text-indigo-600" />
+                  : <ToggleLeft className="w-8 h-8 text-slate-400" />
+                }
+                <div className="text-right">
+                  <p className={`font-bold text-sm ${locationMode === "enabled" ? "text-indigo-700" : "text-slate-600"}`}>
+                    {locationMode === "enabled" ? "مُفعَّل ✓" : "معطَّل"}
+                  </p>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    {locationMode === "enabled"
+                      ? "يجب أن يكون الموظف داخل نطاق GPS فرعه عند التسجيل"
+                      : "لا يُطلب التحقق من الموقع عند تسجيل الحضور"
+                    }
+                  </p>
+                </div>
+              </div>
+              <div className={`w-12 h-6 rounded-full transition-colors relative ${
+                locationMode === "enabled" ? "bg-indigo-600" : "bg-slate-300"
+              }`}>
+                <div className={`w-5 h-5 bg-white rounded-full absolute top-0.5 transition-all shadow ${
+                  locationMode === "enabled" ? "right-0.5" : "left-0.5"
+                }`} />
+              </div>
+            </button>
+
+            {/* Info Card */}
+            <div className={`p-4 rounded-xl border text-sm ${
+              locationMode === "enabled"
+                ? "bg-amber-50 border-amber-200 text-amber-800"
+                : "bg-slate-50 border-slate-200 text-slate-600"
+            }`}>
+              {locationMode === "enabled" ? (
+                <div className="space-y-1.5">
+                  <p className="font-semibold">عند التفعيل:</p>
+                  <ul className="list-disc list-inside text-xs space-y-1 text-amber-700">
+                    <li>يُطلب من الموظف السماح بالموقع في المتصفح</li>
+                    <li>يُتحقق من أنه داخل نطاق GPS الفرع المحدد</li>
+                    <li>إن لم يكن لفرعه GPS محدد، يُسمح بالتسجيل بدون تقييد</li>
+                    <li>يُمكن ضبط GPS لكل فرع من صفحة الفروع</li>
+                  </ul>
+                </div>
+              ) : (
+                <p>الموظفون يستطيعون تسجيل الحضور من أي مكان دون تقييد موقعي.</p>
+              )}
+            </div>
+          </div>
+
+          <button
+            onClick={handleSaveLocationMode}
+            disabled={locModeLoading}
+            className="mt-6 flex items-center gap-2 px-6 py-3 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 transition-colors disabled:opacity-50"
+          >
+            {locModeLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+            حفظ الإعداد
           </button>
         </div>
       )}

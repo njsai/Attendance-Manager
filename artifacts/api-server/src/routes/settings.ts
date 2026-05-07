@@ -3,9 +3,11 @@ import { db } from "@workspace/db";
 import { companyLocationTable, companiesTable } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import { requireAdmin } from "../lib/auth.js";
+import { sql } from "drizzle-orm";
 
 const router = Router();
 
+// ─── Company Location (legacy — kept for backward compat) ─────────────────────
 router.get("/company-location", requireAdmin, async (req, res) => {
   try {
     const companyId = req.session.companyId!;
@@ -42,7 +44,36 @@ router.put("/company-location", requireAdmin, async (req, res) => {
   } catch (err) { console.error(err); res.status(500).json({ message: "Server error" }); }
 });
 
-// Get company info
+// ─── Attendance Location Mode ─────────────────────────────────────────────────
+// GET /api/settings/location-mode → { mode: 'disabled' | 'enabled' }
+router.get("/location-mode", requireAdmin, async (req, res) => {
+  try {
+    const companyId = req.session.companyId!;
+    const result = await db.execute(
+      sql`SELECT attendance_location_mode as mode FROM companies WHERE id = ${companyId}`
+    );
+    const mode = (result.rows[0] as any)?.mode ?? "disabled";
+    res.json({ mode });
+  } catch (err) { console.error(err); res.status(500).json({ message: "Server error" }); }
+});
+
+// PUT /api/settings/location-mode → { mode }
+router.put("/location-mode", requireAdmin, async (req, res) => {
+  try {
+    const companyId = req.session.companyId!;
+    const { mode } = req.body;
+    if (!["enabled", "disabled"].includes(mode)) {
+      res.status(400).json({ message: "القيمة يجب أن تكون enabled أو disabled" });
+      return;
+    }
+    await db.execute(
+      sql`UPDATE companies SET attendance_location_mode = ${mode} WHERE id = ${companyId}`
+    );
+    res.json({ mode, message: "تم حفظ الإعداد" });
+  } catch (err) { console.error(err); res.status(500).json({ message: "Server error" }); }
+});
+
+// ─── Company Info ─────────────────────────────────────────────────────────────
 router.get("/company", requireAdmin, async (req, res) => {
   try {
     const companyId = req.session.companyId!;

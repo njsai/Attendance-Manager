@@ -4,8 +4,14 @@ import { companiesTable, employeesTable, superAdminsTable, branchesTable, depart
 import { eq, count, sql } from "drizzle-orm";
 import { requireSuperAdmin, hashPassword } from "../lib/auth.js";
 import { hashPasswordBcrypt } from "../lib/security.js";
+import { exec } from "child_process";
+import { promisify } from "util";
+import { mkdirSync, existsSync, statSync, readdirSync, unlinkSync, createReadStream } from "fs";
+import { join } from "path";
 
 const router = Router();
+const execAsync = promisify(exec);
+const BACKUP_DIR = "/tmp/sa_backups";
 
 // ─── Get all companies with stats ────────────────────────────────────────────
 router.get("/companies", requireSuperAdmin, async (_req, res) => {
@@ -42,29 +48,20 @@ router.post("/companies", requireSuperAdmin, async (req, res) => {
       return;
     }
 
-    // Create company
     const [company] = await db.insert(companiesTable)
       .values({ name, address, phone, email, isActive: true })
       .returning();
 
-    // Create default branch
     await db.insert(branchesTable).values({ companyId: company.id, name: "الفرع الرئيسي", isActive: true });
-
-    // Create default department
     await db.insert(departmentsTable).values({ companyId: company.id, name: "الإدارة العامة" });
-
-    // Create default shift
     await db.insert(shiftsTable).values({
       companyId: company.id, name: "الدوام الصباحي", startTime: "08:00", endTime: "16:00",
       workDays: "0,1,2,3,4", lateGraceMinutes: 15,
     });
-
-    // Create default company location
     await db.insert(companyLocationTable).values({
       companyId: company.id, name: "المقر الرئيسي", latitude: 33.3152, longitude: 44.3661, radiusMeters: 200,
     });
 
-    // Create admin user for this company (bcrypt hash)
     const adminHash = await hashPasswordBcrypt(adminPassword);
     const [admin] = await db.insert(employeesTable).values({
       companyId: company.id,
@@ -135,7 +132,7 @@ router.post("/companies/:id/employees", requireSuperAdmin, async (req, res) => {
   }
 });
 
-// ─── Change employee password (from any company) ──────────────────────────────
+// ─── Change employee password ─────────────────────────────────────────────────
 router.put("/companies/:companyId/employees/:empId/change-password", requireSuperAdmin, async (req, res) => {
   try {
     const empId = parseInt(req.params.empId);
@@ -184,6 +181,103 @@ router.post("/change-password", requireSuperAdmin, async (req, res) => {
     await db.update(superAdminsTable).set({ passwordHash: hashPassword(newPassword) })
       .where(eq(superAdminsTable.id, req.session.superAdminId!));
     res.json({ message: "تم تغيير كلمة المرور بنجاح" });
+  } catch (err) { console.error(err); res.status(500).json({ message: "Server error" }); }
+});
+
+// ─── BACKUP SYSTEM ────────────────────────────────────────────────────────────
+
+// List all backups
+router.get("/backups", requireSuperAdmin, async (_req, res) => {
+  try {
+    if (!existsSync(BACKUP_DIR)) { res.json([]); return; }
+    const files = readdirSync(BACKUP_DIR).filter(f => f.endsWith(".json"));
+    const backups = files.map(f => {
+      const filePath = join(BACKUP_DIR, f);
+      const stat = statSync(filePath);
+      const [, companyIdStr, , dateStr] = f.replace(".json", "").split("_");
+      return {
+        id: f,
+        filename: f,
+        companyId: companyIdStr ? parseInt(companyIdStr) : null,
+        createdAt: stat.mtime.toISOString(),
+        sizeBytes: stat.size,
+        dateStr,
+      };
+    }).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    res.json(backups);
+  } catch (err) { console.error(err); res.status(500).json({ message: "Server error" }); }
+});
+
+// Create backup for a company (or all: companyId = 0)
+router.post("/backups", requireSuperAdmin, async (req, res) => {
+  try {
+    const { companyId } = req.body; // 0 = all companies
+    if (!existsSync(BACKUP_DIR)) mkdirSync(BACKUP_DIR, { recursive: true });
+
+    const dateStr = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+    const filename = companyId
+      ? `backup_${companyId}_company_${dateStr}.json`
+      : `backup_0_all_${dateStr}.json`;
+    const filePath = join(BACKUP_DIR, filename);
+
+    // Export data via SQL
+    const tables = ["companies", "branches", "departments", "shifts", "employees", "attendance", "leaves", "company_location"];
+    const backup: Record<string, any[]> = {
+      _meta: { createdAt: new Date().toISOString(), companyId: companyId || "all", version: "1.0" },
+    } as any;
+
+    for (const table of tables) {
+      const whereClause = companyId && table !== "companies"
+        ? `WHERE company_id = ${parseInt(companyId)}`
+        : companyId && table === "companies"
+        ? `WHERE id = ${parseInt(companyId)}`
+        : "";
+      const result = await db.execute(sql.raw(`SELECT * FROM ${table} ${whereClause}`));
+      backup[table] = result.rows as any[];
+    }
+
+    const { writeFileSync } = await import("fs");
+    writeFileSync(filePath, JSON.stringify(backup, null, 2), "utf8");
+    const stat = statSync(filePath);
+
+    res.status(201).json({
+      id: filename, filename, companyId: companyId || 0,
+      createdAt: new Date().toISOString(), sizeBytes: stat.size,
+    });
+  } catch (err) { console.error(err); res.status(500).json({ message: "فشل إنشاء النسخة الاحتياطية" }); }
+});
+
+// Download a backup
+router.get("/backups/:filename/download", requireSuperAdmin, (req, res) => {
+  try {
+    const filePath = join(BACKUP_DIR, req.params.filename);
+    if (!existsSync(filePath)) { res.status(404).json({ message: "الملف غير موجود" }); return; }
+    res.setHeader("Content-Disposition", `attachment; filename="${req.params.filename}"`);
+    res.setHeader("Content-Type", "application/json");
+    createReadStream(filePath).pipe(res);
+  } catch (err) { console.error(err); res.status(500).json({ message: "Server error" }); }
+});
+
+// Delete a backup
+router.delete("/backups/:filename", requireSuperAdmin, (req, res) => {
+  try {
+    const filePath = join(BACKUP_DIR, req.params.filename);
+    if (!existsSync(filePath)) { res.status(404).json({ message: "الملف غير موجود" }); return; }
+    unlinkSync(filePath);
+    res.json({ message: "تم حذف النسخة الاحتياطية" });
+  } catch (err) { console.error(err); res.status(500).json({ message: "Server error" }); }
+});
+
+// Stats summary for super admin
+router.get("/stats", requireSuperAdmin, async (_req, res) => {
+  try {
+    const companies = await db.select().from(companiesTable);
+    const totalEmps = await db.select({ count: count() }).from(employeesTable);
+    res.json({
+      totalCompanies: companies.length,
+      activeCompanies: companies.filter(c => c.isActive).length,
+      totalEmployees: Number(totalEmps[0]?.count ?? 0),
+    });
   } catch (err) { console.error(err); res.status(500).json({ message: "Server error" }); }
 });
 

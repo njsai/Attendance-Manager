@@ -10,6 +10,7 @@ export const companiesTable = pgTable("companies", {
   phone: text("phone"),
   email: text("email"),
   isActive: boolean("is_active").notNull().default(true),
+  attendanceLocationMode: text("attendance_location_mode").notNull().default("disabled"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

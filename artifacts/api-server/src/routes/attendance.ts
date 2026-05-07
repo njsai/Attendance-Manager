@@ -4,7 +4,7 @@ import {
   attendanceTable, employeesTable, departmentsTable,
   shiftsTable, companyLocationTable,
 } from "@workspace/db";
-import { eq, and, gte, lte, desc, inArray } from "drizzle-orm";
+import { eq, and, gte, lte, desc, inArray, sql } from "drizzle-orm";
 import { requireAuth, requireAdmin, requireCompanyAuth } from "../lib/auth.js";
 
 const router = Router();
@@ -569,22 +569,39 @@ router.post("/check-in", requireAuth, async (req, res) => {
     const today = new Date().toISOString().split("T")[0];
     const now = new Date();
 
-    // Location validation
-    const [location] = await db
-      .select()
-      .from(companyLocationTable)
-      .where(eq(companyLocationTable.companyId, companyId));
+    // Location validation: check company's attendance_location_mode
+    const locationModeResult = await db.execute(
+      sql`SELECT attendance_location_mode FROM companies WHERE id = ${companyId}`
+    );
+    const locationMode = (locationModeResult.rows[0] as any)?.attendance_location_mode ?? "disabled";
 
-    if (location && latitude != null && longitude != null) {
-      const dist = calculateDistance(
-        Number(latitude), Number(longitude),
-        location.latitude, location.longitude,
-      );
-      if (dist > location.radiusMeters) {
-        res.status(400).json({
-          message: `أنت خارج النطاق المسموح به (${Math.round(dist)} م من ${location.radiusMeters} م المسموح)`,
-        });
+    if (locationMode === "enabled") {
+      if (latitude == null || longitude == null) {
+        res.status(400).json({ message: "يجب تفعيل الموقع الجغرافي لتسجيل الحضور. تحقق من أذونات الموقع في المتصفح." });
         return;
+      }
+      // Get employee's branch GPS
+      const empBranchResult = await db.execute(
+        sql`SELECT b.latitude, b.longitude, b.radius_meters, b.name
+            FROM employees e
+            LEFT JOIN branches b ON e.branch_id = b.id
+            WHERE e.id = ${req.session.userId!}`
+      );
+      const branch = empBranchResult.rows[0] as any;
+      if (branch && branch.latitude != null && branch.longitude != null) {
+        const dist = calculateDistance(
+          Number(latitude), Number(longitude),
+          Number(branch.latitude), Number(branch.longitude),
+        );
+        const radius = Number(branch.radius_meters ?? 200);
+        if (dist > radius) {
+          res.status(400).json({
+            message: `أنت خارج نطاق فرع "${branch.name}" (${Math.round(dist)} م — المسموح ${radius} م)`,
+            distanceMeters: Math.round(dist),
+            radiusMeters: radius,
+          });
+          return;
+        }
       }
     }
 

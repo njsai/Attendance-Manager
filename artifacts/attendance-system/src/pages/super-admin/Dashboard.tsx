@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
-import { Shield, Building2, Plus, Trash2, Edit, Users, LogOut, ChevronDown, ChevronUp, CheckCircle, XCircle, Eye, EyeOff, Key, Loader2, RefreshCw, MessageCircle, ShieldAlert } from "lucide-react";
+import { Shield, Building2, Plus, Trash2, Edit, Users, LogOut, ChevronDown, ChevronUp, CheckCircle, XCircle, Eye, EyeOff, Key, Loader2, RefreshCw, MessageCircle, ShieldAlert, HardDrive, Download, Archive } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import SuperAdminChat from "./Chat";
 
@@ -31,6 +31,11 @@ export default function SuperAdminDashboard() {
   const [showEditModal, setShowEditModal] = useState<Company | null>(null);
   const [showPasswordModal, setShowPasswordModal] = useState<{ companyId: number; empId: number; name: string } | null>(null);
   const [feedback, setFeedback] = useState<{ msg: string; ok: boolean } | null>(null);
+  const [activeTab, setActiveTab] = useState<"companies" | "backups">("companies");
+  const [backups, setBackups] = useState<any[]>([]);
+  const [backupsLoading, setBackupsLoading] = useState(false);
+  const [creatingBackup, setCreatingBackup] = useState(false);
+  const [backupCompanyId, setBackupCompanyId] = useState<string>("0");
 
   const showMsg = (msg: string, ok = true) => { setFeedback({ msg, ok }); setTimeout(() => setFeedback(null), 3000); };
 
@@ -78,6 +83,44 @@ export default function SuperAdminDashboard() {
     await fetch(`${BASE}api/auth/logout`, { method: "POST", credentials: "include" });
     queryClient.clear();
     setLocation("/super-admin/login");
+  };
+
+  const loadBackups = async () => {
+    setBackupsLoading(true);
+    try { setBackups(await apiFetch("api/super-admin/backups")); }
+    catch { showMsg("فشل تحميل النسخ الاحتياطية", false); }
+    finally { setBackupsLoading(false); }
+  };
+
+  const createBackup = async () => {
+    setCreatingBackup(true);
+    try {
+      const bk = await apiFetch("api/super-admin/backups", {
+        method: "POST", body: JSON.stringify({ companyId: parseInt(backupCompanyId) }),
+      });
+      setBackups(prev => [bk, ...prev]);
+      showMsg("تم إنشاء النسخة الاحتياطية بنجاح");
+    } catch (err: any) { showMsg(err.message || "فشل إنشاء النسخة", false); }
+    finally { setCreatingBackup(false); }
+  };
+
+  const deleteBackup = async (filename: string) => {
+    if (!confirm("حذف هذه النسخة الاحتياطية؟")) return;
+    try {
+      await apiFetch(`api/super-admin/backups/${encodeURIComponent(filename)}`, { method: "DELETE" });
+      setBackups(prev => prev.filter(b => b.filename !== filename));
+      showMsg("تم حذف النسخة");
+    } catch (err: any) { showMsg(err.message, false); }
+  };
+
+  const downloadBackup = (filename: string) => {
+    window.open(`${BASE}api/super-admin/backups/${encodeURIComponent(filename)}/download`, "_blank");
+  };
+
+  const formatSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
   };
 
   return (
@@ -132,112 +175,218 @@ export default function SuperAdminDashboard() {
           ))}
         </div>
 
-        {/* Add company button */}
-        <div className="flex items-center justify-between">
-          <h2 className="text-white font-bold text-xl">الشركات</h2>
-          <button onClick={() => setShowCreateModal(true)}
-            className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold rounded-xl transition-all shadow-lg shadow-indigo-900/40">
-            <Plus className="w-4 h-4" /> إضافة شركة جديدة
-          </button>
+        {/* Tabs */}
+        <div className="flex gap-2">
+          {[
+            { key: "companies" as const, label: "الشركات", icon: Building2 },
+            { key: "backups" as const, label: "النسخ الاحتياطية", icon: HardDrive },
+          ].map(t => (
+            <button
+              key={t.key}
+              onClick={() => { setActiveTab(t.key); if (t.key === "backups") loadBackups(); }}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                activeTab === t.key
+                  ? "bg-indigo-600 text-white shadow-lg"
+                  : "bg-white/5 text-slate-400 hover:text-white hover:bg-white/10"
+              }`}
+            >
+              <t.icon className="w-4 h-4" />
+              {t.label}
+            </button>
+          ))}
         </div>
 
-        {/* Feedback */}
-        <AnimatePresence>
-          {feedback && (
-            <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-              className={`flex items-center gap-3 p-4 rounded-xl text-sm font-medium ${feedback.ok ? "bg-green-500/10 border border-green-500/20 text-green-400" : "bg-red-500/10 border border-red-500/20 text-red-400"}`}>
-              {feedback.ok ? <CheckCircle className="w-5 h-5" /> : <XCircle className="w-5 h-5" />}
-              {feedback.msg}
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Companies list */}
-        {loading ? (
-          <div className="flex items-center justify-center py-16">
-            <Loader2 className="w-10 h-10 text-indigo-400 animate-spin" />
-          </div>
-        ) : companies.length === 0 ? (
-          <div className="text-center py-16 text-slate-400">
-            <Building2 className="w-12 h-12 mx-auto mb-3 opacity-30" />
-            <p>لا توجد شركات — أضف شركة جديدة</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {companies.map(company => (
-              <div key={company.id} className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
-                <div className="p-4 flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center flex-shrink-0">
-                    <Building2 className="w-6 h-6 text-indigo-400" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-white font-bold truncate">{company.name}</h3>
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${company.isActive ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"}`}>
-                        {company.isActive ? "نشط" : "موقوف"}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-4 text-xs text-slate-400 mt-1">
-                      {company.phone && <span>📞 {company.phone}</span>}
-                      {company.email && <span>✉️ {company.email}</span>}
-                      <span className="flex items-center gap-1"><Users className="w-3 h-3" /> {company.employeeCount} موظف</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button onClick={() => toggleCompany(company)} title="تفعيل/إيقاف"
-                      className={`p-2 rounded-lg transition-colors ${company.isActive ? "text-yellow-400 hover:bg-yellow-500/10" : "text-green-400 hover:bg-green-500/10"}`}>
-                      {company.isActive ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                    <button onClick={() => setShowEditModal(company)} className="p-2 rounded-lg text-blue-400 hover:bg-blue-500/10 transition-colors">
-                      <Edit className="w-4 h-4" />
-                    </button>
-                    <button onClick={() => setShowDeleteConfirm(company)} className="p-2 rounded-lg text-red-400 hover:bg-red-500/10 transition-colors">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                    <button onClick={() => toggleExpand(company.id)} className="p-2 rounded-lg text-slate-400 hover:bg-white/5 transition-colors">
-                      {expandedId === company.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                    </button>
-                  </div>
+        {/* Backups Tab */}
+        {activeTab === "backups" && (
+          <div className="space-y-4">
+            {/* Create Backup */}
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
+              <h3 className="text-white font-bold mb-4 flex items-center gap-2">
+                <Archive className="w-5 h-5 text-indigo-400" />
+                إنشاء نسخة احتياطية جديدة
+              </h3>
+              <div className="flex gap-3 flex-wrap items-end">
+                <div className="flex-1 min-w-48">
+                  <label className="text-slate-400 text-xs mb-1 block">نطاق النسخة</label>
+                  <select
+                    value={backupCompanyId}
+                    onChange={e => setBackupCompanyId(e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none"
+                  >
+                    <option value="0">جميع الشركات</option>
+                    {companies.map(c => (
+                      <option key={c.id} value={String(c.id)}>{c.name}</option>
+                    ))}
+                  </select>
                 </div>
-
-                <AnimatePresence>
-                  {expandedId === company.id && (
-                    <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }}>
-                      <div className="border-t border-white/10 p-4">
-                        <h4 className="text-slate-300 text-sm font-semibold mb-3 flex items-center gap-2">
-                          <Users className="w-4 h-4" /> الموظفون ({companyEmployees[company.id]?.length ?? "..."})
-                        </h4>
-                        {companyEmployees[company.id] ? (
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                            {companyEmployees[company.id].map(emp => (
-                              <div key={emp.id} className="flex items-center justify-between p-3 bg-white/5 rounded-xl">
-                                <div>
-                                  <div className="text-white text-sm font-medium">{emp.fullName}</div>
-                                  <div className="text-slate-400 text-xs">@{emp.username} · {emp.role === "admin" ? "مدير" : emp.role === "manager" ? "مشرف" : "موظف"}</div>
-                                </div>
-                                <button onClick={() => setShowPasswordModal({ companyId: company.id, empId: emp.id, name: emp.fullName })}
-                                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-white/5 hover:bg-white/10 text-slate-300 rounded-lg transition-all">
-                                  <Key className="w-3.5 h-3.5" /> كلمة المرور
-                                </button>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <div className="flex items-center justify-center py-4">
-                            <Loader2 className="w-6 h-6 text-indigo-400 animate-spin" />
-                          </div>
-                        )}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                <button
+                  onClick={createBackup}
+                  disabled={creatingBackup}
+                  className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold rounded-xl transition-all disabled:opacity-50"
+                >
+                  {creatingBackup ? <Loader2 className="w-4 h-4 animate-spin" /> : <HardDrive className="w-4 h-4" />}
+                  {creatingBackup ? "جاري الإنشاء..." : "إنشاء نسخة"}
+                </button>
               </div>
-            ))}
+            </div>
+
+            {/* Backups List */}
+            {backupsLoading ? (
+              <div className="flex justify-center py-10"><Loader2 className="w-8 h-8 text-indigo-400 animate-spin" /></div>
+            ) : backups.length === 0 ? (
+              <div className="text-center py-12 text-slate-400">
+                <HardDrive className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                <p>لا توجد نسخ احتياطية</p>
+                <p className="text-xs mt-1">أنشئ نسخة احتياطية للحماية من فقدان البيانات</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {backups.map(bk => (
+                  <div key={bk.id} className="bg-white/5 border border-white/10 rounded-xl p-4 flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-10 h-10 rounded-lg bg-indigo-500/20 flex items-center justify-center flex-shrink-0">
+                        <Archive className="w-5 h-5 text-indigo-400" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-white text-sm font-medium truncate">
+                          {bk.companyId === 0 ? "جميع الشركات" : companies.find(c => c.id === bk.companyId)?.name || `شركة #${bk.companyId}`}
+                        </p>
+                        <p className="text-slate-400 text-xs mt-0.5">
+                          {new Date(bk.createdAt).toLocaleString("ar-IQ")} · {formatSize(bk.sizeBytes)}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 flex-shrink-0">
+                      <button
+                        onClick={() => downloadBackup(bk.filename)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600/20 hover:bg-green-600/40 text-green-400 rounded-lg text-xs transition-all"
+                      >
+                        <Download className="w-3.5 h-3.5" /> تنزيل
+                      </button>
+                      <button
+                        onClick={() => deleteBackup(bk.filename)}
+                        className="p-1.5 bg-red-600/20 hover:bg-red-600/40 text-red-400 rounded-lg transition-all"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
+        {/* Companies Tab Content */}
+        {activeTab === "companies" && (
+          <>
+            <div className="flex items-center justify-between">
+              <h2 className="text-white font-bold text-xl">الشركات</h2>
+              <button onClick={() => setShowCreateModal(true)}
+                className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold rounded-xl transition-all shadow-lg shadow-indigo-900/40">
+                <Plus className="w-4 h-4" /> إضافة شركة جديدة
+              </button>
+            </div>
+
+            {/* Feedback */}
+            <AnimatePresence>
+              {feedback && (
+                <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                  className={`flex items-center gap-3 p-4 rounded-xl text-sm font-medium ${feedback.ok ? "bg-green-500/10 border border-green-500/20 text-green-400" : "bg-red-500/10 border border-red-500/20 text-red-400"}`}>
+                  {feedback.ok ? <CheckCircle className="w-5 h-5" /> : <XCircle className="w-5 h-5" />}
+                  {feedback.msg}
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Companies list */}
+            {loading ? (
+              <div className="flex items-center justify-center py-16">
+                <Loader2 className="w-10 h-10 text-indigo-400 animate-spin" />
+              </div>
+            ) : companies.length === 0 ? (
+              <div className="text-center py-16 text-slate-400">
+                <Building2 className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                <p>لا توجد شركات — أضف شركة جديدة</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {companies.map(company => (
+                  <div key={company.id} className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
+                    <div className="p-4 flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center flex-shrink-0">
+                        <Building2 className="w-6 h-6 text-indigo-400" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-white font-bold truncate">{company.name}</h3>
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${company.isActive ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"}`}>
+                            {company.isActive ? "نشط" : "موقوف"}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-4 text-xs text-slate-400 mt-1">
+                          {company.phone && <span>📞 {company.phone}</span>}
+                          {company.email && <span>✉️ {company.email}</span>}
+                          <span className="flex items-center gap-1"><Users className="w-3 h-3" /> {company.employeeCount} موظف</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button onClick={() => toggleCompany(company)} title="تفعيل/إيقاف"
+                          className={`p-2 rounded-lg transition-colors ${company.isActive ? "text-yellow-400 hover:bg-yellow-500/10" : "text-green-400 hover:bg-green-500/10"}`}>
+                          {company.isActive ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                        <button onClick={() => setShowEditModal(company)} className="p-2 rounded-lg text-blue-400 hover:bg-blue-500/10 transition-colors">
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => setShowDeleteConfirm(company)} className="p-2 rounded-lg text-red-400 hover:bg-red-500/10 transition-colors">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => toggleExpand(company.id)} className="p-2 rounded-lg text-slate-400 hover:bg-white/5 transition-colors">
+                          {expandedId === company.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <AnimatePresence>
+                      {expandedId === company.id && (
+                        <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }}>
+                          <div className="border-t border-white/10 p-4">
+                            <h4 className="text-slate-300 text-sm font-semibold mb-3 flex items-center gap-2">
+                              <Users className="w-4 h-4" /> الموظفون ({companyEmployees[company.id]?.length ?? "..."})
+                            </h4>
+                            {companyEmployees[company.id] ? (
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                {companyEmployees[company.id].map(emp => (
+                                  <div key={emp.id} className="flex items-center justify-between p-3 bg-white/5 rounded-xl">
+                                    <div>
+                                      <div className="text-white text-sm font-medium">{emp.fullName}</div>
+                                      <div className="text-slate-400 text-xs">@{emp.username} · {emp.role === "admin" ? "مدير" : emp.role === "manager" ? "مشرف" : "موظف"}</div>
+                                    </div>
+                                    <button onClick={() => setShowPasswordModal({ companyId: company.id, empId: emp.id, name: emp.fullName })}
+                                      className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-white/5 hover:bg-white/10 text-slate-300 rounded-lg transition-all">
+                                      <Key className="w-3.5 h-3.5" /> كلمة المرور
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="flex items-center justify-center py-4">
+                                <Loader2 className="w-6 h-6 text-indigo-400 animate-spin" />
+                              </div>
+                            )}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+
         {/* Chat Section */}
-        {!loading && companies.length > 0 && (
+        {activeTab === "companies" && !loading && companies.length > 0 && (
           <div className="space-y-4">
             <div className="flex items-center gap-3">
               <MessageCircle className="w-5 h-5 text-indigo-400" />

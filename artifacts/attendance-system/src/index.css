@@ -109,6 +109,28 @@
   --elevate-2: rgba(0,0,0, .1);
 }
 
+/* ─── Light Theme Overrides (html.light) ─────────────────────────────────── */
+html.light {
+  --background: 220 18% 96%;
+  --foreground: 222 47% 11%;
+  --card: 0 0% 100%;
+  --card-foreground: 222 47% 11%;
+}
+
+/* Dark-theme pages (hardcoded bg-[#0f1623]) inside light mode get a subtle lift */
+html.light .bg-\[\#0f1623\] { background-color: #f0f4f8 !important; }
+html.light .bg-\[\#1a2234\] { background-color: #ffffff !important; border-color: #e2e8f0 !important; }
+html.light .text-white { color: #1e293b !important; }
+html.light .text-gray-400 { color: #64748b !important; }
+html.light .text-gray-300 { color: #475569 !important; }
+html.light .border-white\/10 { border-color: rgba(0,0,0,0.1) !important; }
+html.light .border-white\/5 { border-color: rgba(0,0,0,0.06) !important; }
+html.light .bg-gray-800 { background-color: #f1f5f9 !important; }
+html.light .bg-white\/5 { background-color: rgba(0,0,0,0.03) !important; }
+html.light .bg-white\/10 { background-color: rgba(0,0,0,0.06) !important; }
+html.light .hover\:bg-white\/5:hover { background-color: rgba(0,0,0,0.03) !important; }
+html.light .hover\:bg-white\/10:hover { background-color: rgba(0,0,0,0.06) !important; }
+
 @layer base {
   * {
     @apply border-border;

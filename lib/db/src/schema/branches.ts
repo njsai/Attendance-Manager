@@ -1,4 +1,4 @@
-import { pgTable, serial, text, boolean, timestamp, integer } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, boolean, timestamp, integer, real } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { companiesTable } from "./companies";
@@ -10,6 +10,9 @@ export const branchesTable = pgTable("branches", {
   address: text("address"),
   city: text("city"),
   phone: text("phone"),
+  latitude: real("latitude"),
+  longitude: real("longitude"),
+  radiusMeters: integer("radius_meters").default(200),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { FileSpreadsheet, FileText, Printer, Download, Filter, Calendar } from "lucide-react";
+import { FileSpreadsheet, FileText, Printer, Filter, Calendar, FileDown } from "lucide-react";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -101,6 +101,30 @@ export default function AdminReports() {
     doc.save(`attendance-report-${startDate}-${endDate}.pdf`);
   };
 
+  const exportCSV = () => {
+    const header = ["التاريخ", "الموظف", "القسم", "الحالة", "وقت الدخول", "وقت الخروج", "ساعات العمل", "دقائق التأخير"];
+    const rows = records.map(r => [
+      r.date,
+      r.employeeName,
+      r.departmentName || "",
+      statusAr(r.status),
+      r.checkInTime ? new Date(r.checkInTime).toLocaleTimeString("ar-IQ") : "",
+      r.checkOutTime ? new Date(r.checkOutTime).toLocaleTimeString("ar-IQ") : "",
+      r.workingHours != null ? r.workingHours.toFixed(2) : "",
+      r.lateMinutes != null ? String(r.lateMinutes) : "0",
+    ]);
+    const csvContent = "\uFEFF" + [header, ...rows].map(row =>
+      row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(",")
+    ).join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `تقرير-الحضور-${startDate}-${endDate}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const handlePrint = () => {
     window.print();
   };
@@ -165,6 +189,10 @@ export default function AdminReports() {
             <button onClick={exportExcel}
               className="flex items-center gap-2 bg-green-700 hover:bg-green-600 text-white font-bold px-4 py-2 rounded-xl text-sm transition-all">
               <FileSpreadsheet size={16} />تصدير Excel
+            </button>
+            <button onClick={exportCSV}
+              className="flex items-center gap-2 bg-teal-700 hover:bg-teal-600 text-white font-bold px-4 py-2 rounded-xl text-sm transition-all">
+              <FileDown size={16} />تصدير CSV
             </button>
             <button onClick={exportPDF}
               className="flex items-center gap-2 bg-red-700 hover:bg-red-600 text-white font-bold px-4 py-2 rounded-xl text-sm transition-all">
