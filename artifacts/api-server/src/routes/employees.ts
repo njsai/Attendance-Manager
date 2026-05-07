@@ -89,7 +89,8 @@ router.post("/", requireAdmin, async (req, res) => {
     res.status(201).json({ ...created, hasFace: false });
   } catch (err: any) {
     console.error(err);
-    if (err.code === "23505") res.status(409).json({ message: "اسم المستخدم موجود مسبقاً" });
+    const isDupe = err.code === "23505" || err.cause?.code === "23505";
+    if (isDupe) res.status(409).json({ message: "اسم المستخدم موجود مسبقاً في هذه الشركة" });
     else res.status(500).json({ message: "Server error" });
   }
 });

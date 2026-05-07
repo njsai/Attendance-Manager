@@ -10,6 +10,7 @@ export const companiesTable = pgTable("companies", {
   phone: text("phone"),
   email: text("email"),
   isActive: boolean("is_active").notNull().default(true),
+  companyCode: text("company_code"),
   attendanceLocationMode: text("attendance_location_mode").notNull().default("disabled"),
   currency: text("currency").notNull().default("IQD"),
   overtimeRate: real("overtime_rate").notNull().default(1.5),

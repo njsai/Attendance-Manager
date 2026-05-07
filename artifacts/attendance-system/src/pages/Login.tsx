@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
-import { Loader2, User, KeyRound, Zap, Eye, EyeOff } from "lucide-react";
-import { motion } from "framer-motion";
+import { Loader2, User, KeyRound, Zap, Eye, EyeOff, Building2, CheckCircle2, XCircle } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { getAndClearCompanyInactiveFlag } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { useTheme } from "@/lib/theme";
@@ -38,6 +38,8 @@ async function apiFetch(url: string) {
   return res.json();
 }
 
+type CompanyStatus = "idle" | "checking" | "found" | "not_found";
+
 export default function Login() {
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
@@ -45,11 +47,15 @@ export default function Login() {
   const { theme } = useTheme();
   const isDark = theme === "dark";
 
+  const [companyCode, setCompanyCode] = useState("");
+  const [companyName, setCompanyName] = useState("");
+  const [companyStatus, setCompanyStatus] = useState<CompanyStatus>("idle");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
   const [error, setError] = useState("");
   const [isPending, setIsPending] = useState(false);
+  const lookupTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const BASE = import.meta.env.BASE_URL;
 
   useEffect(() => {
@@ -58,19 +64,53 @@ export default function Login() {
     }
   }, []);
 
+  // Lookup company code with debounce
+  const handleCompanyCodeChange = (value: string) => {
+    const upper = value.toUpperCase();
+    setCompanyCode(upper);
+    setCompanyName("");
+    setError("");
+
+    if (lookupTimer.current) clearTimeout(lookupTimer.current);
+
+    if (!upper || upper.length < 4) {
+      setCompanyStatus("idle");
+      return;
+    }
+
+    setCompanyStatus("checking");
+    lookupTimer.current = setTimeout(async () => {
+      try {
+        const res = await fetchWithTimeout(`${BASE}api/auth/company-lookup?code=${encodeURIComponent(upper)}`, { credentials: "include" }, 5000);
+        const data = await res.json();
+        if (res.ok) {
+          setCompanyName(data.name);
+          setCompanyStatus("found");
+        } else {
+          setCompanyStatus("not_found");
+          setCompanyName("");
+        }
+      } catch {
+        setCompanyStatus("idle");
+      }
+    }, 500);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setIsPending(true);
     try {
-      await apiPost(`${BASE}api/auth/login`, { username, password });
+      const body: any = { username, password };
+      if (companyCode.trim()) body.companyCode = companyCode.trim();
+      await apiPost(`${BASE}api/auth/login`, body);
       const user = await apiFetch(`${BASE}api/auth/me`);
       queryClient.setQueryData(["/api/auth/me"], user);
       setLocation("/");
     } catch (err: any) {
       const msg = err?.message || "";
       if (msg === "timeout") setError(t("connectionTimeout"));
-      else setError(t("invalidCredentials"));
+      else setError(msg || t("invalidCredentials"));
     } finally {
       setIsPending(false);
     }
@@ -97,6 +137,12 @@ export default function Login() {
   const footerColor = isDark ? "rgba(255,255,255,0.2)" : "rgba(15,23,42,0.35)";
   const superAdminColor = isDark ? "rgba(168,85,247,0.5)" : "rgba(147,51,234,0.5)";
   const superAdminHover = isDark ? "#a855f7" : "#9333ea";
+
+  const companyBorder = companyStatus === "found"
+    ? "rgba(34,197,94,0.4)"
+    : companyStatus === "not_found"
+    ? "rgba(248,113,113,0.4)"
+    : inputBorder;
 
   return (
     <div
@@ -204,24 +250,106 @@ export default function Login() {
           <div style={{ padding: "28px 32px 32px" }}>
 
             {/* Error */}
-            {error && (
-              <motion.div
-                initial={{ opacity: 0, y: -8, scale: 0.97 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                style={{
-                  display: "flex", alignItems: "center", gap: 10,
-                  padding: "12px 14px", borderRadius: 12, marginBottom: 20,
-                  background: "rgba(248,113,113,0.08)",
-                  border: "1px solid rgba(248,113,113,0.25)",
-                  color: "#f87171", fontSize: 13,
-                }}
-              >
-                <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#f87171", flexShrink: 0, boxShadow: "0 0 6px #f87171" }} />
-                {error}
-              </motion.div>
-            )}
+            <AnimatePresence>
+              {error && (
+                <motion.div
+                  initial={{ opacity: 0, y: -8, scale: 0.97 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -8, scale: 0.97 }}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 10,
+                    padding: "12px 14px", borderRadius: 12, marginBottom: 20,
+                    background: "rgba(248,113,113,0.08)",
+                    border: "1px solid rgba(248,113,113,0.25)",
+                    color: "#f87171", fontSize: 13,
+                  }}
+                >
+                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#f87171", flexShrink: 0, boxShadow: "0 0 6px #f87171" }} />
+                  {error}
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+
+              {/* Company Code */}
+              <div>
+                <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: labelColor, marginBottom: 8 }}>
+                  {t("companyCodeField")}
+                </label>
+                <div style={{ position: "relative" }}>
+                  <Building2 size={16} style={{
+                    position: "absolute",
+                    insetInlineEnd: 14,
+                    top: "50%", transform: "translateY(-50%)",
+                    color: companyStatus === "found" ? "rgba(34,197,94,0.7)" : companyStatus === "not_found" ? "rgba(248,113,113,0.7)" : iconColor,
+                    transition: "color 0.2s",
+                  }} />
+                  <input
+                    type="text"
+                    value={companyCode}
+                    onChange={e => handleCompanyCodeChange(e.target.value)}
+                    placeholder={t("companyCodePlaceholder")}
+                    className="neon-input"
+                    maxLength={9}
+                    autoComplete="off"
+                    style={{
+                      width: "100%",
+                      paddingInlineEnd: 42,
+                      paddingInlineStart: companyStatus !== "idle" ? 42 : 14,
+                      paddingTop: 12, paddingBottom: 12,
+                      borderRadius: 12, fontSize: 14,
+                      boxSizing: "border-box",
+                      borderColor: companyBorder,
+                      fontFamily: "monospace",
+                      letterSpacing: "0.08em",
+                    }}
+                  />
+                  {/* Status icon on left */}
+                  <AnimatePresence>
+                    {companyStatus === "checking" && (
+                      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                        style={{ position: "absolute", insetInlineStart: 13, top: "50%", transform: "translateY(-50%)" }}>
+                        <Loader2 size={15} color={iconColor} style={{ animation: "spin 1s linear infinite" }} />
+                      </motion.div>
+                    )}
+                    {companyStatus === "found" && (
+                      <motion.div initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
+                        style={{ position: "absolute", insetInlineStart: 13, top: "50%", transform: "translateY(-50%)" }}>
+                        <CheckCircle2 size={15} color="#22c55e" />
+                      </motion.div>
+                    )}
+                    {companyStatus === "not_found" && (
+                      <motion.div initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
+                        style={{ position: "absolute", insetInlineStart: 13, top: "50%", transform: "translateY(-50%)" }}>
+                        <XCircle size={15} color="#f87171" />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                {/* Company name hint / error */}
+                <AnimatePresence>
+                  {companyStatus === "found" && companyName && (
+                    <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                      style={{ margin: "6px 0 0", fontSize: 12, color: "#22c55e", fontWeight: 600 }}>
+                      {companyName}
+                    </motion.p>
+                  )}
+                  {companyStatus === "not_found" && (
+                    <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                      style={{ margin: "6px 0 0", fontSize: 12, color: "#f87171" }}>
+                      {t("companyNotFound")}
+                    </motion.p>
+                  )}
+                  {companyStatus === "idle" && !companyCode && (
+                    <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                      style={{ margin: "5px 0 0", fontSize: 11, color: isDark ? "rgba(255,255,255,0.2)" : "rgba(15,23,42,0.3)" }}>
+                      {t("companyCodeHint")}
+                    </motion.p>
+                  )}
+                </AnimatePresence>
+              </div>
 
               {/* Username */}
               <div>
@@ -301,16 +429,18 @@ export default function Login() {
               {/* Submit */}
               <motion.button
                 type="submit"
-                disabled={isPending}
-                whileHover={{ scale: isPending ? 1 : 1.02 }}
-                whileTap={{ scale: isPending ? 1 : 0.98 }}
+                disabled={isPending || companyStatus === "not_found"}
+                whileHover={{ scale: (isPending || companyStatus === "not_found") ? 1 : 1.02 }}
+                whileTap={{ scale: (isPending || companyStatus === "not_found") ? 1 : 0.98 }}
                 className="btn-neon"
                 style={{
                   width: "100%", padding: "14px",
                   borderRadius: 14, border: "none",
-                  fontSize: 15, cursor: isPending ? "not-allowed" : "pointer",
+                  fontSize: 15, cursor: (isPending || companyStatus === "not_found") ? "not-allowed" : "pointer",
                   marginTop: 4,
                   display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                  opacity: companyStatus === "not_found" ? 0.6 : 1,
+                  transition: "opacity 0.2s",
                 }}
               >
                 {isPending ? (

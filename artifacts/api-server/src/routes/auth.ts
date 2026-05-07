@@ -17,7 +17,6 @@ const router = Router();
 const MAX_FAILED_ATTEMPTS = 5;
 const LOCKOUT_MINUTES = 15;
 
-// ─── Demo accounts (used when DB is unavailable in dev) ───────────────────────
 const IS_DEV = process.env.NODE_ENV !== "production";
 
 const DEMO_EMPLOYEES: Record<string, { password: string; id: number; companyId: number; fullName: string; role: string; username: string; jobTitle: string }> = {
@@ -30,11 +29,40 @@ const DEMO_SUPER_ADMINS: Record<string, { password: string; id: number; username
   superadmin: { password: "superadmin123", id: 1, username: "superadmin", fullName: "مدير النظام العام", email: "superadmin@system.local" },
 };
 
+// ─── Public: Lookup company by code ──────────────────────────────────────────
+// GET /api/auth/company-lookup?code=XXXX-1234
+router.get("/company-lookup", async (req, res) => {
+  try {
+    const code = String(req.query.code ?? "").trim().toUpperCase();
+    if (!code || code.length < 4) {
+      res.status(400).json({ message: "كود الشركة مطلوب" });
+      return;
+    }
+    const [company] = await db
+      .select({ id: companiesTable.id, name: companiesTable.name, isActive: companiesTable.isActive, companyCode: companiesTable.companyCode })
+      .from(companiesTable)
+      .where(eq(companiesTable.companyCode, code));
+
+    if (!company) {
+      res.status(404).json({ message: "كود الشركة غير صحيح" });
+      return;
+    }
+    if (!company.isActive) {
+      res.status(403).json({ message: "الشركة موقوفة، تواصل مع مزود الخدمة" });
+      return;
+    }
+    res.json({ id: company.id, name: company.name, companyCode: company.companyCode });
+  } catch (err) {
+    console.error("Company lookup error:", err);
+    res.status(500).json({ message: "خطأ في الخادم" });
+  }
+});
+
 // ─── Company employee login ───────────────────────────────────────────────────
 router.post("/login", loginRateLimit, async (req, res) => {
   const ip = getClientIp(req);
   const ua = req.headers["user-agent"] ?? "";
-  const { username, password } = req.body;
+  const { username, password, companyCode } = req.body;
 
   try {
     if (!username || !password) {
@@ -59,13 +87,11 @@ router.post("/login", loginRateLimit, async (req, res) => {
         });
         return;
       }
-      // DB unavailable and credentials don't match demo accounts
       res.status(401).json({ message: "اسم المستخدم أو كلمة المرور غير صحيحة" });
       return;
     }
 
-    // ── DB is available — real login ───────────────────────────────────────
-    // IP-level brute force check
+    // ── IP-level brute force check ─────────────────────────────────────────
     const recentIpFails = await getRecentFailedAttempts(ip, 15);
     if (recentIpFails >= 20) {
       await writeSecurityEvent({
@@ -75,11 +101,12 @@ router.post("/login", loginRateLimit, async (req, res) => {
         ipAddress: ip,
         metadata: { username, attempts: recentIpFails },
       });
-      res.status(429).json({ message: "تم حظر هذا الـ IP مؤقتاً بسبب محاولات تسجيل دخول متكررة. حاول بعد 15 دقيقة.", error: "IP_BLOCKED" });
+      res.status(429).json({ message: "تم حظر هذا الـ IP مؤقتاً. حاول بعد 15 دقيقة.", error: "IP_BLOCKED" });
       return;
     }
 
-    const [employee] = await db
+    // ── Build query: if companyCode provided → filter by company, else global ──
+    let employeeQuery = db
       .select({
         id: employeesTable.id,
         companyId: employeesTable.companyId,
@@ -106,17 +133,36 @@ router.post("/login", loginRateLimit, async (req, res) => {
         shiftStart: shiftsTable.startTime,
         shiftEnd: shiftsTable.endTime,
         companyIsActive: companiesTable.isActive,
+        companyCode: companiesTable.companyCode,
       })
       .from(employeesTable)
       .leftJoin(departmentsTable, eq(employeesTable.departmentId, departmentsTable.id))
       .leftJoin(shiftsTable, eq(employeesTable.shiftId, shiftsTable.id))
-      .leftJoin(companiesTable, eq(employeesTable.companyId, companiesTable.id))
-      .where(eq(employeesTable.username, username.trim().toLowerCase()));
+      .leftJoin(companiesTable, eq(employeesTable.companyId, companiesTable.id));
+
+    // If company code provided: filter by company — precise multi-tenant login
+    const code = companyCode ? String(companyCode).trim().toUpperCase() : null;
+    let employee: any;
+
+    if (code) {
+      const [result] = await employeeQuery.where(
+        and(
+          eq(employeesTable.username, username.trim().toLowerCase()),
+          eq(companiesTable.companyCode, code)
+        )
+      );
+      employee = result;
+    } else {
+      // No code: find by username (works only if username is globally unique)
+      const [result] = await employeeQuery.where(
+        eq(employeesTable.username, username.trim().toLowerCase())
+      );
+      employee = result;
+    }
 
     if (!employee) {
       await logLoginAttempt(ip, username, null, false, ua);
-      // Generic message — don't reveal if username exists
-      res.status(401).json({ message: "اسم المستخدم أو كلمة المرور غير صحيحة" });
+      res.status(401).json({ message: "اسم المستخدم أو كلمة المرور أو كود الشركة غير صحيح" });
       return;
     }
 
@@ -141,7 +187,7 @@ router.post("/login", loginRateLimit, async (req, res) => {
       return;
     }
 
-    // Verify password (supports both legacy SHA-256 and bcrypt)
+    // Verify password
     const valid = await verifyPassword(password, employee.passwordHash);
     if (!valid) {
       const newAttempts = (Number(employee.failedLoginAttempts) || 0) + 1;
@@ -183,7 +229,7 @@ router.post("/login", loginRateLimit, async (req, res) => {
       return;
     }
 
-    // ✅ Valid login — reset failed attempts
+    // ✅ Valid login
     await db.execute(sql`
       UPDATE employees SET
         failed_login_attempts = 0,
@@ -193,7 +239,6 @@ router.post("/login", loginRateLimit, async (req, res) => {
       WHERE id = ${employee.id}
     `);
 
-    // Upgrade legacy hash to bcrypt on successful login
     if (!employee.passwordHash.startsWith("$2")) {
       const newHash = await hashPasswordBcrypt(password);
       await db.execute(sql`UPDATE employees SET password_hash = ${newHash} WHERE id = ${employee.id}`);
@@ -244,7 +289,6 @@ router.post("/super-admin/login", superAdminRateLimit, async (req, res) => {
       return;
     }
 
-    // ── Demo mode fallback: ONLY when DB is unavailable in dev ───────────
     if (IS_DEV && !(await isDbReachable())) {
       const demo = DEMO_SUPER_ADMINS[username.trim().toLowerCase()];
       if (demo && demo.password === password) {
@@ -300,7 +344,6 @@ router.post("/super-admin/login", superAdminRateLimit, async (req, res) => {
       return;
     }
 
-    // Upgrade hash if legacy
     if (!sa.passwordHash.startsWith("$2")) {
       const newHash = await hashPasswordBcrypt(password);
       await db.execute(sql`UPDATE super_admins SET password_hash = ${newHash} WHERE id = ${sa.id}`);
@@ -351,7 +394,6 @@ router.post("/logout", async (req, res) => {
   req.session.destroy(async (err) => {
     if (err) console.error("Logout error:", err);
     res.clearCookie("attend.sid");
-
     await writeAuditLog({
       companyId: companyId ?? null,
       userId: userId ?? null,
@@ -362,12 +404,11 @@ router.post("/logout", async (req, res) => {
       userAgent: ua,
       status: "success",
     });
-
     res.json({ message: "تم تسجيل الخروج" });
   });
 });
 
-// ─── Change password (company employee) ──────────────────────────────────────
+// ─── Change password ──────────────────────────────────────────────────────────
 router.post("/change-password", requireCompanyAuth, async (req, res) => {
   const ip = getClientIp(req);
   try {
@@ -380,7 +421,6 @@ router.post("/change-password", requireCompanyAuth, async (req, res) => {
       res.status(400).json({ message: "كلمة المرور يجب أن تكون 8 أحرف على الأقل" });
       return;
     }
-    // Password strength check
     if (!/(?=.*[a-zA-Z])(?=.*[0-9])/.test(newPassword) && newPassword.length < 10) {
       res.status(400).json({ message: "كلمة المرور ضعيفة — استخدم حروفاً وأرقاماً أو زد طولها لـ 10 أحرف على الأقل" });
       return;
@@ -389,10 +429,7 @@ router.post("/change-password", requireCompanyAuth, async (req, res) => {
     const [emp] = await db
       .select({ id: employeesTable.id, passwordHash: employeesTable.passwordHash, fullName: employeesTable.fullName })
       .from(employeesTable)
-      .where(and(
-        eq(employeesTable.id, req.session.userId!),
-        eq(employeesTable.companyId, req.session.companyId!)
-      ));
+      .where(and(eq(employeesTable.id, req.session.userId!), eq(employeesTable.companyId, req.session.companyId!)));
 
     if (!emp) { res.status(404).json({ message: "الموظف غير موجود" }); return; }
 
@@ -435,7 +472,6 @@ router.post("/change-password", requireCompanyAuth, async (req, res) => {
 router.get("/me", async (req, res) => {
   try {
     if (req.session?.superAdminId) {
-      // In dev, check DB reachability first (fast 2s probe), fall back to demo
       const dbOk = IS_DEV ? await isDbReachable() : true;
       if (dbOk) {
         const [sa] = await db.select().from(superAdminsTable)
@@ -445,7 +481,6 @@ router.get("/me", async (req, res) => {
         res.json({ ...data, role: "super_admin" });
         return;
       }
-      // DB unavailable — use demo data
       const demoSa = Object.values(DEMO_SUPER_ADMINS).find(s => s.id === req.session.superAdminId);
       if (demoSa) {
         res.json({ id: demoSa.id, username: demoSa.username, fullName: demoSa.fullName, email: demoSa.email, role: "super_admin" });
@@ -460,16 +495,11 @@ router.get("/me", async (req, res) => {
       return;
     }
 
-    // In dev, check DB reachability first (fast 2s probe), fall back to demo
     const dbOk = IS_DEV ? await isDbReachable() : true;
     if (!dbOk) {
       const demoEmp = Object.values(DEMO_EMPLOYEES).find(e => e.id === req.session.userId && e.companyId === req.session.companyId);
       if (demoEmp) {
-        res.json({
-          id: demoEmp.id, companyId: demoEmp.companyId, username: demoEmp.username,
-          fullName: demoEmp.fullName, role: demoEmp.role, jobTitle: demoEmp.jobTitle,
-          isActive: true, hasFace: false,
-        });
+        res.json({ id: demoEmp.id, companyId: demoEmp.companyId, username: demoEmp.username, fullName: demoEmp.fullName, role: demoEmp.role, jobTitle: demoEmp.jobTitle, isActive: true, hasFace: false });
         return;
       }
       res.status(401).json({ message: "Unauthorized" });
@@ -511,23 +541,9 @@ router.get("/me", async (req, res) => {
         eq(employeesTable.companyId, req.session.companyId!)
       ));
 
-    if (!employee) {
-      req.session.destroy(() => {});
-      res.status(401).json({ message: "Unauthorized" });
-      return;
-    }
-
-    if (employee.companyIsActive === false) {
-      req.session.destroy(() => {});
-      res.status(403).json({ message: "company_inactive" });
-      return;
-    }
-
-    if (!employee.isActive) {
-      req.session.destroy(() => {});
-      res.status(401).json({ message: "Unauthorized" });
-      return;
-    }
+    if (!employee) { req.session.destroy(() => {}); res.status(401).json({ message: "Unauthorized" }); return; }
+    if (employee.companyIsActive === false) { req.session.destroy(() => {}); res.status(403).json({ message: "company_inactive" }); return; }
+    if (!employee.isActive) { req.session.destroy(() => {}); res.status(401).json({ message: "Unauthorized" }); return; }
 
     const { companyIsActive: _, ...empData } = employee;
     res.json({ ...empData, hasFace: !!employee.hasFace });

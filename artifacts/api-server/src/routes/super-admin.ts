@@ -10,6 +10,26 @@ import { BACKUP_DIR, createBackupForCompany } from "../lib/backup-scheduler.js";
 
 const router = Router();
 
+// ─── Generate a unique company code ──────────────────────────────────────────
+function generateCompanyCode(): string {
+  const letters = "ABCDEFGHJKLMNPQRSTUVWXYZ"; // skip I and O to avoid confusion
+  const digits = "0123456789";
+  let code = "";
+  for (let i = 0; i < 4; i++) code += letters[Math.floor(Math.random() * letters.length)];
+  code += "-";
+  for (let i = 0; i < 4; i++) code += digits[Math.floor(Math.random() * digits.length)];
+  return code;
+}
+
+async function generateUniqueCompanyCode(): Promise<string> {
+  for (let attempt = 0; attempt < 20; attempt++) {
+    const code = generateCompanyCode();
+    const [existing] = await db.select({ id: companiesTable.id }).from(companiesTable).where(eq(companiesTable.companyCode, code));
+    if (!existing) return code;
+  }
+  throw new Error("Failed to generate unique company code");
+}
+
 // ─── Get all companies with stats ────────────────────────────────────────────
 router.get("/companies", requireSuperAdmin, async (_req, res) => {
   try {
@@ -45,8 +65,10 @@ router.post("/companies", requireSuperAdmin, async (req, res) => {
       return;
     }
 
+    const companyCode = await generateUniqueCompanyCode();
+
     const [company] = await db.insert(companiesTable)
-      .values({ name, address, phone, email, isActive: true })
+      .values({ name, address, phone, email, isActive: true, companyCode })
       .returning();
 
     await db.insert(branchesTable).values({ companyId: company.id, name: "الفرع الرئيسي", isActive: true });
@@ -62,17 +84,23 @@ router.post("/companies", requireSuperAdmin, async (req, res) => {
     const adminHash = await hashPasswordBcrypt(adminPassword);
     const [admin] = await db.insert(employeesTable).values({
       companyId: company.id,
-      username: adminUsername,
+      username: adminUsername.trim().toLowerCase(),
       passwordHash: adminHash,
       fullName: adminFullName,
       role: "admin",
       isActive: true,
     }).returning({ id: employeesTable.id, username: employeesTable.username });
 
-    res.status(201).json({ company, admin, message: "تم إنشاء الشركة بنجاح" });
+    res.status(201).json({
+      company,
+      admin,
+      companyCode,
+      message: `تم إنشاء الشركة بنجاح. كود الشركة: ${companyCode}`,
+    });
   } catch (err: any) {
     console.error(err);
-    if (err.code === "23505") res.status(409).json({ message: "اسم المستخدم موجود مسبقاً" });
+    const isDupe2 = err.code === "23505" || err.cause?.code === "23505";
+    if (isDupe2) res.status(409).json({ message: "اسم المستخدم موجود مسبقاً في هذه الشركة" });
     else res.status(500).json({ message: "Server error" });
   }
 });
@@ -87,6 +115,20 @@ router.put("/companies/:id", requireSuperAdmin, async (req, res) => {
       .where(eq(companiesTable.id, id)).returning();
     if (!updated) { res.status(404).json({ message: "Not found" }); return; }
     res.json(updated);
+  } catch (err) { console.error(err); res.status(500).json({ message: "Server error" }); }
+});
+
+// ─── Regenerate company code ──────────────────────────────────────────────────
+router.post("/companies/:id/regenerate-code", requireSuperAdmin, async (req, res) => {
+  try {
+    const id = parseInt(String(req.params.id));
+    const newCode = await generateUniqueCompanyCode();
+    const [updated] = await db.update(companiesTable)
+      .set({ companyCode: newCode })
+      .where(eq(companiesTable.id, id))
+      .returning({ id: companiesTable.id, name: companiesTable.name, companyCode: companiesTable.companyCode });
+    if (!updated) { res.status(404).json({ message: "Not found" }); return; }
+    res.json({ ...updated, message: `تم تجديد كود الشركة: ${newCode}` });
   } catch (err) { console.error(err); res.status(500).json({ message: "Server error" }); }
 });
 
@@ -117,15 +159,23 @@ router.post("/companies/:id/employees", requireSuperAdmin, async (req, res) => {
     const companyId = parseInt(String(req.params.id));
     const { username, password, fullName, role } = req.body;
     if (!username || !password || !fullName) { res.status(400).json({ message: "البيانات مطلوبة" }); return; }
+
+    // Check username uniqueness within this company
+    const [existing] = await db
+      .select({ id: employeesTable.id })
+      .from(employeesTable)
+      .where(eq(employeesTable.companyId, companyId));
+
     const empHash = await hashPasswordBcrypt(password);
     const [emp] = await db.insert(employeesTable).values({
-      companyId, username, passwordHash: empHash, fullName,
+      companyId, username: username.trim().toLowerCase(), passwordHash: empHash, fullName,
       role: role || "employee", isActive: true,
     }).returning();
     res.status(201).json(emp);
   } catch (err: any) {
-    if (err.code === "23505") res.status(409).json({ message: "اسم المستخدم موجود" });
-    else res.status(500).json({ message: "Server error" });
+    const isDupe = err.code === "23505" || err.cause?.code === "23505";
+    if (isDupe) res.status(409).json({ message: "اسم المستخدم موجود مسبقاً في هذه الشركة" });
+    else { console.error(err); res.status(500).json({ message: "Server error" }); }
   }
 });
 
@@ -183,7 +233,6 @@ router.post("/change-password", requireSuperAdmin, async (req, res) => {
 
 // ─── BACKUP SYSTEM ────────────────────────────────────────────────────────────
 
-// List all backups
 router.get("/backups", requireSuperAdmin, async (_req, res) => {
   try {
     if (!existsSync(BACKUP_DIR)) { res.json([]); return; }
@@ -193,32 +242,24 @@ router.get("/backups", requireSuperAdmin, async (_req, res) => {
       const stat = statSync(filePath);
       const [, companyIdStr, , dateStr] = f.replace(".json", "").split("_");
       return {
-        id: f,
-        filename: f,
+        id: f, filename: f,
         companyId: companyIdStr ? parseInt(companyIdStr) : null,
-        createdAt: stat.mtime.toISOString(),
-        sizeBytes: stat.size,
-        dateStr,
+        createdAt: stat.mtime.toISOString(), sizeBytes: stat.size, dateStr,
       };
     }).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
     res.json(backups);
   } catch (err) { console.error(err); res.status(500).json({ message: "Server error" }); }
 });
 
-// Create backup for a company (or all: companyId = 0)
 router.post("/backups", requireSuperAdmin, async (req, res) => {
   try {
     const rawId = req.body.companyId;
     const companyId = rawId ? parseInt(rawId) : null;
     const { filename, sizeBytes } = await createBackupForCompany(companyId);
-    res.status(201).json({
-      id: filename, filename, companyId: companyId ?? 0,
-      createdAt: new Date().toISOString(), sizeBytes,
-    });
+    res.status(201).json({ id: filename, filename, companyId: companyId ?? 0, createdAt: new Date().toISOString(), sizeBytes });
   } catch (err) { console.error(err); res.status(500).json({ message: "فشل إنشاء النسخة الاحتياطية" }); }
 });
 
-// Download a backup
 router.get("/backups/:filename/download", requireSuperAdmin, (req, res) => {
   try {
     const filePath = join(BACKUP_DIR, String(req.params.filename));
@@ -229,7 +270,6 @@ router.get("/backups/:filename/download", requireSuperAdmin, (req, res) => {
   } catch (err) { console.error(err); res.status(500).json({ message: "Server error" }); }
 });
 
-// Delete a backup
 router.delete("/backups/:filename", requireSuperAdmin, (req, res) => {
   try {
     const filePath = join(BACKUP_DIR, String(req.params.filename));
@@ -239,7 +279,6 @@ router.delete("/backups/:filename", requireSuperAdmin, (req, res) => {
   } catch (err) { console.error(err); res.status(500).json({ message: "Server error" }); }
 });
 
-// Stats summary for super admin
 router.get("/stats", requireSuperAdmin, async (_req, res) => {
   try {
     const companies = await db.select().from(companiesTable);
