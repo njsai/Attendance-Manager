@@ -359,7 +359,20 @@ function AddModal({ employees, onClose, onSave, month, year }: {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ ...form, employeeId: parseInt(form.employeeId) }),
+        body: JSON.stringify({
+          employeeId: parseInt(form.employeeId),
+          month: parseInt(form.month),
+          year: parseInt(form.year),
+          basicSalary: parseFloat(form.basicSalary) || 0,
+          incentives: parseFloat(form.incentives) || 0,
+          overtimePay: parseFloat(form.overtimePay) || 0,
+          deductions: parseFloat(form.deductions) || 0,
+          advances: parseFloat(form.advances) || 0,
+          lateDeduction: parseFloat(form.lateDeduction) || 0,
+          absenceDeduction: parseFloat(form.absenceDeduction) || 0,
+          currency: form.currency,
+          notes: form.notes,
+        }),
       });
       if (!r.ok) { const d = await r.json(); setError(d.message); return; }
       onSave(); onClose();

@@ -25,13 +25,19 @@ async function logPayrollChange(
 
 // ─── Helper: recalculate net salary ──────────────────────────────────────────
 function calcNet(p: {
-  basicSalary: number; incentives: number; overtimePay: number;
-  deductions: number; advances: number; lateDeduction: number; absenceDeduction: number;
+  basicSalary: any; incentives: any; overtimePay: any;
+  deductions: any; advances: any; lateDeduction: any; absenceDeduction: any;
 }) {
   return (
-    p.basicSalary + p.incentives + p.overtimePay
-    - p.deductions - p.advances - p.lateDeduction - p.absenceDeduction
+    Number(p.basicSalary)   + Number(p.incentives)   + Number(p.overtimePay)
+    - Number(p.deductions)  - Number(p.advances)
+    - Number(p.lateDeduction) - Number(p.absenceDeduction)
   );
+}
+
+// ─── Helper: check if error is a duplicate key violation ─────────────────────
+function isDuplicateKey(err: any): boolean {
+  return err?.code === "23505" || err?.cause?.code === "23505";
 }
 
 // ─── Helper: build attendance stats for employee in a month ──────────────────
@@ -226,7 +232,7 @@ router.post("/", requireAdmin, async (req, res) => {
 
     res.status(201).json(p);
   } catch (err: any) {
-    if (err.code === "23505") res.status(409).json({ message: "راتب هذا الموظف لهذا الشهر موجود مسبقاً" });
+    if (isDuplicateKey(err)) res.status(409).json({ message: "راتب هذا الموظف لهذا الشهر موجود مسبقاً" });
     else { console.error(err); res.status(500).json({ message: "خطأ في الخادم" }); }
   }
 });
@@ -281,7 +287,7 @@ router.post("/generate", requireAdmin, async (req, res) => {
         });
         created++;
       } catch (e: any) {
-        if (e.code === "23505") skipped++;
+        if (isDuplicateKey(e)) skipped++;
         else throw e;
       }
     }
