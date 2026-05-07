@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import {
   CreditCard, Building2, Clock, CheckCircle, XCircle, AlertTriangle,
   Plus, ChevronLeft, RefreshCw, Calendar, DollarSign, Users, Layers,
-  ArrowRight, FileText, Printer, TrendingUp
+  ArrowRight, FileText, Printer, TrendingUp, Edit2, Save
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -67,6 +67,8 @@ export default function SubscriptionsPage() {
   const [assignForm, setAssignForm] = useState({ planId: "", startDate: new Date().toISOString().slice(0,10), endDate: "", autoRenew: false });
   const [extendForm, setExtendForm] = useState({ months: "1", amount: "", paymentMethod: "manual" });
   const [saving, setSaving] = useState(false);
+  const [editPlan, setEditPlan] = useState<Plan | null>(null);
+  const [editForm, setEditForm] = useState({ name: "", price: "", maxEmployees: "", maxBranches: "", storageGb: "", features: "" });
 
   const showMsg = (msg: string, ok = true) => { setFeedback({ msg, ok }); setTimeout(() => setFeedback(null), 4000); };
 
@@ -102,6 +104,41 @@ export default function SubscriptionsPage() {
       showMsg("تم تفعيل الاشتراك بنجاح");
       setShowAssignModal(null);
       load();
+    } catch (err: any) { showMsg(err.message, false); }
+    finally { setSaving(false); }
+  };
+
+  const openEditPlan = (plan: Plan) => {
+    setEditPlan(plan);
+    setEditForm({
+      name: plan.name,
+      price: String(plan.price),
+      maxEmployees: String(plan.max_employees),
+      maxBranches: String(plan.max_branches),
+      storageGb: String(plan.storage_gb),
+      features: Array.isArray(plan.features) ? plan.features.join("\n") : "",
+    });
+  };
+
+  const handleEditPlan = async () => {
+    if (!editPlan) return;
+    setSaving(true);
+    try {
+      const updated = await apiFetch(`api/super-admin/plans/${editPlan.id}`, {
+        method: "PUT",
+        body: JSON.stringify({
+          name: editForm.name,
+          price: parseFloat(editForm.price),
+          maxEmployees: parseInt(editForm.maxEmployees),
+          maxBranches: parseInt(editForm.maxBranches),
+          storageGb: parseFloat(editForm.storageGb),
+          features: editForm.features.split("\n").map(f => f.trim()).filter(Boolean),
+          isActive: editPlan.is_active,
+        }),
+      });
+      setPlans(prev => prev.map(p => p.id === editPlan.id ? { ...p, ...updated } : p));
+      showMsg("تم حفظ التغييرات بنجاح");
+      setEditPlan(null);
     } catch (err: any) { showMsg(err.message, false); }
     finally { setSaving(false); }
   };
@@ -306,10 +343,18 @@ export default function SubscriptionsPage() {
                     ))}
                   </div>
                 )}
-                <div style={{ marginTop: 12, padding: "4px 10px", borderRadius: 8, fontSize: 10, fontWeight: 700, display: "inline-block",
-                  background: plan.is_active ? "rgba(16,185,129,0.12)" : "rgba(248,113,113,0.12)",
-                  color: plan.is_active ? "#10b981" : "#f87171" }}>
-                  {plan.is_active ? "نشط" : "معطل"}
+                <div style={{ marginTop: 14, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <div style={{ padding: "4px 10px", borderRadius: 8, fontSize: 10, fontWeight: 700, display: "inline-block",
+                    background: plan.is_active ? "rgba(16,185,129,0.12)" : "rgba(248,113,113,0.12)",
+                    color: plan.is_active ? "#10b981" : "#f87171" }}>
+                    {plan.is_active ? "نشط" : "معطل"}
+                  </div>
+                  <button onClick={() => openEditPlan(plan)}
+                    style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 12px", borderRadius: 8,
+                      border: "1px solid rgba(168,85,247,0.3)", background: "rgba(168,85,247,0.1)",
+                      color: "#a855f7", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                    <Edit2 size={12}/> تعديل
+                  </button>
                 </div>
               </motion.div>
             ))}
@@ -519,6 +564,89 @@ export default function SubscriptionsPage() {
                 </button>
                 <button onClick={() => setShowInvoice(null)} style={{ padding: "10px 20px", borderRadius: 10, border: "1px solid #e2e8f0", background: "#f8fafc", color: "#64748b", cursor: "pointer" }}>
                   إغلاق
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Edit Plan Modal ──────────────────────────────────────────── */}
+      <AnimatePresence>
+        {editPlan && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}
+            onClick={e => e.target === e.currentTarget && setEditPlan(null)}>
+            <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9 }}
+              style={{ background: "#0d1526", border: "1px solid rgba(168,85,247,0.3)", borderRadius: 20, padding: 28, width: "100%", maxWidth: 500, fontFamily: "'Tajawal', sans-serif", color: "#fff" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 22 }}>
+                <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(168,85,247,0.12)", border: "1px solid rgba(168,85,247,0.3)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <Edit2 size={16} style={{ color: "#a855f7" }} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: 15, fontWeight: 800 }}>تعديل الخطة — {editPlan.name}</h3>
+                  <p style={{ margin: 0, fontSize: 11, color: "rgba(168,85,247,0.5)" }}>{PLAN_LABELS[editPlan.type]}</p>
+                </div>
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                {/* Name */}
+                <div>
+                  <label style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", display: "block", marginBottom: 6 }}>اسم الخطة</label>
+                  <input value={editForm.name} onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))}
+                    style={{ width: "100%", padding: "10px 12px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#fff", fontSize: 14, boxSizing: "border-box" }} />
+                </div>
+
+                {/* Price — highlighted prominently */}
+                <div style={{ background: "rgba(168,85,247,0.08)", border: "1px solid rgba(168,85,247,0.2)", borderRadius: 12, padding: "14px 16px" }}>
+                  <label style={{ fontSize: 12, color: "#a855f7", display: "block", marginBottom: 6, fontWeight: 700 }}>💰 السعر (USD)</label>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontSize: 22, fontWeight: 800, color: "rgba(255,255,255,0.3)" }}>$</span>
+                    <input type="number" value={editForm.price} onChange={e => setEditForm(f => ({ ...f, price: e.target.value }))}
+                      min={0} step={0.01}
+                      style={{ flex: 1, padding: "10px 12px", borderRadius: 10, border: "1px solid rgba(168,85,247,0.3)", background: "rgba(168,85,247,0.1)", color: "#a855f7", fontSize: 22, fontWeight: 800, boxSizing: "border-box" }} />
+                  </div>
+                </div>
+
+                {/* Limits row */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+                  <div>
+                    <label style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", display: "block", marginBottom: 5 }}>عدد الموظفين</label>
+                    <input type="number" value={editForm.maxEmployees} onChange={e => setEditForm(f => ({ ...f, maxEmployees: e.target.value }))}
+                      style={{ width: "100%", padding: "8px 10px", borderRadius: 9, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#fff", fontSize: 13, boxSizing: "border-box" }} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", display: "block", marginBottom: 5 }}>عدد الفروع</label>
+                    <input type="number" value={editForm.maxBranches} onChange={e => setEditForm(f => ({ ...f, maxBranches: e.target.value }))}
+                      style={{ width: "100%", padding: "8px 10px", borderRadius: 9, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#fff", fontSize: 13, boxSizing: "border-box" }} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", display: "block", marginBottom: 5 }}>التخزين (GB)</label>
+                    <input type="number" value={editForm.storageGb} onChange={e => setEditForm(f => ({ ...f, storageGb: e.target.value }))}
+                      style={{ width: "100%", padding: "8px 10px", borderRadius: 9, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#fff", fontSize: 13, boxSizing: "border-box" }} />
+                  </div>
+                </div>
+
+                {/* Features */}
+                <div>
+                  <label style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", display: "block", marginBottom: 5 }}>المميزات (سطر لكل ميزة)</label>
+                  <textarea value={editForm.features} onChange={e => setEditForm(f => ({ ...f, features: e.target.value }))}
+                    rows={4}
+                    style={{ width: "100%", padding: "10px 12px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#fff", fontSize: 12, resize: "vertical", boxSizing: "border-box", lineHeight: 1.6 }} />
+                </div>
+              </div>
+
+              <div style={{ display: "flex", gap: 10, marginTop: 22 }}>
+                <button onClick={handleEditPlan} disabled={saving}
+                  style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
+                    padding: "12px 0", borderRadius: 11, border: "none",
+                    background: "linear-gradient(135deg,#a855f7,#7c3aed)", color: "#fff",
+                    fontWeight: 800, fontSize: 14, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.6 : 1 }}>
+                  <Save size={15}/> {saving ? "جاري الحفظ..." : "حفظ التغييرات"}
+                </button>
+                <button onClick={() => setEditPlan(null)}
+                  style={{ padding: "12px 20px", borderRadius: 11, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.55)", cursor: "pointer" }}>
+                  إلغاء
                 </button>
               </div>
             </motion.div>

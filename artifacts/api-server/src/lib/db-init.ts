@@ -237,14 +237,27 @@ async function tryInitOnce(): Promise<void> {
   await runSql(`CREATE INDEX IF NOT EXISTS idx_company_subscriptions_company ON company_subscriptions(company_id)`);
   await runSql(`CREATE INDEX IF NOT EXISTS idx_payment_records_company ON payment_records(company_id)`);
 
-  // Seed default subscription plans (idempotent)
+  // Unique constraint on plan type (idempotent)
+  await runSql(`ALTER TABLE subscription_plans ADD COLUMN IF NOT EXISTS _dummy INT`);
+  await runSql(`ALTER TABLE subscription_plans DROP COLUMN IF EXISTS _dummy`);
+  await runSql(`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_subscription_plans_type ON subscription_plans(type)
+  `);
+  // Seed default subscription plans (idempotent via unique type index)
   await runSql(`INSERT INTO subscription_plans (name, type, price, currency, max_employees, max_branches, storage_gb, features)
     VALUES
-      ('الشهري',     'monthly',      29,  'USD', 20,  3,  5,  '["حضور وانصراف","تقارير أساسية","دعم البريد"]'),
-      ('نصف سنوي',  'semi_annual',  149, 'USD', 50,  5,  15, '["حضور وانصراف","تقارير متقدمة","رسائل","دعم أولوية"]'),
-      ('السنوي',     'annual',       249, 'USD', 150, 15, 50, '["حضور وانصراف","تقارير متقدمة","رسائل","رواتب","دعم أولوية","نسخ احتياطي"]'),
-      ('مدى الحياة', 'lifetime',     999, 'USD', 999, 99, 200,'["جميع الميزات","موظفون غير محدودون","دعم VIP","تحديثات مجانية"]')
-    ON CONFLICT DO NOTHING`);
+      ('الشهري',     'monthly',      99,   'USD', 20,  3,  5,  '["حضور وانصراف","تقارير أساسية","دعم البريد"]'),
+      ('نصف سنوي',  'semi_annual',  400,  'USD', 50,  5,  15, '["حضور وانصراف","تقارير متقدمة","رسائل","دعم أولوية"]'),
+      ('السنوي',     'annual',       799,  'USD', 150, 15, 50, '["حضور وانصراف","تقارير متقدمة","رسائل","رواتب","دعم أولوية","نسخ احتياطي"]'),
+      ('مدى الحياة', 'lifetime',     5000, 'USD', 999, 99, 200,'["جميع الميزات","موظفون غير محدودون","دعم VIP","تحديثات مجانية"]')
+    ON CONFLICT (type) DO UPDATE SET
+      name = EXCLUDED.name,
+      price = EXCLUDED.price,
+      max_employees = EXCLUDED.max_employees,
+      max_branches = EXCLUDED.max_branches,
+      storage_gb = EXCLUDED.storage_gb,
+      features = EXCLUDED.features
+  `);
 
   // ─── Add preference columns to existing employees (idempotent) ───────────
   await runSql(`ALTER TABLE employees ADD COLUMN IF NOT EXISTS preferred_theme TEXT NOT NULL DEFAULT 'dark'`);
