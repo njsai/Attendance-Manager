@@ -16,6 +16,37 @@ const router = Router();
 const MAX_FAILED_ATTEMPTS = 5;
 const LOCKOUT_MINUTES = 15;
 
+// ─── Demo accounts (used when DB is unavailable in dev) ───────────────────────
+const IS_DEV = process.env.NODE_ENV !== "production";
+
+// Track DB reachability — once it fails, skip future DB attempts in dev
+let _dbReachable: boolean | null = null;
+async function isDbReachable(): Promise<boolean> {
+  if (_dbReachable === false) return false;
+  if (_dbReachable === true) return true;
+  try {
+    await Promise.race([
+      db.execute(sql`SELECT 1`),
+      new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 2000)),
+    ]);
+    _dbReachable = true;
+    return true;
+  } catch {
+    _dbReachable = false;
+    return false;
+  }
+}
+
+const DEMO_EMPLOYEES: Record<string, { password: string; id: number; companyId: number; fullName: string; role: string; username: string; jobTitle: string }> = {
+  admin:    { password: "admin123",    id: 1,  companyId: 1, fullName: "مدير الشركة",     role: "admin",    username: "admin",    jobTitle: "مدير عام" },
+  manager1: { password: "manager123", id: 2,  companyId: 1, fullName: "محمد العمري",     role: "manager",  username: "manager1", jobTitle: "مشرف قسم" },
+  emp1:     { password: "emp123",     id: 15, companyId: 1, fullName: "علي حسين",        role: "employee", username: "emp1",     jobTitle: "موظف" },
+};
+
+const DEMO_SUPER_ADMINS: Record<string, { password: string; id: number; username: string; fullName: string; email: string }> = {
+  superadmin: { password: "superadmin123", id: 1, username: "superadmin", fullName: "مدير النظام العام", email: "superadmin@system.local" },
+};
+
 // ─── Company employee login ───────────────────────────────────────────────────
 router.post("/login", loginRateLimit, async (req, res) => {
   const ip = getClientIp(req);
@@ -26,6 +57,25 @@ router.post("/login", loginRateLimit, async (req, res) => {
     if (!username || !password) {
       res.status(400).json({ message: "اسم المستخدم وكلمة المرور مطلوبان" });
       return;
+    }
+
+    // ── Demo mode fallback (when DB is unavailable in dev) ────────────────
+    if (IS_DEV) {
+      const demo = DEMO_EMPLOYEES[username.trim().toLowerCase()];
+      if (demo && demo.password === password) {
+        req.session.userId = demo.id;
+        req.session.role = demo.role as any;
+        req.session.companyId = demo.companyId;
+        req.session.loginIp = ip;
+        req.session.deviceInfo = parseDevice(ua);
+        delete (req.session as any).superAdminId;
+        await new Promise<void>((resolve) => req.session.save(() => resolve()));
+        res.json({
+          employee: { id: demo.id, companyId: demo.companyId, username: demo.username, fullName: demo.fullName, role: demo.role, jobTitle: demo.jobTitle, isActive: true },
+          message: "تم تسجيل الدخول بنجاح (وضع تجريبي)",
+        });
+        return;
+      }
     }
 
     // IP-level brute force check
@@ -205,6 +255,25 @@ router.post("/super-admin/login", superAdminRateLimit, async (req, res) => {
       return;
     }
 
+    // ── Demo mode fallback ────────────────────────────────────────────────
+    if (IS_DEV) {
+      const demo = DEMO_SUPER_ADMINS[username.trim().toLowerCase()];
+      if (demo && demo.password === password) {
+        req.session.superAdminId = demo.id;
+        req.session.loginIp = ip;
+        req.session.deviceInfo = parseDevice(ua);
+        delete (req.session as any).userId;
+        delete (req.session as any).companyId;
+        delete (req.session as any).role;
+        await new Promise<void>((resolve) => req.session.save(() => resolve()));
+        res.json({
+          superAdmin: { id: demo.id, username: demo.username ?? username.trim(), fullName: demo.fullName, email: demo.email },
+          message: "مرحباً بك في لوحة التحكم الرئيسية (وضع تجريبي)",
+        });
+        return;
+      }
+    }
+
     const recentFails = await getRecentFailedAttempts(ip, 30);
     if (recentFails >= 5) {
       await writeSecurityEvent({
@@ -375,15 +444,43 @@ router.post("/change-password", requireCompanyAuth, async (req, res) => {
 router.get("/me", async (req, res) => {
   try {
     if (req.session?.superAdminId) {
-      const [sa] = await db.select().from(superAdminsTable)
-        .where(eq(superAdminsTable.id, req.session.superAdminId));
-      if (!sa) { res.status(401).json({ message: "Unauthorized" }); return; }
-      const { passwordHash: _, ...data } = sa;
-      res.json({ ...data, role: "super_admin" });
+      // In dev, check DB reachability first (fast 2s probe), fall back to demo
+      const dbOk = IS_DEV ? await isDbReachable() : true;
+      if (dbOk) {
+        const [sa] = await db.select().from(superAdminsTable)
+          .where(eq(superAdminsTable.id, req.session.superAdminId));
+        if (!sa) { res.status(401).json({ message: "Unauthorized" }); return; }
+        const { passwordHash: _, ...data } = sa;
+        res.json({ ...data, role: "super_admin" });
+        return;
+      }
+      // DB unavailable — use demo data
+      const demoSa = Object.values(DEMO_SUPER_ADMINS).find(s => s.id === req.session.superAdminId);
+      if (demoSa) {
+        res.json({ id: demoSa.id, username: demoSa.username, fullName: demoSa.fullName, email: demoSa.email, role: "super_admin" });
+        return;
+      }
+      res.status(401).json({ message: "Unauthorized" });
       return;
     }
 
     if (!req.session?.userId || !req.session?.companyId) {
+      res.status(401).json({ message: "Unauthorized" });
+      return;
+    }
+
+    // In dev, check DB reachability first (fast 2s probe), fall back to demo
+    const dbOk = IS_DEV ? await isDbReachable() : true;
+    if (!dbOk) {
+      const demoEmp = Object.values(DEMO_EMPLOYEES).find(e => e.id === req.session.userId && e.companyId === req.session.companyId);
+      if (demoEmp) {
+        res.json({
+          id: demoEmp.id, companyId: demoEmp.companyId, username: demoEmp.username,
+          fullName: demoEmp.fullName, role: demoEmp.role, jobTitle: demoEmp.jobTitle,
+          isActive: true, hasFace: false,
+        });
+        return;
+      }
       res.status(401).json({ message: "Unauthorized" });
       return;
     }

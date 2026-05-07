@@ -4,8 +4,21 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Loader2, Shield, User, KeyRound, Eye, EyeOff } from "lucide-react";
 import { motion } from "framer-motion";
 
+async function fetchWithTimeout(input: RequestInfo, init: RequestInit = {}, timeoutMs = 12000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(input, { ...init, signal: controller.signal });
+  } catch (err: any) {
+    if (err?.name === "AbortError") throw new Error("انتهت مهلة الاتصال بالخادم، تحقق من الشبكة وحاول مرة أخرى");
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function apiPost(url: string, body: object) {
-  const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify(body) });
+  const res = await fetchWithTimeout(url, { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify(body) });
   const data = await res.json();
   if (!res.ok) throw new Error(data?.message || "خطأ");
   return data;

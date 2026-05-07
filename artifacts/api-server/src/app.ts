@@ -14,9 +14,9 @@ import {
   requestSizeLimiter,
 } from "./middleware/security.js";
 import { migrateLegacyPasswords } from "./lib/security.js";
+import { pool } from "@workspace/db";
 
 const app: Express = express();
-const PgSession = connectPgSimple(session);
 
 // Trust the Replit proxy
 app.set("trust proxy", 1);
@@ -56,14 +56,41 @@ if (!SESSION_SECRET && isProduction) {
   console.warn("⚠ SESSION_SECRET not set — using fallback. Set a strong secret in production!");
 }
 
-app.use(
-  session({
-    store: new PgSession({
-      conString: process.env.DATABASE_URL,
+const PgSession = connectPgSimple(session);
+
+// In development, fall back to MemoryStore if DB is unreachable.
+// In production, always use PgSession (DB must be available).
+async function buildSessionStore() {
+  if (isProduction) {
+    return new PgSession({
+      pool,
       tableName: "session",
       createTableIfMissing: true,
       pruneSessionInterval: 60 * 15,
-    }),
+    });
+  }
+  // Dev: probe DB with short timeout — use MemoryStore if unavailable
+  try {
+    const client = await pool.connect();
+    client.release();
+    console.log("[Session] DB reachable — using PgSession store");
+    return new PgSession({
+      pool,
+      tableName: "session",
+      createTableIfMissing: true,
+      pruneSessionInterval: 60 * 15,
+    });
+  } catch {
+    console.warn("[Session] DB unreachable — using MemoryStore (dev only)");
+    return new session.MemoryStore();
+  }
+}
+
+const sessionStore = await buildSessionStore();
+
+app.use(
+  session({
+    store: sessionStore,
     secret: SESSION_SECRET || "attend-sec-key-must-change-in-prod-2024!",
     resave: false,
     saveUninitialized: false,
@@ -73,7 +100,7 @@ app.use(
       secure: isProduction,
       httpOnly: true,
       sameSite: isProduction ? "none" : "lax",
-      maxAge: 8 * 60 * 60 * 1000, // 8 hours (session expiration)
+      maxAge: 8 * 60 * 60 * 1000,
       path: "/",
     },
   })
