@@ -197,6 +197,8 @@ export default function AdminBranches() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editBranch, setEditBranch] = useState<Partial<Branch> | null>(null);
+  const [locatingId, setLocatingId] = useState<number | null>(null);
+  const [locateMsg, setLocateMsg] = useState<{ id: number; text: string; ok: boolean } | null>(null);
   const BASE = import.meta.env.BASE_URL;
 
   const textPrimary   = isDark ? "#fff" : "#0f172a";
@@ -230,6 +232,52 @@ export default function AdminBranches() {
       return [b, ...prev];
     });
     setShowModal(false);
+  };
+
+  const quickLocate = (branchId: number) => {
+    if (!navigator.geolocation) {
+      setLocateMsg({ id: branchId, text: "المتصفح لا يدعم تحديد الموقع", ok: false });
+      return;
+    }
+    setLocatingId(branchId);
+    setLocateMsg(null);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const lat = parseFloat(pos.coords.latitude.toFixed(6));
+        const lng = parseFloat(pos.coords.longitude.toFixed(6));
+        try {
+          const branch = branches.find(b => b.id === branchId);
+          if (!branch) return;
+          const res = await fetch(`${BASE}api/branches/${branchId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ ...branch, latitude: lat, longitude: lng }),
+          });
+          if (res.ok) {
+            const updated = await res.json();
+            setBranches(prev => prev.map(b => b.id === branchId ? updated : b));
+            setLocateMsg({ id: branchId, text: `تم تحديث الموقع: ${lat}, ${lng}`, ok: true });
+          } else {
+            setLocateMsg({ id: branchId, text: "فشل حفظ الموقع", ok: false });
+          }
+        } catch {
+          setLocateMsg({ id: branchId, text: "خطأ في الاتصال بالخادم", ok: false });
+        } finally {
+          setLocatingId(null);
+          setTimeout(() => setLocateMsg(null), 4000);
+        }
+      },
+      (err) => {
+        setLocatingId(null);
+        const msg = err.code === 1 ? "تم رفض إذن الموقع — تحقق من إعدادات المتصفح"
+                  : err.code === 2 ? "تعذّر تحديد الموقع، حاول مجدداً"
+                  : "انتهت مهلة تحديد الموقع";
+        setLocateMsg({ id: branchId, text: msg, ok: false });
+        setTimeout(() => setLocateMsg(null), 5000);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
   };
 
   if (loading) return (
@@ -289,7 +337,27 @@ export default function AdminBranches() {
                     {b.city && <p style={{ color: textMuted, fontSize: 11, marginTop: 2 }}>{b.city}</p>}
                   </div>
                 </div>
-                <div style={{ display: "flex", gap: 6 }}>
+                <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                  <button
+                    onClick={() => quickLocate(b.id)}
+                    disabled={locatingId === b.id}
+                    title="تحديد موقعي الآن"
+                    style={{
+                      display: "flex", alignItems: "center", gap: 4,
+                      padding: "5px 10px", borderRadius: 9, border: "none",
+                      background: locatingId === b.id
+                        ? (isDark ? "rgba(16,185,129,0.06)" : "rgba(16,185,129,0.06)")
+                        : (isDark ? "rgba(16,185,129,0.12)" : "rgba(16,185,129,0.1)"),
+                      color: "#10b981",
+                      fontSize: 11, fontWeight: 700,
+                      cursor: locatingId === b.id ? "not-allowed" : "pointer",
+                      opacity: locatingId === b.id ? 0.6 : 1,
+                      fontFamily: "'Tajawal', sans-serif",
+                      transition: "opacity 0.2s",
+                    }}>
+                    <Navigation size={11} style={{ animation: locatingId === b.id ? "spin 1s linear infinite" : "none" }} />
+                    {locatingId === b.id ? "جاري..." : "موقعي الآن"}
+                  </button>
                   <button onClick={() => { setEditBranch(b); setShowModal(true); }}
                     style={{ padding: 7, borderRadius: 9, background: isDark ? "rgba(0,245,255,0.07)" : "rgba(8,145,178,0.07)", border: `1px solid ${isDark ? "rgba(0,245,255,0.15)" : "rgba(8,145,178,0.2)"}`, color: cyanColor, cursor: "pointer" }}>
                     <Edit2 size={13} />
@@ -300,6 +368,19 @@ export default function AdminBranches() {
                   </button>
                 </div>
               </div>
+
+              {locateMsg?.id === b.id && (
+                <div style={{
+                  marginTop: 8, padding: "7px 12px", borderRadius: 9, fontSize: 12, fontWeight: 600,
+                  background: locateMsg.ok ? "rgba(16,185,129,0.1)" : "rgba(248,113,113,0.1)",
+                  border: `1px solid ${locateMsg.ok ? "rgba(16,185,129,0.25)" : "rgba(248,113,113,0.25)"}`,
+                  color: locateMsg.ok ? "#10b981" : "#f87171",
+                  display: "flex", alignItems: "center", gap: 6,
+                }}>
+                  <Navigation size={11} />
+                  {locateMsg.text}
+                </div>
+              )}
 
               {(b.address || b.phone || (b.latitude != null && b.longitude != null)) && (
                 <div style={{ marginTop: 10, display: "flex", gap: 12, flexWrap: "wrap" }}>
