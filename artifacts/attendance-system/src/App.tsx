@@ -36,8 +36,14 @@ const AccountSettingsPage  = lazy(() => import("@/pages/super-admin/AccountSetti
 const NotFound             = lazy(() => import("@/pages/not-found"));
 
 // ─── Prefetch super-admin chunks after app is idle ────────────────────────────
+// Use setTimeout fallback for Safari which doesn't support requestIdleCallback
+const idle: (cb: () => void) => void =
+  typeof requestIdleCallback === "function"
+    ? (cb) => requestIdleCallback(cb)
+    : (cb) => setTimeout(cb, 200);
+
 function prefetchSuperAdminChunks() {
-  requestIdleCallback(() => {
+  idle(() => {
     import("@/pages/super-admin/Dashboard");
     import("@/pages/super-admin/Security");
     import("@/pages/super-admin/Monitoring");
