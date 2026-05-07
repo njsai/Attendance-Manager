@@ -13,6 +13,7 @@ import settingsRouter from "./settings.js";
 import superAdminRouter from "./super-admin.js";
 import messagesRouter from "./messages.js";
 import securityRouter from "./security.js";
+import payrollRouter from "./payroll.js";
 
 const router: IRouter = Router();
 
@@ -30,5 +31,6 @@ router.use("/leaves", leavesRouter);
 router.use("/reports", reportsRouter);
 router.use("/settings", settingsRouter);
 router.use("/messages", messagesRouter);
+router.use("/payroll", payrollRouter);
 
 export default router;

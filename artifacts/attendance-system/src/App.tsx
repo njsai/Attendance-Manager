@@ -25,6 +25,7 @@ const AdminReports        = lazy(() => import("@/pages/admin/Reports"));
 const DepartmentsAndShifts = lazy(() => import("@/pages/admin/DepartmentsAndShifts"));
 const AdminBranches       = lazy(() => import("@/pages/admin/Branches"));
 const AdminSettings       = lazy(() => import("@/pages/admin/Settings"));
+const AdminPayroll        = lazy(() => import("@/pages/admin/Payroll"));
 const MyLeaves            = lazy(() => import("@/pages/employee/MyLeaves"));
 const ChatPage            = lazy(() => import("@/pages/Chat"));
 const NotFound            = lazy(() => import("@/pages/not-found"));
@@ -91,6 +92,7 @@ function Router() {
         <Route path="/departments">{() => <Guard adminOnly><DepartmentsAndShifts /></Guard>}</Route>
         <Route path="/shifts">{() => <Guard adminOnly><DepartmentsAndShifts /></Guard>}</Route>
         <Route path="/settings">{() => <Guard adminOnly><AdminSettings /></Guard>}</Route>
+        <Route path="/payroll">{() => <Guard adminOnly><AdminPayroll /></Guard>}</Route>
 
         {/* Employee */}
         <Route path="/my-attendance">{() => <Guard><EmployeeDashboard /></Guard>}</Route>

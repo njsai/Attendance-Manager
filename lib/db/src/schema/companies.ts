@@ -1,4 +1,4 @@
-import { pgTable, serial, text, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, boolean, timestamp, real } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -11,6 +11,10 @@ export const companiesTable = pgTable("companies", {
   email: text("email"),
   isActive: boolean("is_active").notNull().default(true),
   attendanceLocationMode: text("attendance_location_mode").notNull().default("disabled"),
+  currency: text("currency").notNull().default("IQD"),
+  overtimeRate: real("overtime_rate").notNull().default(1.5),
+  lateDeductionRate: real("late_deduction_rate").notNull().default(1.0),
+  absenceDeductionRate: real("absence_deduction_rate").notNull().default(1.0),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

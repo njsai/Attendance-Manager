@@ -6,7 +6,7 @@ import { useTheme } from "@/lib/theme";
 import {
   LayoutDashboard, Users, Building2, Clock,
   CalendarCheck, FileBarChart, LogOut, Menu, X, Home, Settings, MessageCircle,
-  Sun, Moon, Languages
+  Sun, Moon, Languages, Banknote
 } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -31,6 +31,7 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
     { name: t("attendance"), path: "/attendance", icon: CalendarCheck },
     { name: t("leaves"), path: "/leaves", icon: Clock },
     { name: t("reports"), path: "/reports", icon: FileBarChart },
+    { name: "الرواتب", path: "/payroll", icon: Banknote },
     { name: t("chat"), path: "/chat", icon: MessageCircle },
     { name: t("settings"), path: "/settings", icon: Settings },
   ];
