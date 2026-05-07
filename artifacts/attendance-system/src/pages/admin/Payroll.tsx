@@ -84,43 +84,66 @@ function PayrollSlip({ record, onClose }: { record: PayrollRecord; onClose: () =
   const handlePrint = () => {
     const w = window.open("", "_blank");
     if (!w) return;
+    const statusLabel = STATUS_MAP[record.status]?.label ?? record.status;
+    const statusColor = record.status === "paid" ? "#10b981" : record.status === "partial" ? "#f59e0b" : "#ef4444";
     w.document.write(`<!DOCTYPE html><html dir="rtl"><head>
       <meta charset="utf-8"><title>كشف راتب</title>
       <style>
-        body{font-family:sans-serif;padding:30px;color:#111;direction:rtl}
-        h1{font-size:22px;margin:0 0 4px}
-        .sub{color:#666;font-size:13px;margin-bottom:24px}
-        table{width:100%;border-collapse:collapse;margin:16px 0}
-        td,th{padding:10px 12px;border:1px solid #ddd;font-size:13px}
-        th{background:#f5f5f5;font-weight:600;text-align:right}
-        .total{background:#1a1a2e;color:#fff;font-weight:bold}
-        .row{display:flex;justify-content:space-between;margin:6px 0;font-size:13px}
-        .footer{text-align:center;margin-top:30px;color:#999;font-size:12px;border-top:1px solid #eee;padding-top:16px}
-        @media print{button{display:none}}
+        *{box-sizing:border-box;margin:0;padding:0}
+        body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;padding:28px 32px;color:#111;background:#fff;direction:rtl}
+        .logo-row{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;padding-bottom:16px;border-bottom:2px solid #1e3a5f}
+        h1{font-size:22px;font-weight:800;color:#1e3a5f}
+        .period{color:#555;font-size:13px;margin-top:3px}
+        .badge{display:inline-block;padding:3px 12px;border-radius:20px;font-size:11px;font-weight:700;background:${statusColor}22;color:${statusColor};border:1px solid ${statusColor}55}
+        .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:20px}
+        .info-cell{background:#f8fafc;border-radius:8px;padding:10px 14px}
+        .info-lbl{font-size:10px;color:#888;margin-bottom:2px}
+        .info-val{font-size:13px;font-weight:600;color:#1e3a5f}
+        table{width:100%;border-collapse:collapse;margin-bottom:16px}
+        thead tr{background:#1e3a5f}
+        th{color:#fff;padding:9px 14px;text-align:right;font-size:12px;font-weight:600}
+        td{padding:9px 14px;border-bottom:1px solid #e5e7eb;font-size:13px}
+        .sect-header td{background:#f0f4f8;color:#1e3a5f;font-weight:700;font-size:11px;letter-spacing:.5px;padding:6px 14px}
+        .deduction td{color:#ef4444}
+        .net-row td{background:#1e3a5f;color:#fff;font-weight:800;font-size:15px;padding:12px 14px}
+        .footer{text-align:center;margin-top:24px;color:#aaa;font-size:10px;padding-top:12px;border-top:1px solid #e5e7eb}
+        @media print{@page{margin:10mm}body{padding:0}}
       </style></head><body>
-      <h1>كشف الراتب الشهري</h1>
-      <div class="sub">${MONTHS[record.month - 1]} ${record.year}</div>
+      <div class="logo-row">
+        <div>
+          <h1>كشف الراتب الشهري</h1>
+          <div class="period">${MONTHS[record.month - 1]} ${record.year}</div>
+        </div>
+        <span class="badge">${statusLabel}</span>
+      </div>
+      <div class="info-grid">
+        <div class="info-cell"><div class="info-lbl">اسم الموظف</div><div class="info-val">${record.employeeName}</div></div>
+        <div class="info-cell"><div class="info-lbl">المسمى الوظيفي</div><div class="info-val">${record.jobTitle ?? "—"}</div></div>
+        <div class="info-cell"><div class="info-lbl">القسم</div><div class="info-val">${record.departmentName ?? "—"}</div></div>
+        <div class="info-cell"><div class="info-lbl">العملة</div><div class="info-val">${record.currency}</div></div>
+        <div class="info-cell"><div class="info-lbl">أيام الحضور</div><div class="info-val">${record.workDays} يوم</div></div>
+        <div class="info-cell"><div class="info-lbl">أيام الغياب</div><div class="info-val">${record.absentDays} يوم</div></div>
+        <div class="info-cell"><div class="info-lbl">تأخير</div><div class="info-val">${record.lateMinutes} دقيقة</div></div>
+        <div class="info-cell"><div class="info-lbl">أوفر تايم</div><div class="info-val">${record.overtimeMinutes} دقيقة</div></div>
+      </div>
       <table>
-        <tr><th>الموظف</th><td>${record.employeeName}</td><th>المسمى الوظيفي</th><td>${record.jobTitle ?? "-"}</td></tr>
-        <tr><th>القسم</th><td>${record.departmentName ?? "-"}</td><th>العملة</th><td>${record.currency}</td></tr>
-        <tr><th>أيام الحضور</th><td>${record.workDays} يوم</td><th>أيام الغياب</th><td>${record.absentDays} يوم</td></tr>
-        <tr><th>تأخير (دقيقة)</th><td>${record.lateMinutes}</td><th>أوفر تايم (دقيقة)</th><td>${record.overtimeMinutes}</td></tr>
+        <thead><tr><th>البند</th><th>المبلغ</th></tr></thead>
+        <tbody>
+          <tr class="sect-header"><td colspan="2">المستحقات</td></tr>
+          <tr><td>الراتب الأساسي</td><td>${fmt(record.basicSalary, record.currency)}</td></tr>
+          <tr><td>الحوافز والمكافآت</td><td>${fmt(record.incentives, record.currency)}</td></tr>
+          <tr><td>أجر الأوفر تايم</td><td>${fmt(record.overtimePay, record.currency)}</td></tr>
+          <tr class="sect-header"><td colspan="2">الخصومات</td></tr>
+          <tr class="deduction"><td>خصومات أخرى</td><td>-${fmt(record.deductions, record.currency)}</td></tr>
+          <tr class="deduction"><td>سلف</td><td>-${fmt(record.advances, record.currency)}</td></tr>
+          <tr class="deduction"><td>خصم التأخير</td><td>-${fmt(record.lateDeduction, record.currency)}</td></tr>
+          <tr class="deduction"><td>خصم الغياب</td><td>-${fmt(record.absenceDeduction, record.currency)}</td></tr>
+          <tr class="net-row"><td>صافي الراتب</td><td>${fmt(record.netSalary, record.currency)}</td></tr>
+        </tbody>
       </table>
-      <table>
-        <tr><th colspan="2" style="background:#e8f5e9">المستحقات</th></tr>
-        <tr><td>الراتب الأساسي</td><td>${fmt(record.basicSalary, record.currency)}</td></tr>
-        <tr><td>الحوافز والمكافآت</td><td>${fmt(record.incentives, record.currency)}</td></tr>
-        <tr><td>أجر الأوفر تايم</td><td>${fmt(record.overtimePay, record.currency)}</td></tr>
-        <tr><th colspan="2" style="background:#fce4ec">الخصومات</th></tr>
-        <tr><td>خصومات أخرى</td><td>${fmt(record.deductions, record.currency)}</td></tr>
-        <tr><td>سلف</td><td>${fmt(record.advances, record.currency)}</td></tr>
-        <tr><td>خصم التأخير</td><td>${fmt(record.lateDeduction, record.currency)}</td></tr>
-        <tr><td>خصم الغياب</td><td>${fmt(record.absenceDeduction, record.currency)}</td></tr>
-        <tr class="total"><td>صافي الراتب</td><td>${fmt(record.netSalary, record.currency)}</td></tr>
-      </table>
-      ${record.notes ? `<div class="row"><span>ملاحظات:</span><span>${record.notes}</span></div>` : ""}
-      <div class="footer">تم إنشاؤه بواسطة نظام إدارة الحضور والانصراف &mdash; ${new Date().toLocaleDateString("ar-IQ")}</div>
-      <script>window.onload=()=>{window.print();window.close()}</script>
+      ${record.notes ? `<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:10px 14px;font-size:12px;color:#92400e"><b>ملاحظات:</b> ${record.notes}</div>` : ""}
+      <div class="footer">نظام إدارة الحضور والانصراف &mdash; ${new Date().toLocaleDateString("ar-IQ")}</div>
+      <script>window.onload=()=>{window.print()}</script>
     </body></html>`);
     w.document.close();
   };
@@ -128,28 +151,96 @@ function PayrollSlip({ record, onClose }: { record: PayrollRecord; onClose: () =
   const handlePDF = () => {
     const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
     doc.setFont("helvetica");
+
+    // Header bar
+    doc.setFillColor(30, 58, 95);
+    doc.rect(0, 0, 210, 28, "F");
+    doc.setTextColor(255, 255, 255);
     doc.setFontSize(18);
-    doc.text(`Payroll Slip - ${MONTHS[record.month - 1]} ${record.year}`, 105, 20, { align: "center" });
+    doc.setFont("helvetica", "bold");
+    doc.text("Payroll Slip", 105, 12, { align: "center" });
     doc.setFontSize(11);
-    doc.text(`Employee: ${record.employeeName}`, 20, 35);
-    doc.text(`Status: ${STATUS_MAP[record.status]?.label}`, 20, 42);
+    doc.setFont("helvetica", "normal");
+    doc.text(`${MONTHS[record.month - 1]} ${record.year}`, 105, 21, { align: "center" });
+
+    // Employee info grid
+    doc.setTextColor(30, 58, 95);
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "bold");
+    const infoY = 36;
+    const col1 = 14, col2 = 110;
+    [
+      ["Employee", record.employeeName],
+      ["Department", record.departmentName ?? "-"],
+      ["Job Title", record.jobTitle ?? "-"],
+    ].forEach(([label, val], i) => {
+      doc.setTextColor(120, 130, 140);
+      doc.text(label + ":", col1, infoY + i * 7);
+      doc.setTextColor(20, 20, 20);
+      doc.setFont("helvetica", "normal");
+      doc.text(String(val), col1 + 28, infoY + i * 7);
+      doc.setFont("helvetica", "bold");
+    });
+    [
+      ["Work Days", `${record.workDays} days`],
+      ["Absent Days", `${record.absentDays} days`],
+      ["Status", STATUS_MAP[record.status]?.label ?? record.status],
+    ].forEach(([label, val], i) => {
+      doc.setTextColor(120, 130, 140);
+      doc.text(label + ":", col2, infoY + i * 7);
+      doc.setTextColor(20, 20, 20);
+      doc.setFont("helvetica", "normal");
+      doc.text(String(val), col2 + 28, infoY + i * 7);
+      doc.setFont("helvetica", "bold");
+    });
+
+    // Divider
+    doc.setDrawColor(200, 210, 220);
+    doc.line(14, infoY + 22, 196, infoY + 22);
+
     autoTable(doc, {
-      startY: 50,
+      startY: infoY + 26,
       head: [["Item", "Amount"]],
       body: [
-        ["Basic Salary", fmt(record.basicSalary, record.currency)],
-        ["Incentives", fmt(record.incentives, record.currency)],
-        ["Overtime Pay", fmt(record.overtimePay, record.currency)],
-        ["Deductions", `-${fmt(record.deductions, record.currency)}`],
-        ["Advances", `-${fmt(record.advances, record.currency)}`],
-        ["Late Deduction", `-${fmt(record.lateDeduction, record.currency)}`],
-        ["Absence Deduction", `-${fmt(record.absenceDeduction, record.currency)}`],
-        ["NET SALARY", fmt(record.netSalary, record.currency)],
+        ["Basic Salary",      fmt(record.basicSalary, record.currency)],
+        ["Incentives",        fmt(record.incentives, record.currency)],
+        ["Overtime Pay",      fmt(record.overtimePay, record.currency)],
+        ["Deductions",       `-${fmt(record.deductions, record.currency)}`],
+        ["Advances",         `-${fmt(record.advances, record.currency)}`],
+        ["Late Deduction",   `-${fmt(record.lateDeduction, record.currency)}`],
+        ["Absence Deduction",`-${fmt(record.absenceDeduction, record.currency)}`],
+        ["NET SALARY",        fmt(record.netSalary, record.currency)],
       ],
-      styles: { font: "helvetica", fontSize: 10 },
-      headStyles: { fillColor: [30, 40, 80] },
-      bodyStyles: { halign: "right" },
+      styles: { font: "helvetica", fontSize: 10, cellPadding: 5, textColor: [30, 30, 30] },
+      headStyles: { fillColor: [30, 58, 95], textColor: [255, 255, 255], fontStyle: "bold" },
+      alternateRowStyles: { fillColor: [246, 249, 252] },
+      columnStyles: { 1: { halign: "right" } },
+      tableLineColor: [220, 228, 236],
+      tableLineWidth: 0.1,
+      didParseCell: (data) => {
+        if (data.row.index === 7) {
+          data.cell.styles.fillColor = [30, 58, 95];
+          (data.cell.styles as any).textColor = [255, 255, 255];
+          data.cell.styles.fontStyle = "bold";
+          data.cell.styles.fontSize = 12;
+        }
+      },
     });
+
+    const finalY = (doc as any).lastAutoTable.finalY + 8;
+    if (record.notes) {
+      doc.setFontSize(9);
+      doc.setTextColor(100, 80, 30);
+      doc.text(`Notes: ${record.notes}`, 14, finalY);
+    }
+
+    doc.setFontSize(8);
+    doc.setTextColor(160, 160, 160);
+    doc.text(
+      `Generated by Attendance Management System  |  ${new Date().toLocaleDateString()}`,
+      105, 285, { align: "center" }
+    );
+
     doc.save(`payslip_${record.employeeId}_${record.year}_${record.month}.pdf`);
   };
 

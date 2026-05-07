@@ -93,39 +93,63 @@ export default function AdminReports() {
 
   const exportExcel = () => {
     const rows = records.map(r => ({
-      "التاريخ": fmtDate(r.date), "الموظف": r.employeeName,
-      "القسم": r.departmentName || "—", "الحالة": statusAr(r.status),
-      "وقت الدخول": fmt12(r.checkInTime), "وقت الخروج": fmt12(r.checkOutTime),
-      "ساعات العمل": r.workingHours ? r.workingHours.toFixed(2) : "—",
-      "دقائق التأخير": r.lateMinutes ?? 0,
+      "Date":        fmtDate(r.date),
+      "Employee":    r.employeeName,
+      "Department":  r.departmentName || "-",
+      "Status":      statusAr(r.status),
+      "Check In":    fmt12(r.checkInTime),
+      "Check Out":   fmt12(r.checkOutTime),
+      "Hours":       r.workingHours ? r.workingHours.toFixed(2) : "-",
+      "Late (min)":  r.lateMinutes ?? 0,
     }));
     const ws = XLSX.utils.json_to_sheet(rows);
+    ws["!cols"] = [{ wch: 14 }, { wch: 22 }, { wch: 16 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 10 }, { wch: 12 }];
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "تقرير الحضور");
-    ws["!cols"] = [{ wch: 14 }, { wch: 20 }, { wch: 14 }, { wch: 10 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 14 }];
-    XLSX.writeFile(wb, `تقرير-الحضور-${startDate}-${endDate}.xlsx`);
+    XLSX.utils.book_append_sheet(wb, ws, "Attendance");
+    const wbBin = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+    const blob = new Blob([wbBin], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `attendance-report-${startDate}-${endDate}.xlsx`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const exportPDF = () => {
     const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
     doc.setFont("helvetica");
-    doc.setFontSize(16);
-    doc.text("Attendance Report", 14, 20);
+    doc.setFontSize(18);
+    doc.setTextColor(30, 58, 95);
+    doc.text("Attendance Report", 14, 18);
     doc.setFontSize(10);
-    doc.text(`Period: ${startDate} to ${endDate}`, 14, 28);
-    doc.text(`Total: ${records.length} | Present: ${presentCount} | Absent: ${absentCount} | Late: ${lateCount}`, 14, 34);
+    doc.setTextColor(80, 80, 80);
+    doc.text(`Period: ${startDate}  to  ${endDate}`, 14, 26);
+    doc.text(`Records: ${records.length}  |  Present: ${presentCount}  |  Absent: ${absentCount}  |  Late: ${lateCount}  |  Hours: ${totalHours.toFixed(1)}`, 14, 32);
+    doc.setDrawColor(200, 210, 220);
+    doc.line(14, 35, 283, 35);
     autoTable(doc, {
-      startY: 40,
-      head: [["Date", "Employee", "Department", "Status", "Check In", "Check Out", "Hours", "Late(min)"]],
+      startY: 39,
+      head: [["Date", "Employee", "Department", "Status", "Check In", "Check Out", "Hours", "Late (min)"]],
       body: records.map(r => [
         r.date, r.employeeName, r.departmentName || "—", statusAr(r.status),
         fmt12(r.checkInTime), fmt12(r.checkOutTime),
-        r.workingHours ? r.workingHours.toFixed(1) : "—", r.lateMinutes ?? 0,
+        r.workingHours ? r.workingHours.toFixed(1) : "—",
+        r.lateMinutes ?? 0,
       ]),
-      styles: { fontSize: 8 },
-      headStyles: { fillColor: [30, 64, 175] },
-      alternateRowStyles: { fillColor: [245, 247, 250] },
+      styles: { fontSize: 8, font: "helvetica", cellPadding: 3, textColor: [30, 30, 30] },
+      headStyles: { fillColor: [30, 58, 95], textColor: [255, 255, 255], fontStyle: "bold", fontSize: 8 },
+      alternateRowStyles: { fillColor: [246, 249, 252] },
+      tableLineColor: [220, 228, 236],
+      tableLineWidth: 0.1,
     });
+    const pageCount = (doc as any).internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.setTextColor(160, 160, 160);
+      doc.text(`Page ${i} of ${pageCount}  |  Generated: ${new Date().toLocaleDateString()}`, 14, doc.internal.pageSize.height - 8);
+    }
     doc.save(`attendance-report-${startDate}-${endDate}.pdf`);
   };
 
@@ -148,7 +172,62 @@ export default function AdminReports() {
     URL.revokeObjectURL(url);
   };
 
-  const handlePrint = () => window.print();
+  const handlePrint = () => {
+    const w = window.open("", "_blank");
+    if (!w) return;
+    const bodyRows = records.map(r => {
+      const sc = r.status === "present" ? "#10b981" : r.status === "late" ? "#f59e0b" : r.status === "absent" ? "#ef4444" : "#3b82f6";
+      return `<tr>
+        <td>${fmtDate(r.date)}</td><td>${r.employeeName}</td><td>${r.departmentName ?? "—"}</td>
+        <td><span style="color:${sc};font-weight:600">${statusAr(r.status)}</span></td>
+        <td>${fmt12(r.checkInTime)}</td><td>${fmt12(r.checkOutTime)}</td>
+        <td>${r.workingHours ? r.workingHours.toFixed(1) + " h" : "—"}</td>
+        <td>${r.lateMinutes ? r.lateMinutes + " min" : "—"}</td>
+      </tr>`;
+    }).join("");
+    w.document.write(`<!DOCTYPE html><html dir="rtl"><head>
+      <meta charset="utf-8"><title>Attendance Report</title>
+      <style>
+        *{box-sizing:border-box;margin:0;padding:0}
+        body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;padding:24px;color:#111;background:#fff;direction:rtl}
+        .header{margin-bottom:20px}
+        h1{font-size:20px;font-weight:800;color:#1e3a5f;margin-bottom:4px}
+        .meta{color:#555;font-size:12px;margin-bottom:16px}
+        .stats{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+        .stat{background:#f0f4f8;border-radius:8px;padding:10px 16px;text-align:center;min-width:100px}
+        .stat-val{font-size:22px;font-weight:800;color:#1e3a5f}
+        .stat-lbl{font-size:10px;color:#666;margin-top:2px}
+        table{width:100%;border-collapse:collapse;font-size:12px}
+        thead tr{background:#1e3a5f}
+        th{color:#fff;padding:9px 11px;text-align:right;font-weight:600;font-size:11px}
+        td{padding:8px 11px;border-bottom:1px solid #e5e7eb;vertical-align:middle}
+        tr:nth-child(even) td{background:#f8fafc}
+        .footer{text-align:center;margin-top:24px;color:#999;font-size:10px;border-top:1px solid #e5e7eb;padding-top:12px}
+        @media print{.no-print{display:none}@page{margin:12mm}body{padding:0}}
+      </style></head><body>
+      <div class="header">
+        <h1>Attendance Report</h1>
+        <div class="meta">Period: ${startDate} &mdash; ${endDate}</div>
+      </div>
+      <div class="stats">
+        <div class="stat"><div class="stat-val">${records.length}</div><div class="stat-lbl">Total Records</div></div>
+        <div class="stat"><div class="stat-val" style="color:#10b981">${presentCount}</div><div class="stat-lbl">Present Days</div></div>
+        <div class="stat"><div class="stat-val" style="color:#ef4444">${absentCount}</div><div class="stat-lbl">Absent Days</div></div>
+        <div class="stat"><div class="stat-val" style="color:#f59e0b">${lateCount}</div><div class="stat-lbl">Late Days</div></div>
+        <div class="stat"><div class="stat-val">${totalHours.toFixed(1)}</div><div class="stat-lbl">Total Hours</div></div>
+      </div>
+      <table>
+        <thead><tr>
+          <th>Date</th><th>Employee</th><th>Department</th><th>Status</th>
+          <th>Check In</th><th>Check Out</th><th>Hours</th><th>Late</th>
+        </tr></thead>
+        <tbody>${bodyRows}</tbody>
+      </table>
+      <div class="footer">Attendance Management System &mdash; Generated: ${new Date().toLocaleDateString()}</div>
+      <script>window.onload=()=>{window.print()}</script>
+    </body></html>`);
+    w.document.close();
+  };
 
   const locale = lang === "ar" ? "ar-IQ" : "en-US";
 
