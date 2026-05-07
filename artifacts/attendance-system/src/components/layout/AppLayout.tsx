@@ -15,6 +15,7 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
   const [location] = useLocation();
   const { t, lang, setLang } = useI18n();
   const { theme, toggleTheme } = useTheme();
+  const isDark = theme === "dark";
 
   if (!user) return null;
 
@@ -26,19 +27,19 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
     { name: t("attendance"),  path: "/attendance",  icon: CalendarCheck },
     { name: t("leaves"),      path: "/leaves",      icon: Clock },
     { name: t("reports"),     path: "/reports",     icon: FileBarChart },
-    { name: "الرواتب",        path: "/payroll",     icon: Banknote },
+    { name: t("payroll"),     path: "/payroll",     icon: Banknote },
     { name: t("chat"),        path: "/chat",        icon: MessageCircle },
     { name: t("settings"),    path: "/settings",    icon: Settings },
   ];
 
   const MANAGER_NAV = [
-    { name: t("home"),      path: "/",         icon: Home },
+    { name: t("home"),      path: "/",          icon: Home },
     { name: t("myLeaves"),  path: "/my-leaves", icon: Clock },
     { name: t("chat"),      path: "/chat",      icon: MessageCircle },
   ];
 
   const EMPLOYEE_NAV = [
-    { name: t("home"),      path: "/",         icon: Home },
+    { name: t("home"),      path: "/",          icon: Home },
     { name: t("myLeaves"),  path: "/my-leaves", icon: Clock },
     { name: t("chat"),      path: "/chat",      icon: MessageCircle },
   ];
@@ -60,13 +61,31 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
     .map((w: string) => w[0])
     .join("");
 
+  const sidebarBg = isDark ? "rgba(2,8,23,0.85)" : "rgba(255,255,255,0.97)";
+  const textBase = isDark ? "rgba(255,255,255,0.45)" : "rgba(15,23,42,0.5)";
+  const textActive = isDark ? "#00f5ff" : "#0891b2";
+  const activeBg = isDark
+    ? "linear-gradient(135deg, rgba(0,245,255,0.12), rgba(59,130,246,0.08))"
+    : "linear-gradient(135deg, rgba(0,200,220,0.08), rgba(59,130,246,0.06))";
+  const borderColor = isDark ? "rgba(0,245,255,0.1)" : "rgba(0,180,200,0.15)";
+  const hoverBg = isDark ? "rgba(255,255,255,0.04)" : "rgba(0,180,200,0.05)";
+  const hoverText = isDark ? "rgba(255,255,255,0.8)" : "rgba(15,23,42,0.8)";
+  const btnBg = isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.04)";
+  const btnColor = isDark ? "rgba(255,255,255,0.5)" : "rgba(15,23,42,0.45)";
+  const userCardBg = isDark ? "rgba(0,245,255,0.05)" : "rgba(0,180,200,0.06)";
+  const userCardBorder = isDark ? "rgba(0,245,255,0.12)" : "rgba(0,180,200,0.18)";
+  const titleColor = isDark ? "#00f5ff" : "#0891b2";
+  const subtitleColor = isDark ? "rgba(255,255,255,0.3)" : "rgba(15,23,42,0.35)";
+  const nameColor = isDark ? "#fff" : "#0f172a";
+  const roleColor = isDark ? "rgba(0,245,255,0.6)" : "rgba(8,145,178,0.7)";
+
   return (
-    <div className="flex flex-col h-full" style={{ fontFamily: "'Tajawal', sans-serif" }}>
+    <div className="flex flex-col h-full" style={{ fontFamily: "'Tajawal', sans-serif", background: sidebarBg }}>
 
       {/* ── Logo ── */}
       <div style={{
         padding: "20px 16px 16px",
-        borderBottom: "1px solid rgba(0,245,255,0.1)",
+        borderBottom: `1px solid ${borderColor}`,
         display: "flex", alignItems: "center", justifyContent: "space-between",
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -74,15 +93,15 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
             width: 38, height: 38, borderRadius: 12, flexShrink: 0,
             background: "linear-gradient(135deg, rgba(0,245,255,0.8), rgba(59,130,246,0.8))",
             display: "flex", alignItems: "center", justifyContent: "center",
-            boxShadow: "0 0 20px rgba(0,245,255,0.4)",
+            boxShadow: isDark ? "0 0 20px rgba(0,245,255,0.4)" : "0 0 12px rgba(0,180,200,0.25)",
           }}>
-            <Zap size={18} color="#020817" />
+            <Zap size={18} color={isDark ? "#020817" : "#fff"} />
           </div>
           <div>
-            <div style={{ fontSize: 13, fontWeight: 800, color: "#00f5ff", letterSpacing: 0.5, textShadow: "0 0 12px rgba(0,245,255,0.5)" }}>
+            <div style={{ fontSize: 13, fontWeight: 800, color: titleColor, letterSpacing: 0.5, textShadow: isDark ? "0 0 12px rgba(0,245,255,0.5)" : "none" }}>
               {t("systemTitle")}
             </div>
-            <div style={{ fontSize: 9, color: "rgba(255,255,255,0.3)", marginTop: 1 }}>
+            <div style={{ fontSize: 9, color: subtitleColor, marginTop: 1 }}>
               {ROLE_LABEL[user.role] ?? user.role}
             </div>
           </div>
@@ -90,7 +109,7 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
         {onClose && (
           <button onClick={onClose} style={{
             padding: 6, borderRadius: 8, border: "none", background: "transparent",
-            color: "rgba(255,255,255,0.4)", cursor: "pointer",
+            color: subtitleColor, cursor: "pointer",
           }}>
             <X size={16} />
           </button>
@@ -102,37 +121,32 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
         {navItems.map((item) => {
           const isActive = location === item.path;
           return (
-            <Link
-              key={item.path}
-              href={item.path}
-              onClick={onClose}
-            >
+            <Link key={item.path} href={item.path} onClick={onClose}>
               <motion.div
-                whileHover={{ x: -3 }}
+                whileHover={{ x: lang === "ar" ? -3 : 3 }}
                 style={{
                   display: "flex", alignItems: "center", gap: 10,
                   padding: "9px 12px", marginBottom: 2, borderRadius: 10,
                   cursor: "pointer", transition: "all 0.15s",
-                  background: isActive
-                    ? "linear-gradient(135deg, rgba(0,245,255,0.12), rgba(59,130,246,0.08))"
-                    : "transparent",
-                  borderLeft: isActive ? "2.5px solid #00f5ff" : "2.5px solid transparent",
-                  color: isActive ? "#00f5ff" : "rgba(255,255,255,0.45)",
+                  background: isActive ? activeBg : "transparent",
+                  borderLeft: lang === "ltr" ? (isActive ? `2.5px solid ${textActive}` : "2.5px solid transparent") : "none",
+                  borderRight: lang === "ar" ? (isActive ? `2.5px solid ${textActive}` : "2.5px solid transparent") : "none",
+                  color: isActive ? textActive : textBase,
                 }}
                 onMouseEnter={e => {
-                  if (!isActive) (e.currentTarget as HTMLDivElement).style.background = "rgba(255,255,255,0.04)";
-                  if (!isActive) (e.currentTarget as HTMLDivElement).style.color = "rgba(255,255,255,0.8)";
+                  if (!isActive) (e.currentTarget as HTMLDivElement).style.background = hoverBg;
+                  if (!isActive) (e.currentTarget as HTMLDivElement).style.color = hoverText;
                 }}
                 onMouseLeave={e => {
                   if (!isActive) (e.currentTarget as HTMLDivElement).style.background = "transparent";
-                  if (!isActive) (e.currentTarget as HTMLDivElement).style.color = "rgba(255,255,255,0.45)";
+                  if (!isActive) (e.currentTarget as HTMLDivElement).style.color = textBase;
                 }}
               >
                 <item.icon
                   size={16}
                   style={{
                     flexShrink: 0,
-                    filter: isActive ? "drop-shadow(0 0 6px rgba(0,245,255,0.8))" : "none",
+                    filter: isActive && isDark ? "drop-shadow(0 0 6px rgba(0,245,255,0.8))" : "none",
                   }}
                 />
                 <span style={{ fontSize: 13, fontWeight: isActive ? 600 : 400 }}>
@@ -148,32 +162,44 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
       </nav>
 
       {/* ── Theme & Language ── */}
-      <div style={{ padding: "8px 10px", borderTop: "1px solid rgba(0,245,255,0.08)" }}>
+      <div style={{ padding: "8px 10px", borderTop: `1px solid ${borderColor}` }}>
         <div style={{ display: "flex", gap: 6 }}>
           <button
             onClick={toggleTheme}
             style={{
               flex: 1, display: "flex", alignItems: "center", justifyContent: "center",
               gap: 5, padding: "7px 8px", borderRadius: 8, border: "none",
-              background: "rgba(255,255,255,0.05)", cursor: "pointer",
-              color: "rgba(255,255,255,0.5)", fontSize: 11, transition: "all 0.15s",
+              background: btnBg, cursor: "pointer",
+              color: btnColor, fontSize: 11, transition: "all 0.15s",
             }}
-            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(0,245,255,0.08)"; (e.currentTarget as HTMLButtonElement).style.color = "#00f5ff"; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.05)"; (e.currentTarget as HTMLButtonElement).style.color = "rgba(255,255,255,0.5)"; }}
+            onMouseEnter={e => {
+              (e.currentTarget as HTMLButtonElement).style.background = isDark ? "rgba(0,245,255,0.08)" : "rgba(0,180,200,0.08)";
+              (e.currentTarget as HTMLButtonElement).style.color = textActive;
+            }}
+            onMouseLeave={e => {
+              (e.currentTarget as HTMLButtonElement).style.background = btnBg;
+              (e.currentTarget as HTMLButtonElement).style.color = btnColor;
+            }}
           >
-            {theme === "dark" ? <Sun size={13} /> : <Moon size={13} />}
-            {theme === "dark" ? t("lightMode") : t("darkMode")}
+            {isDark ? <Sun size={13} /> : <Moon size={13} />}
+            {isDark ? t("lightMode") : t("darkMode")}
           </button>
           <button
             onClick={() => setLang(lang === "ar" ? "en" : "ar")}
             style={{
               display: "flex", alignItems: "center", gap: 4,
               padding: "7px 12px", borderRadius: 8, border: "none",
-              background: "rgba(255,255,255,0.05)", cursor: "pointer",
-              color: "rgba(255,255,255,0.5)", fontSize: 11, fontWeight: 700, transition: "all 0.15s",
+              background: btnBg, cursor: "pointer",
+              color: btnColor, fontSize: 11, fontWeight: 700, transition: "all 0.15s",
             }}
-            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(0,245,255,0.08)"; (e.currentTarget as HTMLButtonElement).style.color = "#00f5ff"; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.05)"; (e.currentTarget as HTMLButtonElement).style.color = "rgba(255,255,255,0.5)"; }}
+            onMouseEnter={e => {
+              (e.currentTarget as HTMLButtonElement).style.background = isDark ? "rgba(0,245,255,0.08)" : "rgba(0,180,200,0.08)";
+              (e.currentTarget as HTMLButtonElement).style.color = textActive;
+            }}
+            onMouseLeave={e => {
+              (e.currentTarget as HTMLButtonElement).style.background = btnBg;
+              (e.currentTarget as HTMLButtonElement).style.color = btnColor;
+            }}
           >
             <Languages size={13} />
             {lang === "ar" ? "EN" : "ع"}
@@ -186,23 +212,23 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
         <div style={{
           display: "flex", alignItems: "center", gap: 10,
           padding: "10px 12px", borderRadius: 12,
-          background: "rgba(0,245,255,0.05)",
-          border: "1px solid rgba(0,245,255,0.12)",
+          background: userCardBg,
+          border: `1px solid ${userCardBorder}`,
         }}>
           <div style={{
             width: 34, height: 34, borderRadius: "50%", flexShrink: 0,
             background: "linear-gradient(135deg, rgba(0,245,255,0.7), rgba(168,85,247,0.7))",
             display: "flex", alignItems: "center", justifyContent: "center",
             fontSize: 13, fontWeight: 700, color: "#020817",
-            boxShadow: "0 0 12px rgba(0,245,255,0.3)",
+            boxShadow: isDark ? "0 0 12px rgba(0,245,255,0.3)" : "0 0 8px rgba(0,180,200,0.2)",
           }}>
             {initials}
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: nameColor, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {user.fullName}
             </div>
-            <div style={{ fontSize: 10, color: "rgba(0,245,255,0.6)" }}>
+            <div style={{ fontSize: 10, color: roleColor }}>
               {ROLE_LABEL[user.role] ?? user.role}
             </div>
           </div>
@@ -211,10 +237,16 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
             title={t("logout")}
             style={{
               padding: 6, borderRadius: 8, border: "none", background: "transparent",
-              color: "rgba(255,255,255,0.3)", cursor: "pointer", transition: "all 0.15s", flexShrink: 0,
+              color: isDark ? "rgba(255,255,255,0.3)" : "rgba(15,23,42,0.3)", cursor: "pointer", transition: "all 0.15s", flexShrink: 0,
             }}
-            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = "#f87171"; (e.currentTarget as HTMLButtonElement).style.background = "rgba(248,113,113,0.1)"; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = "rgba(255,255,255,0.3)"; (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
+            onMouseEnter={e => {
+              (e.currentTarget as HTMLButtonElement).style.color = "#f87171";
+              (e.currentTarget as HTMLButtonElement).style.background = "rgba(248,113,113,0.1)";
+            }}
+            onMouseLeave={e => {
+              (e.currentTarget as HTMLButtonElement).style.color = isDark ? "rgba(255,255,255,0.3)" : "rgba(15,23,42,0.3)";
+              (e.currentTarget as HTMLButtonElement).style.background = "transparent";
+            }}
           >
             <LogOut size={15} />
           </button>
@@ -226,47 +258,68 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   const { user } = useAuth();
-  const { t, dir } = useI18n();
+  const { t, dir, locale } = useI18n();
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
   const [mobileOpen, setMobileOpen] = useState(false);
 
   if (!user) return <>{children}</>;
+
+  const appBg = isDark
+    ? "linear-gradient(135deg, #020817 0%, #050d1f 50%, #080318 100%)"
+    : "linear-gradient(135deg, #f0f9ff 0%, #fefefe 50%, #fdf4ff 100%)";
+  const headerBg = isDark ? "rgba(2,8,23,0.7)" : "rgba(255,255,255,0.85)";
+  const headerBorder = isDark ? "rgba(0,245,255,0.08)" : "rgba(0,180,200,0.15)";
+  const topbarBg = isDark ? "rgba(2,8,23,0.9)" : "rgba(255,255,255,0.95)";
+  const sidebarBorderColor = isDark ? "rgba(0,245,255,0.1)" : "rgba(0,180,200,0.2)";
+  const pillBg = isDark ? "rgba(0,255,159,0.08)" : "rgba(0,180,100,0.08)";
+  const pillBorder = isDark ? "rgba(0,255,159,0.2)" : "rgba(0,180,100,0.2)";
+  const pillColor = isDark ? "#00ff9f" : "#059669";
+  const dateColor = isDark ? "rgba(255,255,255,0.3)" : "rgba(15,23,42,0.45)";
+  const bellBg = isDark ? "rgba(0,245,255,0.06)" : "rgba(0,180,200,0.06)";
+  const bellBorder = isDark ? "rgba(0,245,255,0.12)" : "rgba(0,180,200,0.15)";
+  const bellColor = isDark ? "rgba(0,245,255,0.6)" : "rgba(8,145,178,0.7)";
+  const menuBg = isDark ? "rgba(0,245,255,0.08)" : "rgba(0,180,200,0.08)";
+  const menuColor = isDark ? "#00f5ff" : "#0891b2";
+  const titleColor = isDark ? "#00f5ff" : "#0891b2";
 
   return (
     <div
       className="flex h-screen overflow-hidden"
       dir={dir}
       style={{
-        background: "linear-gradient(135deg, #020817 0%, #050d1f 50%, #080318 100%)",
+        background: appBg,
         position: "relative",
       }}
     >
       {/* Ambient glow blobs */}
-      <div style={{
-        position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0,
-        background: `
-          radial-gradient(ellipse 55% 45% at 8% 12%, rgba(0,245,255,0.05) 0%, transparent 70%),
-          radial-gradient(ellipse 45% 55% at 92% 88%, rgba(168,85,247,0.06) 0%, transparent 70%)
-        `,
-      }} />
+      {isDark && (
+        <div style={{
+          position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0,
+          background: `
+            radial-gradient(ellipse 55% 45% at 8% 12%, rgba(0,245,255,0.05) 0%, transparent 70%),
+            radial-gradient(ellipse 45% 55% at 92% 88%, rgba(168,85,247,0.06) 0%, transparent 70%)
+          `,
+        }} />
+      )}
 
       {/* Desktop Sidebar */}
       <aside
         className="hidden md:flex flex-col flex-shrink-0"
         style={{
           width: 220,
-          background: "rgba(2,8,23,0.85)",
           backdropFilter: "blur(24px)",
-          borderLeft: "1px solid rgba(0,245,255,0.1)",
-          borderRight: "none",
+          borderInlineStart: `1px solid ${sidebarBorderColor}`,
           zIndex: 20,
           position: "relative",
         }}
       >
-        {/* Top neon line */}
-        <div style={{
-          position: "absolute", top: 0, left: 0, right: 0, height: 1,
-          background: "linear-gradient(90deg, transparent, rgba(0,245,255,0.4), transparent)",
-        }} />
+        {isDark && (
+          <div style={{
+            position: "absolute", top: 0, left: 0, right: 0, height: 1,
+            background: "linear-gradient(90deg, transparent, rgba(0,245,255,0.4), transparent)",
+          }} />
+        )}
         <SidebarContent />
       </aside>
 
@@ -290,10 +343,8 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               className={`fixed top-0 ${dir === "rtl" ? "right-0" : "left-0"} bottom-0 z-50 flex flex-col md:hidden`}
               style={{
                 width: 240,
-                background: "rgba(2,8,23,0.97)",
                 backdropFilter: "blur(24px)",
-                borderLeft: dir === "rtl" ? "1px solid rgba(0,245,255,0.12)" : "none",
-                borderRight: dir === "rtl" ? "none" : "1px solid rgba(0,245,255,0.12)",
+                borderInlineEnd: `1px solid ${sidebarBorderColor}`,
               }}
             >
               <SidebarContent onClose={() => setMobileOpen(false)} />
@@ -309,18 +360,18 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         <header
           className="md:hidden flex items-center justify-between px-4 py-3 flex-shrink-0"
           style={{
-            background: "rgba(2,8,23,0.9)",
+            background: topbarBg,
             backdropFilter: "blur(20px)",
-            borderBottom: "1px solid rgba(0,245,255,0.1)",
+            borderBottom: `1px solid ${headerBorder}`,
           }}
         >
           <button
             onClick={() => setMobileOpen(true)}
-            style={{ padding: 8, borderRadius: 8, border: "none", background: "rgba(0,245,255,0.08)", color: "#00f5ff", cursor: "pointer" }}
+            style={{ padding: 8, borderRadius: 8, border: "none", background: menuBg, color: menuColor, cursor: "pointer" }}
           >
             <Menu size={18} />
           </button>
-          <span style={{ fontSize: 14, fontWeight: 700, color: "#00f5ff", textShadow: "0 0 12px rgba(0,245,255,0.5)" }}>
+          <span style={{ fontSize: 14, fontWeight: 700, color: titleColor, textShadow: isDark ? "0 0 12px rgba(0,245,255,0.5)" : "none" }}>
             {t("systemTitle")}
           </span>
           <div style={{ width: 36 }} />
@@ -331,9 +382,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           className="hidden md:flex items-center justify-between px-6 py-0 flex-shrink-0"
           style={{
             height: 56,
-            background: "rgba(2,8,23,0.7)",
+            background: headerBg,
             backdropFilter: "blur(20px)",
-            borderBottom: "1px solid rgba(0,245,255,0.08)",
+            borderBottom: `1px solid ${headerBorder}`,
           }}
         >
           {/* Live status pill */}
@@ -344,28 +395,28 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               style={{
                 display: "flex", alignItems: "center", gap: 6,
                 padding: "4px 12px", borderRadius: 20,
-                background: "rgba(0,255,159,0.08)",
-                border: "1px solid rgba(0,255,159,0.2)",
-                fontSize: 11, color: "#00ff9f",
+                background: pillBg,
+                border: `1px solid ${pillBorder}`,
+                fontSize: 11, color: pillColor,
               }}
             >
-              <span style={{ width: 6, height: 6, background: "#00ff9f", borderRadius: "50%", display: "inline-block", boxShadow: "0 0 6px #00ff9f" }} />
-              النظام يعمل
+              <span style={{ width: 6, height: 6, background: pillColor, borderRadius: "50%", display: "inline-block", boxShadow: `0 0 6px ${pillColor}` }} />
+              {t("systemOnline")}
             </motion.div>
           </div>
 
           {/* Right side */}
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.3)" }}>
-              {new Date().toLocaleDateString("ar-IQ", { weekday: "short", month: "short", day: "numeric" })}
+            <div style={{ fontSize: 12, color: dateColor }}>
+              {new Date().toLocaleDateString(locale, { weekday: "short", month: "short", day: "numeric" })}
             </div>
             <div style={{
               width: 32, height: 32, borderRadius: 8,
-              background: "rgba(0,245,255,0.06)", border: "1px solid rgba(0,245,255,0.12)",
+              background: bellBg, border: `1px solid ${bellBorder}`,
               display: "flex", alignItems: "center", justifyContent: "center",
               cursor: "pointer",
             }}>
-              <Bell size={15} color="rgba(0,245,255,0.6)" />
+              <Bell size={15} color={bellColor} />
             </div>
           </div>
         </header>

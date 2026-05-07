@@ -4,6 +4,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Loader2, User, KeyRound, Zap, Eye, EyeOff } from "lucide-react";
 import { motion } from "framer-motion";
 import { getAndClearCompanyInactiveFlag } from "@/lib/auth";
+import { useI18n } from "@/lib/i18n";
+import { useTheme } from "@/lib/theme";
 
 async function fetchWithTimeout(input: RequestInfo, init: RequestInit = {}, timeoutMs = 12000) {
   const controller = new AbortController();
@@ -11,7 +13,7 @@ async function fetchWithTimeout(input: RequestInfo, init: RequestInit = {}, time
   try {
     return await fetch(input, { ...init, signal: controller.signal });
   } catch (err: any) {
-    if (err?.name === "AbortError") throw new Error("انتهت مهلة الاتصال بالخادم، تحقق من الشبكة وحاول مرة أخرى");
+    if (err?.name === "AbortError") throw new Error("timeout");
     throw err;
   } finally {
     clearTimeout(timer);
@@ -26,7 +28,7 @@ async function apiPost(url: string, body: object) {
     body: JSON.stringify(body),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data?.message || "خطأ");
+  if (!res.ok) throw new Error(data?.message || "error");
   return data;
 }
 
@@ -39,6 +41,10 @@ async function apiFetch(url: string) {
 export default function Login() {
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
+  const { t, dir } = useI18n();
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
+
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
@@ -48,7 +54,7 @@ export default function Login() {
 
   useEffect(() => {
     if (getAndClearCompanyInactiveFlag()) {
-      setError("تم إيقاف شركتك من قِبل مزود الخدمة، يرجى التواصل مع الدعم");
+      setError(t("companyInactive"));
     }
   }, []);
 
@@ -62,36 +68,63 @@ export default function Login() {
       queryClient.setQueryData(["/api/auth/me"], user);
       setLocation("/");
     } catch (err: any) {
-      setError(err?.message || "اسم المستخدم أو الرمز غير صحيح");
+      const msg = err?.message || "";
+      if (msg === "timeout") setError(t("connectionTimeout"));
+      else setError(t("invalidCredentials"));
     } finally {
       setIsPending(false);
     }
   };
 
+  const bg = isDark
+    ? "linear-gradient(135deg, #020817 0%, #050d1f 50%, #080318 100%)"
+    : "linear-gradient(135deg, #f0f9ff 0%, #fefefe 50%, #fdf4ff 100%)";
+  const cardBg = isDark ? "rgba(5,13,31,0.85)" : "rgba(255,255,255,0.95)";
+  const cardBorder = isDark ? "rgba(0,245,255,0.15)" : "rgba(0,180,200,0.2)";
+  const cardShadow = isDark
+    ? "0 0 60px rgba(0,245,255,0.06), 0 32px 80px rgba(0,0,0,0.5)"
+    : "0 0 40px rgba(0,180,200,0.08), 0 20px 60px rgba(0,0,0,0.1)";
+  const topLine = isDark
+    ? "linear-gradient(90deg, transparent, #00f5ff, #a855f7, transparent)"
+    : "linear-gradient(90deg, transparent, #0891b2, #9333ea, transparent)";
+  const headerBorder = isDark ? "rgba(0,245,255,0.08)" : "rgba(0,180,200,0.12)";
+  const titleColor = isDark ? "#fff" : "#0f172a";
+  const subtitleColor = isDark ? "rgba(0,245,255,0.5)" : "rgba(8,145,178,0.7)";
+  const labelColor = isDark ? "rgba(255,255,255,0.55)" : "rgba(15,23,42,0.55)";
+  const inputBg = isDark ? "rgba(0,245,255,0.03)" : "rgba(0,0,0,0.02)";
+  const inputBorder = isDark ? "rgba(0,245,255,0.12)" : "rgba(0,180,200,0.2)";
+  const inputColor = isDark ? "white" : "#0f172a";
+  const iconColor = isDark ? "rgba(0,245,255,0.4)" : "rgba(8,145,178,0.5)";
+  const footerColor = isDark ? "rgba(255,255,255,0.2)" : "rgba(15,23,42,0.35)";
+  const superAdminColor = isDark ? "rgba(168,85,247,0.5)" : "rgba(147,51,234,0.5)";
+  const superAdminHover = isDark ? "#a855f7" : "#9333ea";
+
   return (
     <div
-      dir="rtl"
+      dir={dir}
       style={{
         minHeight: "100vh",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
         padding: 16,
-        background: "linear-gradient(135deg, #020817 0%, #050d1f 50%, #080318 100%)",
+        background: bg,
         fontFamily: "'Tajawal', sans-serif",
         position: "relative",
         overflow: "hidden",
       }}
     >
       {/* Ambient glow blobs */}
-      <div style={{
-        position: "absolute", inset: 0, pointerEvents: "none",
-        background: `
-          radial-gradient(ellipse 60% 50% at 15% 20%, rgba(0,245,255,0.07) 0%, transparent 70%),
-          radial-gradient(ellipse 50% 60% at 85% 80%, rgba(168,85,247,0.08) 0%, transparent 70%),
-          radial-gradient(ellipse 40% 40% at 50% 50%, rgba(59,130,246,0.04) 0%, transparent 70%)
-        `,
-      }} />
+      {isDark && (
+        <div style={{
+          position: "absolute", inset: 0, pointerEvents: "none",
+          background: `
+            radial-gradient(ellipse 60% 50% at 15% 20%, rgba(0,245,255,0.07) 0%, transparent 70%),
+            radial-gradient(ellipse 50% 60% at 85% 80%, rgba(168,85,247,0.08) 0%, transparent 70%),
+            radial-gradient(ellipse 40% 40% at 50% 50%, rgba(59,130,246,0.04) 0%, transparent 70%)
+          `,
+        }} />
+      )}
 
       {/* Floating particles */}
       {[...Array(6)].map((_, i) => (
@@ -102,22 +135,13 @@ export default function Login() {
             width: i % 2 === 0 ? 3 : 2,
             height: i % 2 === 0 ? 3 : 2,
             borderRadius: "50%",
-            background: i % 3 === 0 ? "#00f5ff" : i % 3 === 1 ? "#a855f7" : "#f97316",
+            background: i % 3 === 0 ? (isDark ? "#00f5ff" : "#0891b2") : i % 3 === 1 ? (isDark ? "#a855f7" : "#9333ea") : (isDark ? "#f97316" : "#ea580c"),
             left: `${15 + i * 14}%`,
             top: `${20 + (i % 3) * 25}%`,
             opacity: 0.4,
-            boxShadow: `0 0 6px currentColor`,
           }}
-          animate={{
-            y: [-10, 10, -10],
-            opacity: [0.2, 0.6, 0.2],
-          }}
-          transition={{
-            duration: 3 + i * 0.5,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: i * 0.4,
-          }}
+          animate={{ y: [-10, 10, -10], opacity: [0.2, 0.6, 0.2] }}
+          transition={{ duration: 3 + i * 0.5, repeat: Infinity, ease: "easeInOut", delay: i * 0.4 }}
         />
       ))}
 
@@ -129,50 +153,51 @@ export default function Login() {
       >
         {/* Card */}
         <div style={{
-          background: "rgba(5,13,31,0.85)",
+          background: cardBg,
           backdropFilter: "blur(32px)",
-          border: "1px solid rgba(0,245,255,0.15)",
+          border: `1px solid ${cardBorder}`,
           borderRadius: 24,
           overflow: "hidden",
-          boxShadow: "0 0 60px rgba(0,245,255,0.06), 0 32px 80px rgba(0,0,0,0.5)",
+          boxShadow: cardShadow,
         }}>
 
           {/* Neon top line */}
-          <div style={{
-            height: 2,
-            background: "linear-gradient(90deg, transparent, #00f5ff, #a855f7, transparent)",
-          }} />
+          <div style={{ height: 2, background: topLine }} />
 
           {/* Header */}
           <div style={{
             padding: "36px 32px 28px",
             textAlign: "center",
-            borderBottom: "1px solid rgba(0,245,255,0.08)",
+            borderBottom: `1px solid ${headerBorder}`,
             position: "relative",
           }}>
-            {/* Logo icon */}
             <motion.div
-              animate={{ boxShadow: ["0 0 20px rgba(0,245,255,0.3)", "0 0 40px rgba(0,245,255,0.6)", "0 0 20px rgba(0,245,255,0.3)"] }}
+              animate={{ boxShadow: isDark
+                ? ["0 0 20px rgba(0,245,255,0.3)", "0 0 40px rgba(0,245,255,0.6)", "0 0 20px rgba(0,245,255,0.3)"]
+                : ["0 0 12px rgba(0,180,200,0.2)", "0 0 24px rgba(0,180,200,0.35)", "0 0 12px rgba(0,180,200,0.2)"]
+              }}
               transition={{ duration: 2.5, repeat: Infinity }}
               style={{
                 width: 72, height: 72, borderRadius: 20,
-                background: "linear-gradient(135deg, rgba(0,245,255,0.15), rgba(59,130,246,0.1))",
-                border: "1px solid rgba(0,245,255,0.3)",
+                background: isDark
+                  ? "linear-gradient(135deg, rgba(0,245,255,0.15), rgba(59,130,246,0.1))"
+                  : "linear-gradient(135deg, rgba(0,180,200,0.12), rgba(59,130,246,0.08))",
+                border: `1px solid ${isDark ? "rgba(0,245,255,0.3)" : "rgba(0,180,200,0.25)"}`,
                 display: "flex", alignItems: "center", justifyContent: "center",
                 margin: "0 auto 20px",
               }}
             >
-              <Zap size={32} color="#00f5ff" style={{ filter: "drop-shadow(0 0 8px rgba(0,245,255,0.8))" }} />
+              <Zap size={32} color={isDark ? "#00f5ff" : "#0891b2"} style={{ filter: isDark ? "drop-shadow(0 0 8px rgba(0,245,255,0.8))" : "none" }} />
             </motion.div>
 
             <h1 style={{
-              fontSize: 22, fontWeight: 800, color: "#fff", margin: 0,
-              textShadow: "0 0 30px rgba(0,245,255,0.2)",
+              fontSize: 22, fontWeight: 800, color: titleColor, margin: 0,
+              textShadow: isDark ? "0 0 30px rgba(0,245,255,0.2)" : "none",
             }}>
-              نظام الحضور والانصراف
+              {t("systemName")}
             </h1>
-            <p style={{ fontSize: 13, color: "rgba(0,245,255,0.5)", margin: "6px 0 0" }}>
-              أدخل بياناتك للدخول
+            <p style={{ fontSize: 13, color: subtitleColor, margin: "6px 0 0" }}>
+              {t("enterCredentials")}
             </p>
           </div>
 
@@ -201,23 +226,27 @@ export default function Login() {
 
               {/* Username */}
               <div>
-                <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.55)", marginBottom: 8 }}>
-                  اسم المستخدم
+                <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: labelColor, marginBottom: 8 }}>
+                  {t("usernameField")}
                 </label>
                 <div style={{ position: "relative" }}>
                   <User size={16} style={{
-                    position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)",
-                    color: "rgba(0,245,255,0.4)",
+                    position: "absolute",
+                    insetInlineEnd: 14,
+                    top: "50%", transform: "translateY(-50%)",
+                    color: iconColor,
                   }} />
                   <input
                     type="text"
                     required
                     value={username}
                     onChange={e => setUsername(e.target.value)}
-                    placeholder="أدخل اسم المستخدم"
+                    placeholder={t("enterUsername")}
                     className="neon-input"
                     style={{
-                      width: "100%", paddingRight: 42, paddingLeft: 14,
+                      width: "100%",
+                      paddingInlineEnd: 42,
+                      paddingInlineStart: 14,
                       paddingTop: 12, paddingBottom: 12,
                       borderRadius: 12, fontSize: 14,
                       boxSizing: "border-box",
@@ -228,23 +257,27 @@ export default function Login() {
 
               {/* Password */}
               <div>
-                <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.55)", marginBottom: 8 }}>
-                  الرمز السري
+                <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: labelColor, marginBottom: 8 }}>
+                  {t("passwordField")}
                 </label>
                 <div style={{ position: "relative" }}>
                   <KeyRound size={16} style={{
-                    position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)",
-                    color: "rgba(0,245,255,0.4)",
+                    position: "absolute",
+                    insetInlineEnd: 14,
+                    top: "50%", transform: "translateY(-50%)",
+                    color: iconColor,
                   }} />
                   <input
                     type={showPass ? "text" : "password"}
                     required
                     value={password}
                     onChange={e => setPassword(e.target.value)}
-                    placeholder="••••••••"
+                    placeholder={t("passwordPlaceholder")}
                     className="neon-input"
                     style={{
-                      width: "100%", paddingRight: 42, paddingLeft: 42,
+                      width: "100%",
+                      paddingInlineEnd: 42,
+                      paddingInlineStart: 42,
                       paddingTop: 12, paddingBottom: 12,
                       borderRadius: 12, fontSize: 14,
                       boxSizing: "border-box",
@@ -254,9 +287,11 @@ export default function Login() {
                     type="button"
                     onClick={() => setShowPass(p => !p)}
                     style={{
-                      position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)",
+                      position: "absolute",
+                      insetInlineStart: 12,
+                      top: "50%", transform: "translateY(-50%)",
                       background: "none", border: "none", cursor: "pointer",
-                      color: "rgba(255,255,255,0.25)", padding: 2,
+                      color: isDark ? "rgba(255,255,255,0.25)" : "rgba(15,23,42,0.3)", padding: 2,
                     }}
                   >
                     {showPass ? <EyeOff size={15} /> : <Eye size={15} />}
@@ -280,40 +315,42 @@ export default function Login() {
                 }}
               >
                 {isPending ? (
-                  <><Loader2 size={18} style={{ animation: "spin 1s linear infinite" }} /> جاري الدخول...</>
+                  <><Loader2 size={18} style={{ animation: "spin 1s linear infinite" }} /> {t("loggingIn")}</>
                 ) : (
-                  <><Zap size={16} /> دخول</>
+                  <><Zap size={16} /> {t("loginBtn")}</>
                 )}
               </motion.button>
             </form>
 
             {/* Footer links */}
             <div style={{ textAlign: "center", marginTop: 20, display: "flex", flexDirection: "column", gap: 6 }}>
-              <p style={{ fontSize: 11, color: "rgba(255,255,255,0.2)" }}>
-                تواصل مع مدير النظام إذا نسيت بياناتك
+              <p style={{ fontSize: 11, color: footerColor }}>
+                {t("forgotCredentials")}
               </p>
               <a
                 href="/super-admin/login"
                 style={{
-                  fontSize: 11, color: "rgba(168,85,247,0.5)",
+                  fontSize: 11, color: superAdminColor,
                   textDecoration: "none", transition: "color 0.15s",
                 }}
-                onMouseEnter={e => (e.currentTarget.style.color = "#a855f7")}
-                onMouseLeave={e => (e.currentTarget.style.color = "rgba(168,85,247,0.5)")}
+                onMouseEnter={e => (e.currentTarget.style.color = superAdminHover)}
+                onMouseLeave={e => (e.currentTarget.style.color = superAdminColor)}
               >
-                دخول مدير النظام العام →
+                {t("superAdminLoginLink")}
               </a>
             </div>
           </div>
         </div>
 
         {/* Bottom glow */}
-        <div style={{
-          position: "absolute", bottom: -30, left: "50%", transform: "translateX(-50%)",
-          width: 200, height: 60,
-          background: "radial-gradient(ellipse, rgba(0,245,255,0.15), transparent 70%)",
-          pointerEvents: "none",
-        }} />
+        {isDark && (
+          <div style={{
+            position: "absolute", bottom: -30, left: "50%", transform: "translateX(-50%)",
+            width: 200, height: 60,
+            background: "radial-gradient(ellipse, rgba(0,245,255,0.15), transparent 70%)",
+            pointerEvents: "none",
+          }} />
+        )}
       </motion.div>
     </div>
   );
