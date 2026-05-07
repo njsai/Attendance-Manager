@@ -1,6 +1,7 @@
 import app from "./app";
 import { startBackupScheduler } from "./lib/backup-scheduler.js";
 import { initializeDatabase } from "./lib/db-init.js";
+import { runMigrations } from "./lib/migration-runner.js";
 
 const rawPort = process.env["PORT"];
 
@@ -27,8 +28,14 @@ process.on("unhandledRejection", (reason) => {
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
   startBackupScheduler();
-  // Initialize DB schema + seed data (idempotent, safe to run every startup)
-  initializeDatabase().catch((err) => {
-    console.error("[DB-Init] Failed:", err.message);
-  });
+
+  // 1. Apply any pending SQL migrations (idempotent, tracked in schema_migrations)
+  runMigrations()
+    .then(() => {
+      // 2. db-init: CREATE TABLE IF NOT EXISTS + seed data (backward compat)
+      return initializeDatabase();
+    })
+    .catch((err) => {
+      console.error("[Startup] DB init failed:", err.message);
+    });
 });

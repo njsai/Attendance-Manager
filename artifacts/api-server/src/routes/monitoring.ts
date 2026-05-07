@@ -20,9 +20,9 @@ export function trackRequest(_req: any, _res: any, next: any) {
   next();
 }
 
-async function query(sql: string) {
+async function query(sql: string, params: any[] = []) {
   const client = await pool.connect();
-  try { return (await client.query(sql)).rows; }
+  try { return (await client.query(sql, params)).rows; }
   finally { client.release(); }
 }
 
@@ -127,9 +127,11 @@ router.get("/audit-logs", requireSuperAdmin, async (req, res) => {
     const rows = await query(
       `SELECT al.*, c.name AS company_name FROM audit_logs al
        LEFT JOIN companies c ON c.id = al.company_id
-       ${where} ORDER BY al.created_at DESC LIMIT $${params.length - 1} OFFSET $${params.length}`
+       ${where} ORDER BY al.created_at DESC LIMIT $${params.length - 1} OFFSET $${params.length}`,
+      params
     );
-    const [{ cnt }] = await query(`SELECT COUNT(*) AS cnt FROM audit_logs ${where}`);
+    const countParams = params.slice(0, params.length - 2);
+    const [{ cnt }] = await query(`SELECT COUNT(*) AS cnt FROM audit_logs ${where}`, countParams);
     res.json({ logs: rows, total: Number(cnt) });
   } catch (err) {
     console.error(err);
@@ -144,9 +146,10 @@ router.get("/security-events", requireSuperAdmin, async (req, res) => {
     const rows = await query(
       `SELECT se.*, c.name AS company_name FROM security_events se
        LEFT JOIN companies c ON c.id = se.company_id
-       ORDER BY se.created_at DESC LIMIT $1`
+       ORDER BY se.created_at DESC LIMIT $1`,
+      [parseInt(String(limit))]
     );
-    res.json(rows.slice(0, parseInt(String(limit))));
+    res.json(rows);
   } catch (err) { console.error(err); res.status(500).json({ message: "خطأ" }); }
 });
 

@@ -47,3 +47,8 @@ Thumbs.db
 # Replit
 .cache/
 .local/
+
+# Backup files — never commit to git
+data/backups/sql/
+data/backups/json/
+data/uploads/
