@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
-import { Loader2, Shield, User, KeyRound } from "lucide-react";
+import { Loader2, Shield, User, KeyRound, Eye, EyeOff } from "lucide-react";
 import { motion } from "framer-motion";
 
 async function apiPost(url: string, body: object) {
@@ -16,6 +16,7 @@ export default function SuperAdminLogin() {
   const queryClient = useQueryClient();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [showPass, setShowPass] = useState(false);
   const [error, setError] = useState("");
   const [isPending, setIsPending] = useState(false);
   const BASE = import.meta.env.BASE_URL;
@@ -36,58 +37,239 @@ export default function SuperAdminLogin() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-950 via-slate-900 to-slate-900 p-4" dir="rtl">
-      <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="w-full max-w-md">
-        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl shadow-2xl overflow-hidden">
-          <div className="bg-gradient-to-bl from-indigo-700 to-indigo-900 px-8 py-10 text-center relative overflow-hidden">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(255,255,255,0.1),transparent_60%)]" />
-            <div className="relative z-10">
-              <div className="w-20 h-20 mx-auto rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center shadow-xl mb-4 border border-white/30">
-                <Shield className="w-10 h-10 text-white" />
-              </div>
-              <h1 className="text-2xl font-bold text-white">لوحة التحكم الرئيسية</h1>
-              <p className="text-white/70 mt-1 text-sm">مدير النظام العام</p>
-            </div>
+    <div
+      dir="rtl"
+      style={{
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 16,
+        background: "linear-gradient(135deg, #020817 0%, #050d1f 50%, #080318 100%)",
+        fontFamily: "'Tajawal', sans-serif",
+        position: "relative",
+        overflow: "hidden",
+      }}
+    >
+      {/* Ambient glow — purple theme for super admin */}
+      <div style={{
+        position: "absolute", inset: 0, pointerEvents: "none",
+        background: `
+          radial-gradient(ellipse 60% 50% at 15% 20%, rgba(168,85,247,0.1) 0%, transparent 70%),
+          radial-gradient(ellipse 50% 60% at 85% 80%, rgba(0,245,255,0.06) 0%, transparent 70%)
+        `,
+      }} />
+
+      {/* Floating particles */}
+      {[...Array(6)].map((_, i) => (
+        <motion.div
+          key={i}
+          style={{
+            position: "absolute",
+            width: i % 2 === 0 ? 3 : 2,
+            height: i % 2 === 0 ? 3 : 2,
+            borderRadius: "50%",
+            background: i % 2 === 0 ? "#a855f7" : "#00f5ff",
+            left: `${10 + i * 15}%`,
+            top: `${15 + (i % 3) * 28}%`,
+            opacity: 0.5,
+          }}
+          animate={{ y: [-12, 12, -12], opacity: [0.2, 0.7, 0.2] }}
+          transition={{ duration: 3.5 + i * 0.4, repeat: Infinity, ease: "easeInOut", delay: i * 0.5 }}
+        />
+      ))}
+
+      <motion.div
+        initial={{ opacity: 0, y: 32, scale: 0.96 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+        style={{ width: "100%", maxWidth: 420, position: "relative", zIndex: 1 }}
+      >
+        <div style={{
+          background: "rgba(5,13,31,0.88)",
+          backdropFilter: "blur(32px)",
+          border: "1px solid rgba(168,85,247,0.2)",
+          borderRadius: 24,
+          overflow: "hidden",
+          boxShadow: "0 0 60px rgba(168,85,247,0.08), 0 32px 80px rgba(0,0,0,0.5)",
+        }}>
+          {/* Top neon line — purple for super admin */}
+          <div style={{
+            height: 2,
+            background: "linear-gradient(90deg, transparent, #a855f7, #00f5ff, transparent)",
+          }} />
+
+          {/* Header */}
+          <div style={{
+            padding: "36px 32px 28px",
+            textAlign: "center",
+            borderBottom: "1px solid rgba(168,85,247,0.1)",
+          }}>
+            <motion.div
+              animate={{ boxShadow: ["0 0 20px rgba(168,85,247,0.3)", "0 0 40px rgba(168,85,247,0.6)", "0 0 20px rgba(168,85,247,0.3)"] }}
+              transition={{ duration: 2.5, repeat: Infinity }}
+              style={{
+                width: 72, height: 72, borderRadius: 20,
+                background: "linear-gradient(135deg, rgba(168,85,247,0.2), rgba(139,92,246,0.1))",
+                border: "1px solid rgba(168,85,247,0.4)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                margin: "0 auto 20px",
+              }}
+            >
+              <Shield size={32} color="#a855f7" style={{ filter: "drop-shadow(0 0 8px rgba(168,85,247,0.8))" }} />
+            </motion.div>
+
+            <h1 style={{ fontSize: 22, fontWeight: 800, color: "#fff", margin: 0, textShadow: "0 0 30px rgba(168,85,247,0.2)" }}>
+              لوحة التحكم الرئيسية
+            </h1>
+            <p style={{ fontSize: 13, color: "rgba(168,85,247,0.55)", margin: "6px 0 0" }}>
+              مدير النظام العام
+            </p>
           </div>
 
-          <div className="p-8 space-y-5">
+          {/* Form */}
+          <div style={{ padding: "28px 32px 32px" }}>
             {error && (
-              <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
-                className="flex items-center gap-3 p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm font-medium">
-                <span className="w-2 h-2 rounded-full bg-red-400 flex-shrink-0" />{error}
+              <motion.div
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                style={{
+                  display: "flex", alignItems: "center", gap: 10,
+                  padding: "12px 14px", borderRadius: 12, marginBottom: 20,
+                  background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.25)",
+                  color: "#f87171", fontSize: 13,
+                }}
+              >
+                <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#f87171", flexShrink: 0, boxShadow: "0 0 6px #f87171" }} />
+                {error}
               </motion.div>
             )}
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div className="space-y-2">
-                <label className="block text-sm font-semibold text-slate-300">اسم المستخدم</label>
-                <div className="relative">
-                  <User className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
-                  <input type="text" required value={username} onChange={e => setUsername(e.target.value)}
+
+            <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+              {/* Username */}
+              <div>
+                <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.55)", marginBottom: 8 }}>
+                  اسم المستخدم
+                </label>
+                <div style={{ position: "relative" }}>
+                  <User size={16} style={{ position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)", color: "rgba(168,85,247,0.5)" }} />
+                  <input
+                    type="text"
+                    required
+                    value={username}
+                    onChange={e => setUsername(e.target.value)}
                     placeholder="أدخل اسم المستخدم"
-                    className="w-full pr-12 pl-4 py-3.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all" />
+                    style={{
+                      width: "100%", paddingRight: 42, paddingLeft: 14,
+                      paddingTop: 12, paddingBottom: 12,
+                      borderRadius: 12, fontSize: 14,
+                      background: "rgba(168,85,247,0.04)",
+                      border: "1px solid rgba(168,85,247,0.15)",
+                      color: "#fff", outline: "none",
+                      transition: "all 0.2s",
+                      boxSizing: "border-box",
+                    }}
+                    onFocus={e => {
+                      e.target.style.borderColor = "rgba(168,85,247,0.5)";
+                      e.target.style.boxShadow = "0 0 0 3px rgba(168,85,247,0.1), 0 0 20px rgba(168,85,247,0.1)";
+                    }}
+                    onBlur={e => {
+                      e.target.style.borderColor = "rgba(168,85,247,0.15)";
+                      e.target.style.boxShadow = "none";
+                    }}
+                  />
                 </div>
               </div>
-              <div className="space-y-2">
-                <label className="block text-sm font-semibold text-slate-300">الرمز</label>
-                <div className="relative">
-                  <KeyRound className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
-                  <input type="password" required value={password} onChange={e => setPassword(e.target.value)}
+
+              {/* Password */}
+              <div>
+                <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.55)", marginBottom: 8 }}>
+                  الرمز السري
+                </label>
+                <div style={{ position: "relative" }}>
+                  <KeyRound size={16} style={{ position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)", color: "rgba(168,85,247,0.5)" }} />
+                  <input
+                    type={showPass ? "text" : "password"}
+                    required
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full pr-12 pl-4 py-3.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all" />
+                    style={{
+                      width: "100%", paddingRight: 42, paddingLeft: 42,
+                      paddingTop: 12, paddingBottom: 12,
+                      borderRadius: 12, fontSize: 14,
+                      background: "rgba(168,85,247,0.04)",
+                      border: "1px solid rgba(168,85,247,0.15)",
+                      color: "#fff", outline: "none",
+                      transition: "all 0.2s",
+                      boxSizing: "border-box",
+                    }}
+                    onFocus={e => {
+                      e.target.style.borderColor = "rgba(168,85,247,0.5)";
+                      e.target.style.boxShadow = "0 0 0 3px rgba(168,85,247,0.1)";
+                    }}
+                    onBlur={e => {
+                      e.target.style.borderColor = "rgba(168,85,247,0.15)";
+                      e.target.style.boxShadow = "none";
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPass(p => !p)}
+                    style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.25)", padding: 2 }}
+                  >
+                    {showPass ? <EyeOff size={15} /> : <Eye size={15} />}
+                  </button>
                 </div>
               </div>
-              <button type="submit" disabled={isPending}
-                className="w-full py-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-base shadow-lg shadow-indigo-900/50 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2">
-                {isPending ? <><Loader2 className="w-5 h-5 animate-spin" /> جاري الدخول...</> : <><Shield className="w-5 h-5" /> دخول لوحة التحكم</>}
-              </button>
+
+              {/* Submit — purple gradient for super admin */}
+              <motion.button
+                type="submit"
+                disabled={isPending}
+                whileHover={{ scale: isPending ? 1 : 1.02 }}
+                whileTap={{ scale: isPending ? 1 : 0.98 }}
+                style={{
+                  width: "100%", padding: "14px",
+                  borderRadius: 14, border: "none",
+                  background: "linear-gradient(135deg, rgba(168,85,247,0.9), rgba(139,92,246,0.9))",
+                  color: "#fff", fontWeight: 700, fontSize: 15,
+                  cursor: isPending ? "not-allowed" : "pointer",
+                  marginTop: 4,
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                  boxShadow: "0 4px 20px rgba(168,85,247,0.4)",
+                  opacity: isPending ? 0.6 : 1,
+                  fontFamily: "'Tajawal', sans-serif",
+                }}
+              >
+                {isPending ? (
+                  <><Loader2 size={18} className="animate-spin" /> جاري الدخول...</>
+                ) : (
+                  <><Shield size={16} /> دخول لوحة التحكم</>
+                )}
+              </motion.button>
             </form>
-            <div className="text-center pt-2">
-              <button onClick={() => setLocation("/login")} className="text-xs text-slate-600 hover:text-slate-400 transition-colors">
+
+            <div style={{ textAlign: "center", marginTop: 20 }}>
+              <button
+                onClick={() => setLocation("/login")}
+                style={{ fontSize: 11, color: "rgba(0,245,255,0.4)", background: "none", border: "none", cursor: "pointer", transition: "color 0.15s", fontFamily: "'Tajawal', sans-serif" }}
+                onMouseEnter={e => (e.currentTarget.style.color = "rgba(0,245,255,0.8)")}
+                onMouseLeave={e => (e.currentTarget.style.color = "rgba(0,245,255,0.4)")}
+              >
                 الدخول كموظف →
               </button>
             </div>
           </div>
         </div>
+
+        {/* Bottom glow */}
+        <div style={{
+          position: "absolute", bottom: -30, left: "50%", transform: "translateX(-50%)",
+          width: 200, height: 60,
+          background: "radial-gradient(ellipse, rgba(168,85,247,0.15), transparent 70%)",
+          pointerEvents: "none",
+        }} />
       </motion.div>
     </div>
   );

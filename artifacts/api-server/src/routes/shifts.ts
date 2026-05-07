@@ -37,7 +37,7 @@ router.post("/", requireAdmin, async (req, res) => {
 router.put("/:id", requireAdmin, async (req, res) => {
   try {
     const companyId = req.session.companyId!;
-    const id = parseInt(req.params.id);
+    const id = parseInt(String(req.params.id));
     const { name, startTime, endTime, workDays, lateGraceMinutes } = req.body;
     const [shift] = await db.update(shiftsTable)
       .set({ name, startTime, endTime, workDays, lateGraceMinutes })
@@ -54,7 +54,7 @@ router.put("/:id", requireAdmin, async (req, res) => {
 router.delete("/:id", requireAdmin, async (req, res) => {
   try {
     const companyId = req.session.companyId!;
-    const id = parseInt(req.params.id);
+    const id = parseInt(String(req.params.id));
     await db.delete(shiftsTable)
       .where(and(eq(shiftsTable.id, id), eq(shiftsTable.companyId, companyId)));
     res.json({ message: "Deleted" });

@@ -1,5 +1,6 @@
 import app from "./app";
 import { startBackupScheduler } from "./lib/backup-scheduler.js";
+import { initializeDatabase } from "./lib/db-init.js";
 
 const rawPort = process.env["PORT"];
 
@@ -26,4 +27,8 @@ process.on("unhandledRejection", (reason) => {
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
   startBackupScheduler();
+  // Initialize DB schema + seed data (idempotent, safe to run every startup)
+  initializeDatabase().catch((err) => {
+    console.error("[DB-Init] Failed:", err.message);
+  });
 });

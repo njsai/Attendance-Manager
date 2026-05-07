@@ -45,16 +45,16 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 const ROLE_COLORS: Record<string, string> = {
-  admin: "bg-purple-600",
-  manager: "bg-blue-600",
-  employee: "bg-slate-600",
-  super_admin: "bg-indigo-700",
+  admin: "rgba(168,85,247,0.8)",
+  manager: "rgba(59,130,246,0.8)",
+  employee: "rgba(100,116,139,0.8)",
+  super_admin: "rgba(0,245,255,0.8)",
 };
 
 function Avatar({ name, role }: { name: string; role: string }) {
-  const bg = ROLE_COLORS[role] ?? "bg-slate-600";
+  const bg = ROLE_COLORS[role] ?? "rgba(100,116,139,0.8)";
   return (
-    <div className={`w-8 h-8 rounded-full ${bg} flex items-center justify-center text-white text-xs font-bold flex-shrink-0`}>
+    <div style={{ width: 32, height: 32, borderRadius: "50%", background: bg, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 12, fontWeight: 700, flexShrink: 0 }}>
       {name.charAt(0)}
     </div>
   );
@@ -62,23 +62,19 @@ function Avatar({ name, role }: { name: string; role: string }) {
 
 function MessageBubble({ msg, isMe }: { msg: Message; isMe: boolean }) {
   return (
-    <div className={`flex gap-2 ${isMe ? "flex-row-reverse" : "flex-row"}`}>
+    <div style={{ display: "flex", gap: 8, flexDirection: isMe ? "row-reverse" : "row" }}>
       {!isMe && <Avatar name={msg.senderName} role={msg.senderType} />}
-      <div className={`max-w-[75%] ${isMe ? "items-end" : "items-start"} flex flex-col gap-0.5`}>
+      <div style={{ maxWidth: "75%", display: "flex", flexDirection: "column", gap: 3, alignItems: isMe ? "flex-end" : "flex-start" }}>
         {!isMe && (
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-white/80">{msg.senderName}</span>
-            <span className="text-xs text-white/40">{ROLE_LABELS[msg.senderType] ?? msg.senderType}</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.7)" }}>{msg.senderName}</span>
+            <span style={{ fontSize: 10, color: "rgba(255,255,255,0.3)" }}>{ROLE_LABELS[msg.senderType] ?? msg.senderType}</span>
           </div>
         )}
-        <div className={`px-4 py-2.5 rounded-2xl text-sm leading-relaxed break-words ${
-          isMe
-            ? "bg-indigo-600 text-white rounded-tr-sm"
-            : "bg-white/10 text-white/90 rounded-tl-sm"
-        }`}>
+        <div style={{ padding: "9px 14px", borderRadius: isMe ? "18px 4px 18px 18px" : "4px 18px 18px 18px", fontSize: 13, lineHeight: 1.5, wordBreak: "break-word", background: isMe ? "linear-gradient(135deg, rgba(0,245,255,0.25), rgba(59,130,246,0.2))" : "rgba(255,255,255,0.07)", border: isMe ? "1px solid rgba(0,245,255,0.2)" : "1px solid rgba(255,255,255,0.08)", color: "#fff" }}>
           {msg.content}
         </div>
-        <span className="text-xs text-white/30 px-1">{formatTime(msg.createdAt)}</span>
+        <span style={{ fontSize: 10, color: "rgba(255,255,255,0.25)", padding: "0 4px" }}>{formatTime(msg.createdAt)}</span>
       </div>
     </div>
   );
@@ -186,16 +182,16 @@ export default function SuperAdminChat({ companies }: { companies: Company[] }) 
   }
 
   return (
-    <div className="flex h-[600px] bg-[#0f1623] rounded-2xl overflow-hidden border border-white/10" dir="rtl">
+    <div style={{ display: "flex", height: 580, background: "rgba(5,13,31,0.9)", borderRadius: 18, overflow: "hidden", border: "1px solid rgba(0,245,255,0.1)" }} dir="rtl">
       {/* Companies sidebar */}
-      <div className={`flex flex-col border-l border-white/10 bg-[#111827] transition-all ${selectedCompany ? "w-0 md:w-64 overflow-hidden" : "w-full md:w-64"}`}>
-        <div className="p-4 border-b border-white/10 flex-shrink-0">
-          <h3 className="text-white font-bold text-sm flex items-center gap-2">
-            <MessageCircle className="w-4 h-4 text-indigo-400" /> دردشة الدعم
+      <div style={{ display: "flex", flexDirection: "column", borderLeft: "1px solid rgba(0,245,255,0.07)", background: "rgba(255,255,255,0.02)", width: selectedCompany ? 0 : "100%", overflow: "hidden", transition: "width 0.2s", flexShrink: 0 }} className="md:!w-64">
+        <div style={{ padding: "14px 16px", borderBottom: "1px solid rgba(0,245,255,0.07)", flexShrink: 0 }}>
+          <h3 style={{ color: "#fff", fontWeight: 700, fontSize: 13, display: "flex", alignItems: "center", gap: 7, margin: 0 }}>
+            <MessageCircle size={14} style={{ color: "#a855f7" }} /> دردشة الدعم
           </h3>
-          <p className="text-white/40 text-xs mt-0.5">اختر شركة للمحادثة</p>
+          <p style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", marginTop: 3 }}>اختر شركة للمحادثة</p>
         </div>
-        <div className="flex-1 overflow-y-auto">
+        <div style={{ flex: 1, overflowY: "auto" }}>
           {companies.map(c => {
             const entry = summary[c.id];
             const unread = entry?.unread ?? 0;
@@ -203,73 +199,67 @@ export default function SuperAdminChat({ companies }: { companies: Company[] }) 
             const isSelected = selectedCompany?.id === c.id;
             return (
               <button key={c.id} onClick={() => setSelectedCompany(c)}
-                className={`w-full text-right p-4 border-b border-white/5 transition-all hover:bg-white/5 ${isSelected ? "bg-indigo-600/20 border-indigo-500/20" : ""}`}>
-                <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${isSelected ? "bg-indigo-600/40" : "bg-white/10"}`}>
-                    <Building2 className="w-5 h-5 text-indigo-400" />
+                style={{ width: "100%", textAlign: "right", padding: "12px 14px", borderBottom: "1px solid rgba(255,255,255,0.04)", background: isSelected ? "rgba(0,245,255,0.06)" : "transparent", borderRight: isSelected ? "2px solid #00f5ff" : "2px solid transparent", cursor: "pointer", display: "block", transition: "all 0.15s" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <div style={{ width: 38, height: 38, borderRadius: 11, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, background: isSelected ? "rgba(0,245,255,0.12)" : "rgba(255,255,255,0.06)", border: `1px solid ${isSelected ? "rgba(0,245,255,0.25)" : "rgba(255,255,255,0.08)"}` }}>
+                    <Building2 size={16} style={{ color: isSelected ? "#00f5ff" : "rgba(255,255,255,0.4)" }} />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-white text-sm font-medium truncate">{c.name}</span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6 }}>
+                      <span style={{ color: "#fff", fontSize: 12, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.name}</span>
                       {unread > 0 && (
-                        <span className="bg-indigo-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0">
-                          {unread}
-                        </span>
+                        <span style={{ background: "#a855f7", color: "#fff", fontSize: 10, fontWeight: 700, borderRadius: "50%", width: 18, height: 18, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{unread}</span>
                       )}
                     </div>
-                    {lastMsg && (
-                      <p className="text-white/40 text-xs truncate mt-0.5">{lastMsg.content}</p>
-                    )}
-                    {lastMsg && (
-                      <p className="text-white/25 text-xs">{formatDate(lastMsg.createdAt)}</p>
-                    )}
+                    {lastMsg && <p style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginTop: 2 }}>{lastMsg.content}</p>}
+                    {lastMsg && <p style={{ fontSize: 9, color: "rgba(255,255,255,0.2)" }}>{formatDate(lastMsg.createdAt)}</p>}
                   </div>
                 </div>
               </button>
             );
           })}
           {companies.length === 0 && (
-            <div className="p-6 text-center text-white/30 text-xs">لا توجد شركات</div>
+            <div style={{ padding: 24, textAlign: "center", fontSize: 11, color: "rgba(255,255,255,0.25)" }}>لا توجد شركات</div>
           )}
         </div>
       </div>
 
       {/* Chat area */}
       {selectedCompany ? (
-        <div className="flex-1 flex flex-col min-w-0">
-          {/* Header */}
-          <div className="px-4 py-3 border-b border-white/10 bg-[#111827] flex items-center gap-3 flex-shrink-0">
-            <button onClick={() => setSelectedCompany(null)} className="md:hidden text-white/50 hover:text-white p-1">
-              <ArrowRight className="w-5 h-5" />
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
+          {/* Chat Header */}
+          <div style={{ padding: "12px 16px", borderBottom: "1px solid rgba(0,245,255,0.07)", background: "rgba(255,255,255,0.02)", display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+            <button onClick={() => setSelectedCompany(null)} className="md:hidden" style={{ padding: 4, background: "none", border: "none", color: "rgba(255,255,255,0.4)", cursor: "pointer" }}>
+              <ArrowRight size={16} />
             </button>
-            <div className="w-9 h-9 rounded-xl bg-indigo-600/30 flex items-center justify-center">
-              <Building2 className="w-4 h-4 text-indigo-400" />
+            <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(0,245,255,0.1)", border: "1px solid rgba(0,245,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Building2 size={15} style={{ color: "#00f5ff" }} />
             </div>
             <div>
-              <p className="text-white font-semibold text-sm">{selectedCompany.name}</p>
-              <p className="text-white/40 text-xs">قناة الدعم الفني</p>
+              <p style={{ color: "#fff", fontWeight: 700, fontSize: 13, margin: 0 }}>{selectedCompany.name}</p>
+              <p style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", marginTop: 2 }}>قناة الدعم الفني</p>
             </div>
           </div>
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          <div style={{ flex: 1, overflowY: "auto", padding: 14, display: "flex", flexDirection: "column", gap: 12 }}>
             {loading ? (
-              <div className="flex items-center justify-center h-full">
-                <Loader2 className="w-8 h-8 text-indigo-400 animate-spin" />
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%" }}>
+                <Loader2 size={28} style={{ color: "#a855f7" }} className="animate-spin" />
               </div>
             ) : messages.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full text-white/30">
-                <MessageCircle className="w-12 h-12 mb-3 opacity-30" />
-                <p className="text-sm">لا توجد رسائل</p>
-                <p className="text-xs mt-1">ابدأ المحادثة مع {selectedCompany.name}</p>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", color: "rgba(255,255,255,0.2)" }}>
+                <MessageCircle size={40} style={{ marginBottom: 10, opacity: 0.2 }} />
+                <p style={{ fontSize: 13 }}>لا توجد رسائل</p>
+                <p style={{ fontSize: 11, marginTop: 4 }}>ابدأ المحادثة مع {selectedCompany.name}</p>
               </div>
             ) : (
               dateGroups.map(group => (
-                <div key={group.date} className="space-y-3">
-                  <div className="flex items-center gap-3">
-                    <div className="flex-1 h-px bg-white/10" />
-                    <span className="text-xs text-white/30 px-2">{formatDate(group.msgs[0].createdAt)}</span>
-                    <div className="flex-1 h-px bg-white/10" />
+                <div key={group.date} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.06)" }} />
+                    <span style={{ fontSize: 10, color: "rgba(255,255,255,0.25)", padding: "0 6px" }}>{formatDate(group.msgs[0].createdAt)}</span>
+                    <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.06)" }} />
                   </div>
                   {group.msgs.map(msg => (
                     <MessageBubble key={msg.id} msg={msg} isMe={msg.senderType === "super_admin"} />
@@ -281,34 +271,29 @@ export default function SuperAdminChat({ companies }: { companies: Company[] }) 
           </div>
 
           {error && (
-            <div className="px-4 py-2 flex items-center gap-2 bg-red-500/10 text-red-400 text-xs border-t border-red-500/20 flex-shrink-0">
-              <AlertCircle className="w-4 h-4" /> {error}
+            <div style={{ padding: "8px 14px", display: "flex", alignItems: "center", gap: 8, background: "rgba(248,113,113,0.08)", color: "#f87171", fontSize: 12, borderTop: "1px solid rgba(248,113,113,0.2)", flexShrink: 0 }}>
+              <AlertCircle size={13} /> {error}
             </div>
           )}
 
           {/* Input */}
-          <div className="px-4 py-3 border-t border-white/10 bg-[#111827] flex-shrink-0">
-            <form onSubmit={e => { e.preventDefault(); sendMessage(); }} className="flex gap-2 items-center">
-              <input
-                ref={inputRef}
-                type="text"
-                value={input}
-                onChange={e => setInput(e.target.value)}
+          <div style={{ padding: "10px 14px", borderTop: "1px solid rgba(0,245,255,0.07)", background: "rgba(255,255,255,0.02)", flexShrink: 0 }}>
+            <form onSubmit={e => { e.preventDefault(); sendMessage(); }} style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <input ref={inputRef} type="text" value={input} onChange={e => setInput(e.target.value)}
                 placeholder={`رسالة إلى ${selectedCompany.name}...`}
-                className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/30 transition-all"
-              />
+                style={{ flex: 1, padding: "9px 14px", borderRadius: 11, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(0,245,255,0.1)", color: "#fff", fontSize: 13, outline: "none" }} />
               <button type="submit" disabled={!input.trim() || sending}
-                className="w-10 h-10 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 flex items-center justify-center transition-all flex-shrink-0">
-                {sending ? <Loader2 className="w-4 h-4 text-white animate-spin" /> : <Send className="w-4 h-4 text-white" />}
+                style={{ width: 38, height: 38, borderRadius: 11, border: "none", background: input.trim() && !sending ? "linear-gradient(135deg, rgba(0,245,255,0.8), rgba(168,85,247,0.6))" : "rgba(255,255,255,0.06)", display: "flex", alignItems: "center", justifyContent: "center", cursor: !input.trim() || sending ? "not-allowed" : "pointer", flexShrink: 0, opacity: !input.trim() || sending ? 0.4 : 1 }}>
+                {sending ? <Loader2 size={15} style={{ color: "#fff" }} className="animate-spin" /> : <Send size={15} style={{ color: "#fff" }} />}
               </button>
             </form>
           </div>
         </div>
       ) : (
-        <div className="hidden md:flex flex-1 items-center justify-center text-white/20">
-          <div className="text-center">
-            <MessageCircle className="w-16 h-16 mx-auto mb-4 opacity-20" />
-            <p className="text-sm">اختر شركة من القائمة لبدء المحادثة</p>
+        <div className="hidden md:flex" style={{ flex: 1, alignItems: "center", justifyContent: "center", color: "rgba(255,255,255,0.15)" }}>
+          <div style={{ textAlign: "center" }}>
+            <MessageCircle size={48} style={{ margin: "0 auto 12px", opacity: 0.15 }} />
+            <p style={{ fontSize: 13 }}>اختر شركة من القائمة لبدء المحادثة</p>
           </div>
         </div>
       )}

@@ -2,7 +2,8 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import { employeesTable, departmentsTable, shiftsTable, branchesTable } from "@workspace/db";
 import { eq, ilike, and, or } from "drizzle-orm";
-import { requireAuth, requireAdmin, requireCompanyAuth, hashPassword } from "../lib/auth.js";
+import { requireAuth, requireAdmin, requireCompanyAuth } from "../lib/auth.js";
+import { hashPasswordBcrypt } from "../lib/security.js";
 
 const router = Router();
 
@@ -54,7 +55,7 @@ router.get("/", requireAuth, async (req, res) => {
 router.get("/:id", requireAuth, async (req, res) => {
   try {
     const companyId = req.session.companyId!;
-    const id = parseInt(req.params.id);
+    const id = parseInt(String(req.params.id));
     const [employee] = await db.select(employeeSelect).from(employeesTable)
       .leftJoin(departmentsTable, eq(employeesTable.departmentId, departmentsTable.id))
       .leftJoin(shiftsTable, eq(employeesTable.shiftId, shiftsTable.id))
@@ -73,8 +74,9 @@ router.post("/", requireAdmin, async (req, res) => {
       res.status(400).json({ message: "الاسم واسم المستخدم وكلمة المرور مطلوبة" });
       return;
     }
+    const passwordHash = await hashPasswordBcrypt(password);
     const [emp] = await db.insert(employeesTable).values({
-      companyId, username, passwordHash: hashPassword(password), fullName, email, phone, address,
+      companyId, username: username.trim().toLowerCase(), passwordHash, fullName, email, phone, address,
       role: role || "employee", departmentId: departmentId || null, shiftId: shiftId || null,
       branchId: branchId || null, jobTitle, salary: salary || null,
     }).returning({ id: employeesTable.id });
@@ -95,11 +97,11 @@ router.post("/", requireAdmin, async (req, res) => {
 router.put("/:id", requireAdmin, async (req, res) => {
   try {
     const companyId = req.session.companyId!;
-    const id = parseInt(req.params.id);
+    const id = parseInt(String(req.params.id));
     const { username, password, fullName, email, phone, address, role, departmentId, shiftId, branchId, jobTitle, salary, isActive } = req.body;
     const updateData: any = { fullName, email, phone, address, role, jobTitle, salary: salary || null, isActive };
-    if (username) updateData.username = username;
-    if (password) updateData.passwordHash = hashPassword(password);
+    if (username) updateData.username = username.trim().toLowerCase();
+    if (password) updateData.passwordHash = await hashPasswordBcrypt(password);
     if (departmentId !== undefined) updateData.departmentId = departmentId || null;
     if (shiftId !== undefined) updateData.shiftId = shiftId || null;
     if (branchId !== undefined) updateData.branchId = branchId || null;
@@ -117,7 +119,7 @@ router.put("/:id", requireAdmin, async (req, res) => {
 router.delete("/:id", requireAdmin, async (req, res) => {
   try {
     const companyId = req.session.companyId!;
-    const id = parseInt(req.params.id);
+    const id = parseInt(String(req.params.id));
     if (id === req.session.userId) { res.status(400).json({ message: "لا يمكن حذف حسابك الخاص" }); return; }
     await db.delete(employeesTable).where(and(eq(employeesTable.id, id), eq(employeesTable.companyId, companyId)));
     res.json({ message: "Deleted" });
@@ -127,7 +129,7 @@ router.delete("/:id", requireAdmin, async (req, res) => {
 router.put("/:id/toggle-status", requireAdmin, async (req, res) => {
   try {
     const companyId = req.session.companyId!;
-    const id = parseInt(req.params.id);
+    const id = parseInt(String(req.params.id));
     const [current] = await db.select({ isActive: employeesTable.isActive }).from(employeesTable)
       .where(and(eq(employeesTable.id, id), eq(employeesTable.companyId, companyId)));
     if (!current) { res.status(404).json({ message: "Not found" }); return; }
@@ -141,10 +143,11 @@ router.put("/:id/toggle-status", requireAdmin, async (req, res) => {
   } catch (err) { console.error(err); res.status(500).json({ message: "Server error" }); }
 });
 
+// ─── Face descriptor CRUD ──────────────────────────────────────────────────────
 router.put("/:id/face-descriptor", requireAdmin, async (req, res) => {
   try {
     const companyId = req.session.companyId!;
-    const id = parseInt(req.params.id);
+    const id = parseInt(String(req.params.id));
     const { faceDescriptor } = req.body;
     if (!faceDescriptor) { res.status(400).json({ message: "بيانات الوجه مطلوبة" }); return; }
     await db.update(employeesTable).set({ faceDescriptor: JSON.stringify(faceDescriptor) })
@@ -156,13 +159,14 @@ router.put("/:id/face-descriptor", requireAdmin, async (req, res) => {
 router.delete("/:id/face-descriptor", requireAdmin, async (req, res) => {
   try {
     const companyId = req.session.companyId!;
-    const id = parseInt(req.params.id);
+    const id = parseInt(String(req.params.id));
     await db.update(employeesTable).set({ faceDescriptor: null })
       .where(and(eq(employeesTable.id, id), eq(employeesTable.companyId, companyId)));
     res.json({ message: "تم حذف بصمة الوجه" });
   } catch (err) { console.error(err); res.status(500).json({ message: "Server error" }); }
 });
 
+// All face descriptors for the company (used for face recognition clock-in)
 router.get("/face-descriptors/all", requireCompanyAuth, async (req, res) => {
   try {
     const companyId = req.session.companyId!;
@@ -175,13 +179,16 @@ router.get("/face-descriptors/all", requireCompanyAuth, async (req, res) => {
   } catch (err) { console.error(err); res.status(500).json({ message: "Server error" }); }
 });
 
+// Admin changes another employee's password
 router.put("/:id/change-password", requireAdmin, async (req, res) => {
   try {
     const companyId = req.session.companyId!;
-    const id = parseInt(req.params.id);
+    const id = parseInt(String(req.params.id));
     const { newPassword } = req.body;
     if (!newPassword || newPassword.length < 6) { res.status(400).json({ message: "كلمة المرور يجب أن تكون 6 أحرف على الأقل" }); return; }
-    await db.update(employeesTable).set({ passwordHash: hashPassword(newPassword) })
+    const newHash = await hashPasswordBcrypt(newPassword);
+    await db.update(employeesTable)
+      .set({ passwordHash: newHash, failedLoginAttempts: 0, lockedUntil: null })
       .where(and(eq(employeesTable.id, id), eq(employeesTable.companyId, companyId)));
     res.json({ message: "تم تغيير كلمة المرور بنجاح" });
   } catch (err) { console.error(err); res.status(500).json({ message: "Server error" }); }

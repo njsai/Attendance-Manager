@@ -17,10 +17,10 @@ const MONTHS = [
   "يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"
 ];
 const YEARS = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
-const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> = {
-  unpaid:  { label: "غير مدفوع",  color: "text-red-400",    bg: "bg-red-500/10 border-red-500/20" },
-  paid:    { label: "مدفوع",      color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20" },
-  partial: { label: "جزئي",       color: "text-amber-400",   bg: "bg-amber-500/10 border-amber-500/20" },
+const STATUS_MAP: Record<string, { label: string; color: string; bg: string; border: string }> = {
+  unpaid:  { label: "غير مدفوع",  color: "#f87171",  bg: "rgba(248,113,113,0.1)",  border: "rgba(248,113,113,0.25)" },
+  paid:    { label: "مدفوع",      color: "#10b981",  bg: "rgba(16,185,129,0.1)",   border: "rgba(16,185,129,0.25)" },
+  partial: { label: "جزئي",       color: "#f59e0b",  bg: "rgba(245,158,11,0.1)",   border: "rgba(245,158,11,0.25)" },
 };
 
 type PayrollRecord = {
@@ -132,98 +132,71 @@ function PayrollSlip({ record, onClose }: { record: PayrollRecord; onClose: () =
     doc.save(`payslip_${record.employeeId}_${record.year}_${record.month}.pdf`);
   };
 
+  const mSt = { background: "rgba(5,13,31,0.97)", border: "1px solid rgba(0,245,255,0.12)", borderRadius: 20, width: "100%", maxWidth: 500, maxHeight: "88vh", overflowY: "auto" as const };
+  const rowSt = (c: string) => ({ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0", fontSize: 13, borderBottom: "1px solid rgba(255,255,255,0.04)" });
+  const st = STATUS_MAP[record.status];
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-      <motion.div initial={{ scale: 0.92, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-        className="bg-slate-900 border border-white/10 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden">
-        <div className="flex items-center justify-between p-5 border-b border-white/10">
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", backdropFilter: "blur(8px)", zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }} dir="rtl">
+      <motion.div initial={{ scale: 0.92, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} style={mSt}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", borderBottom: "1px solid rgba(0,245,255,0.07)" }}>
           <div>
-            <h2 className="text-white font-bold text-lg">كشف الراتب</h2>
-            <p className="text-slate-400 text-sm">{record.employeeName} — {MONTHS[record.month - 1]} {record.year}</p>
+            <h2 style={{ color: "#fff", fontWeight: 700, fontSize: 15, margin: 0 }}>كشف الراتب</h2>
+            <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 12, marginTop: 2 }}>{record.employeeName} — {MONTHS[record.month - 1]} {record.year}</p>
           </div>
-          <div className="flex gap-2">
-            <button onClick={handlePrint} className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm rounded-lg transition-all">
-              <Printer className="w-3.5 h-3.5" /> طباعة
+          <div style={{ display: "flex", gap: 6 }}>
+            <button onClick={handlePrint} style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 11px", borderRadius: 9, border: "none", background: "rgba(168,85,247,0.15)", color: "#a855f7", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "'Tajawal', sans-serif" }}>
+              <Printer size={12} /> طباعة
             </button>
-            <button onClick={handlePDF} className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-sm rounded-lg transition-all">
-              <Download className="w-3.5 h-3.5" /> PDF
+            <button onClick={handlePDF} style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 11px", borderRadius: 9, border: "none", background: "rgba(16,185,129,0.12)", color: "#10b981", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "'Tajawal', sans-serif" }}>
+              <Download size={12} /> PDF
             </button>
-            <button onClick={onClose} className="p-1.5 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-all">
-              <X className="w-5 h-5" />
-            </button>
+            <button onClick={onClose} style={{ padding: 6, borderRadius: 8, background: "none", border: "none", color: "rgba(255,255,255,0.35)", cursor: "pointer" }}><X size={16} /></button>
           </div>
         </div>
-        <div className="p-5 space-y-4 max-h-[70vh] overflow-y-auto" ref={slipRef}>
-          {/* Info */}
-          <div className="grid grid-cols-2 gap-3">
-            {[
-              ["المسمى الوظيفي", record.jobTitle ?? "-"],
-              ["القسم", record.departmentName ?? "-"],
-              ["أيام الحضور", `${record.workDays} يوم`],
-              ["أيام الغياب", `${record.absentDays} يوم`],
-              ["تأخير", `${record.lateMinutes} دقيقة`],
-              ["أوفر تايم", `${record.overtimeMinutes} دقيقة`],
+        <div style={{ padding: "14px 18px", display: "flex", flexDirection: "column", gap: 12 }} ref={slipRef}>
+          <div className="grid grid-cols-2 gap-2">
+            {[["المسمى الوظيفي", record.jobTitle ?? "-"], ["القسم", record.departmentName ?? "-"],
+              ["أيام الحضور", `${record.workDays} يوم`], ["أيام الغياب", `${record.absentDays} يوم`],
+              ["تأخير", `${record.lateMinutes} دقيقة`], ["أوفر تايم", `${record.overtimeMinutes} دقيقة`],
             ].map(([k, v]) => (
-              <div key={k} className="bg-white/5 rounded-xl p-3">
-                <p className="text-slate-400 text-xs mb-0.5">{k}</p>
-                <p className="text-white text-sm font-semibold">{v}</p>
+              <div key={k} style={{ background: "rgba(255,255,255,0.03)", borderRadius: 10, padding: "8px 12px" }}>
+                <p style={{ color: "rgba(255,255,255,0.3)", fontSize: 10, margin: 0 }}>{k}</p>
+                <p style={{ color: "#fff", fontSize: 13, fontWeight: 600, marginTop: 2 }}>{v}</p>
               </div>
             ))}
           </div>
-          {/* Earnings */}
-          <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-xl p-4">
-            <h3 className="text-emerald-400 text-xs font-bold uppercase mb-3">المستحقات</h3>
-            <div className="space-y-2">
-              {[
-                ["الراتب الأساسي", record.basicSalary],
-                ["الحوافز والمكافآت", record.incentives],
-                ["أجر الأوفر تايم", record.overtimePay],
-              ].map(([k, v]) => (
-                <div key={k as string} className="flex justify-between text-sm">
-                  <span className="text-slate-300">{k as string}</span>
-                  <span className="text-emerald-400 font-medium">+{fmt(v as number, record.currency)}</span>
-                </div>
-              ))}
-            </div>
+          <div style={{ background: "rgba(16,185,129,0.05)", border: "1px solid rgba(16,185,129,0.15)", borderRadius: 12, padding: "12px 14px" }}>
+            <p style={{ color: "#10b981", fontSize: 10, fontWeight: 700, marginBottom: 8 }}>المستحقات</p>
+            {[["الراتب الأساسي", record.basicSalary], ["الحوافز والمكافآت", record.incentives], ["أجر الأوفر تايم", record.overtimePay]].map(([k, v]) => (
+              <div key={k as string} style={rowSt("#10b981")}>
+                <span style={{ color: "rgba(255,255,255,0.55)" }}>{k as string}</span>
+                <span style={{ color: "#10b981", fontWeight: 600 }}>+{fmt(v as number, record.currency)}</span>
+              </div>
+            ))}
           </div>
-          {/* Deductions */}
-          <div className="bg-red-500/5 border border-red-500/20 rounded-xl p-4">
-            <h3 className="text-red-400 text-xs font-bold uppercase mb-3">الخصومات</h3>
-            <div className="space-y-2">
-              {[
-                ["خصومات أخرى", record.deductions],
-                ["سلف", record.advances],
-                ["خصم التأخير", record.lateDeduction],
-                ["خصم الغياب", record.absenceDeduction],
-              ].map(([k, v]) => (
-                <div key={k as string} className="flex justify-between text-sm">
-                  <span className="text-slate-300">{k as string}</span>
-                  <span className={(v as number) > 0 ? "text-red-400 font-medium" : "text-slate-500"}>
-                    {(v as number) > 0 ? `-${fmt(v as number, record.currency)}` : "٠"}
-                  </span>
-                </div>
-              ))}
-            </div>
+          <div style={{ background: "rgba(248,113,113,0.05)", border: "1px solid rgba(248,113,113,0.15)", borderRadius: 12, padding: "12px 14px" }}>
+            <p style={{ color: "#f87171", fontSize: 10, fontWeight: 700, marginBottom: 8 }}>الخصومات</p>
+            {[["خصومات أخرى", record.deductions], ["سلف", record.advances], ["خصم التأخير", record.lateDeduction], ["خصم الغياب", record.absenceDeduction]].map(([k, v]) => (
+              <div key={k as string} style={rowSt("#f87171")}>
+                <span style={{ color: "rgba(255,255,255,0.55)" }}>{k as string}</span>
+                <span style={{ color: (v as number) > 0 ? "#f87171" : "rgba(255,255,255,0.2)", fontWeight: 600 }}>{(v as number) > 0 ? `-${fmt(v as number, record.currency)}` : "٠"}</span>
+              </div>
+            ))}
           </div>
-          {/* Net */}
-          <div className="bg-indigo-600/20 border border-indigo-500/40 rounded-xl p-4 flex items-center justify-between">
-            <span className="text-white font-bold text-lg">صافي الراتب</span>
-            <span className="text-indigo-300 font-black text-xl">{fmt(record.netSalary, record.currency)}</span>
+          <div style={{ background: "rgba(0,245,255,0.05)", border: "1px solid rgba(0,245,255,0.15)", borderRadius: 12, padding: "12px 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span style={{ color: "#fff", fontWeight: 700, fontSize: 15 }}>صافي الراتب</span>
+            <span style={{ color: "#00f5ff", fontWeight: 900, fontSize: 18 }}>{fmt(record.netSalary, record.currency)}</span>
           </div>
-          {/* Status */}
-          <div className="flex items-center justify-between">
-            <span className="text-slate-400 text-sm">حالة الصرف:</span>
-            <span className={`text-xs px-3 py-1 rounded-full font-bold border ${STATUS_MAP[record.status]?.bg} ${STATUS_MAP[record.status]?.color}`}>
-              {STATUS_MAP[record.status]?.label}
-            </span>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span style={{ color: "rgba(255,255,255,0.4)", fontSize: 12 }}>حالة الصرف:</span>
+            {st && <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 12px", borderRadius: 20, color: st.color, background: st.bg, border: `1px solid ${st.border}` }}>{st.label}</span>}
           </div>
-          {record.paidAt && (
-            <p className="text-slate-400 text-xs text-center">تاريخ الصرف: {new Date(record.paidAt).toLocaleDateString("ar-IQ", { year: "numeric", month: "long", day: "numeric" })}</p>
-          )}
+          {record.paidAt && <p style={{ color: "rgba(255,255,255,0.3)", fontSize: 11, textAlign: "center" }}>تاريخ الصرف: {new Date(record.paidAt).toLocaleDateString("ar-IQ", { year: "numeric", month: "long", day: "numeric" })}</p>}
           {record.notes && (
-            <div className="bg-white/5 rounded-xl p-3">
-              <p className="text-slate-400 text-xs mb-1">ملاحظات</p>
-              <p className="text-slate-300 text-sm">{record.notes}</p>
+            <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: 10, padding: "10px 12px" }}>
+              <p style={{ color: "rgba(255,255,255,0.3)", fontSize: 10, marginBottom: 4 }}>ملاحظات</p>
+              <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 13 }}>{record.notes}</p>
             </div>
           )}
         </div>
@@ -264,28 +237,28 @@ function EditModal({ record, onClose, onSave }: { record: PayrollRecord; onClose
 
   const field = (label: string, key: keyof typeof form, type = "number") => (
     <div>
-      <label className="text-slate-400 text-xs mb-1 block">{label}</label>
-      <input
-        type={type}
-        value={form[key] as any}
+      <label style={{ display: "block", fontSize: 10, color: "rgba(255,255,255,0.35)", marginBottom: 4 }}>{label}</label>
+      <input type={type} value={form[key] as any}
         onChange={e => setForm(f => ({ ...f, [key]: type === "number" ? parseFloat(e.target.value) || 0 : e.target.value }))}
-        className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-indigo-500 transition-colors"
-      />
+        style={{ width: "100%", padding: "8px 11px", borderRadius: 9, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(0,245,255,0.1)", color: "#fff", fontSize: 12, outline: "none", boxSizing: "border-box" as const, colorScheme: "dark" as const }} />
     </div>
   );
 
+  const nInp = { width: "100%", padding: "8px 11px", borderRadius: 9, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(0,245,255,0.1)", color: "#fff", fontSize: 12, outline: "none", boxSizing: "border-box" as const, colorScheme: "dark" as const };
+  const nLbl = { display: "block", fontSize: 10, color: "rgba(255,255,255,0.35)", marginBottom: 4 };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", backdropFilter: "blur(8px)", zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }} dir="rtl">
       <motion.div initial={{ scale: 0.92, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-        className="bg-slate-900 border border-white/10 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden">
-        <div className="flex items-center justify-between p-5 border-b border-white/10">
+        style={{ background: "rgba(5,13,31,0.97)", border: "1px solid rgba(0,245,255,0.12)", borderRadius: 20, width: "100%", maxWidth: 500, maxHeight: "88vh", overflowY: "auto" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", borderBottom: "1px solid rgba(0,245,255,0.07)" }}>
           <div>
-            <h2 className="text-white font-bold text-lg">تعديل الراتب</h2>
-            <p className="text-slate-400 text-sm">{record.employeeName} — {MONTHS[record.month - 1]} {record.year}</p>
+            <h2 style={{ color: "#fff", fontWeight: 700, fontSize: 15, margin: 0 }}>تعديل الراتب</h2>
+            <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 12, marginTop: 2 }}>{record.employeeName} — {MONTHS[record.month - 1]} {record.year}</p>
           </div>
-          <button onClick={onClose} className="p-1.5 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-all"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.35)", cursor: "pointer" }}><X size={16} /></button>
         </div>
-        <div className="p-5 space-y-3 max-h-[65vh] overflow-y-auto">
+        <div style={{ padding: "14px 18px", display: "flex", flexDirection: "column", gap: 10, maxHeight: "65vh", overflowY: "auto" }}>
           <div className="grid grid-cols-2 gap-3">
             {field("الراتب الأساسي", "basicSalary")}
             {field("الحوافز والمكافآت", "incentives")}
@@ -295,29 +268,27 @@ function EditModal({ record, onClose, onSave }: { record: PayrollRecord; onClose
             {field("خصم التأخير", "lateDeduction")}
             {field("خصم الغياب", "absenceDeduction")}
             <div>
-              <label className="text-slate-400 text-xs mb-1 block">العملة</label>
-              <select value={form.currency} onChange={e => setForm(f => ({ ...f, currency: e.target.value }))}
-                className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-indigo-500">
-                <option value="IQD">دينار عراقي (IQD)</option>
-                <option value="USD">دولار أمريكي (USD)</option>
+              <label style={nLbl}>العملة</label>
+              <select value={form.currency} onChange={e => setForm(f => ({ ...f, currency: e.target.value }))} style={nInp}>
+                <option value="IQD" style={{ background: "#050d1f" }}>دينار عراقي (IQD)</option>
+                <option value="USD" style={{ background: "#050d1f" }}>دولار أمريكي (USD)</option>
               </select>
             </div>
           </div>
           <div>
-            <label className="text-slate-400 text-xs mb-1 block">ملاحظات</label>
-            <textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={2}
-              className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-indigo-500 resize-none" />
+            <label style={nLbl}>ملاحظات</label>
+            <textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={2} style={{ ...nInp, resize: "none" }} />
           </div>
-          <div className="bg-indigo-600/20 border border-indigo-500/30 rounded-xl p-3 flex justify-between items-center">
-            <span className="text-slate-300 text-sm font-semibold">صافي الراتب المحسوب</span>
-            <span className={`text-lg font-black ${net < 0 ? "text-red-400" : "text-indigo-300"}`}>{fmt(net, form.currency)}</span>
+          <div style={{ background: "rgba(0,245,255,0.05)", border: "1px solid rgba(0,245,255,0.12)", borderRadius: 11, padding: "10px 14px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span style={{ color: "rgba(255,255,255,0.7)", fontSize: 13, fontWeight: 600 }}>صافي الراتب المحسوب</span>
+            <span style={{ color: net < 0 ? "#f87171" : "#00f5ff", fontWeight: 900, fontSize: 16 }}>{fmt(net, form.currency)}</span>
           </div>
         </div>
-        <div className="p-4 border-t border-white/10 flex gap-2 justify-end">
-          <button onClick={onClose} className="px-4 py-2 text-slate-400 hover:text-white text-sm transition-colors">إلغاء</button>
+        <div style={{ padding: "12px 18px", borderTop: "1px solid rgba(0,245,255,0.07)", display: "flex", gap: 8, justifyContent: "flex-end" }}>
+          <button onClick={onClose} style={{ padding: "8px 16px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.08)", background: "none", color: "rgba(255,255,255,0.4)", fontSize: 12, cursor: "pointer", fontFamily: "'Tajawal', sans-serif" }}>إلغاء</button>
           <button onClick={save} disabled={saving}
-            className="flex items-center gap-2 px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold rounded-xl transition-all disabled:opacity-50">
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+            style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 18px", borderRadius: 10, border: "none", background: "linear-gradient(135deg, rgba(0,245,255,0.7), rgba(59,130,246,0.7))", color: "#020817", fontSize: 12, fontWeight: 700, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.6 : 1, fontFamily: "'Tajawal', sans-serif" }}>
+            {saving ? <Loader2 size={13} style={{ animation: "spin 1s linear infinite" }} /> : <Check size={13} />}
             حفظ التعديلات
           </button>
         </div>
@@ -390,46 +361,30 @@ function AddModal({ employees, onClose, onSave, month, year }: {
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", backdropFilter: "blur(8px)", zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }} dir="rtl">
       <motion.div initial={{ scale: 0.92, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-        className="bg-slate-900 border border-white/10 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden">
-        <div className="flex items-center justify-between p-5 border-b border-white/10">
-          <h2 className="text-white font-bold text-lg">إضافة راتب جديد</h2>
-          <button onClick={onClose} className="p-1.5 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-all"><X className="w-5 h-5" /></button>
+        style={{ background: "rgba(5,13,31,0.97)", border: "1px solid rgba(0,245,255,0.12)", borderRadius: 20, width: "100%", maxWidth: 520 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", borderBottom: "1px solid rgba(0,245,255,0.07)" }}>
+          <h2 style={{ color: "#fff", fontWeight: 700, fontSize: 15, margin: 0 }}>إضافة راتب جديد</h2>
+          <button onClick={onClose} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.35)", cursor: "pointer" }}><X size={16} /></button>
         </div>
-        <div className="p-5 space-y-3 max-h-[65vh] overflow-y-auto">
-          {error && <div className="flex items-center gap-2 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm"><AlertCircle className="w-4 h-4 shrink-0" />{error}</div>}
+        <div style={{ padding: "14px 18px", display: "flex", flexDirection: "column", gap: 10, maxHeight: "65vh", overflowY: "auto" }}>
+          {error && <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 12px", background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.2)", borderRadius: 10, color: "#f87171", fontSize: 12 }}><AlertCircle size={13} />{error}</div>}
           <div className="grid grid-cols-3 gap-3">
-            <div className="col-span-3">
-              <label className="text-slate-400 text-xs mb-1 block">الموظف</label>
-              <select value={form.employeeId} onChange={e => setForm(f => ({ ...f, employeeId: e.target.value }))}
-                className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-indigo-500">
-                <option value="">— اختر الموظف —</option>
-                {employees.map(e => <option key={e.id} value={e.id}>{e.fullName}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="text-slate-400 text-xs mb-1 block">الشهر</label>
-              <select value={form.month} onChange={e => setForm(f => ({ ...f, month: e.target.value }))}
-                className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-indigo-500">
-                {MONTHS.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="text-slate-400 text-xs mb-1 block">السنة</label>
-              <select value={form.year} onChange={e => setForm(f => ({ ...f, year: e.target.value }))}
-                className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-indigo-500">
-                {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="text-slate-400 text-xs mb-1 block">العملة</label>
-              <select value={form.currency} onChange={e => setForm(f => ({ ...f, currency: e.target.value }))}
-                className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-indigo-500">
-                <option value="IQD">IQD دينار عراقي</option>
-                <option value="USD">USD دولار</option>
-              </select>
-            </div>
+            {[
+              { label: "الموظف", key: "employeeId", span: 3, opts: [{ v: "", l: "— اختر الموظف —" }, ...employees.map(e => ({ v: String(e.id), l: e.fullName }))] },
+              { label: "الشهر", key: "month", span: 1, opts: MONTHS.map((m, i) => ({ v: String(i + 1), l: m })) },
+              { label: "السنة", key: "year", span: 1, opts: YEARS.map(y => ({ v: String(y), l: String(y) })) },
+              { label: "العملة", key: "currency", span: 1, opts: [{ v: "IQD", l: "IQD دينار عراقي" }, { v: "USD", l: "USD دولار" }] },
+            ].map(f => (
+              <div key={f.key} style={{ gridColumn: `span ${f.span}` }}>
+                <label style={{ display: "block", fontSize: 10, color: "rgba(255,255,255,0.35)", marginBottom: 4 }}>{f.label}</label>
+                <select value={form[f.key as keyof typeof form]} onChange={e => setForm(fm => ({ ...fm, [f.key]: e.target.value }))}
+                  style={{ width: "100%", padding: "8px 11px", borderRadius: 9, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(0,245,255,0.1)", color: "#fff", fontSize: 12, outline: "none", colorScheme: "dark" as const }}>
+                  {f.opts.map(o => <option key={o.v} value={o.v} style={{ background: "#050d1f" }}>{o.l}</option>)}
+                </select>
+              </div>
+            ))}
           </div>
           <div className="grid grid-cols-2 gap-3">
             {field("الراتب الأساسي", "basicSalary")}
@@ -441,20 +396,20 @@ function AddModal({ employees, onClose, onSave, month, year }: {
             {field("خصم الغياب", "absenceDeduction")}
           </div>
           <div>
-            <label className="text-slate-400 text-xs mb-1 block">ملاحظات</label>
+            <label style={{ display: "block", fontSize: 10, color: "rgba(255,255,255,0.35)", marginBottom: 4 }}>ملاحظات</label>
             <textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={2}
-              className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-indigo-500 resize-none" />
+              style={{ width: "100%", padding: "8px 11px", borderRadius: 9, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(0,245,255,0.1)", color: "#fff", fontSize: 12, outline: "none", resize: "none", colorScheme: "dark" as const, boxSizing: "border-box" as const }} />
           </div>
-          <div className="bg-indigo-600/20 border border-indigo-500/30 rounded-xl p-3 flex justify-between items-center">
-            <span className="text-slate-300 text-sm font-semibold">صافي الراتب المحسوب</span>
-            <span className={`text-lg font-black ${net < 0 ? "text-red-400" : "text-indigo-300"}`}>{fmt(net, form.currency)}</span>
+          <div style={{ background: "rgba(0,245,255,0.05)", border: "1px solid rgba(0,245,255,0.12)", borderRadius: 11, padding: "10px 14px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span style={{ color: "rgba(255,255,255,0.7)", fontSize: 13, fontWeight: 600 }}>صافي الراتب المحسوب</span>
+            <span style={{ color: net < 0 ? "#f87171" : "#00f5ff", fontWeight: 900, fontSize: 16 }}>{fmt(net, form.currency)}</span>
           </div>
         </div>
-        <div className="p-4 border-t border-white/10 flex gap-2 justify-end">
-          <button onClick={onClose} className="px-4 py-2 text-slate-400 hover:text-white text-sm transition-colors">إلغاء</button>
+        <div style={{ padding: "12px 18px", borderTop: "1px solid rgba(0,245,255,0.07)", display: "flex", gap: 8, justifyContent: "flex-end" }}>
+          <button onClick={onClose} style={{ padding: "8px 16px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.08)", background: "none", color: "rgba(255,255,255,0.4)", fontSize: 12, cursor: "pointer", fontFamily: "'Tajawal', sans-serif" }}>إلغاء</button>
           <button onClick={save} disabled={saving}
-            className="flex items-center gap-2 px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold rounded-xl transition-all disabled:opacity-50">
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+            style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 18px", borderRadius: 10, border: "none", background: "linear-gradient(135deg, rgba(16,185,129,0.8), rgba(5,150,105,0.7))", color: "#fff", fontSize: 12, fontWeight: 700, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.6 : 1, fontFamily: "'Tajawal', sans-serif" }}>
+            {saving ? <Loader2 size={13} style={{ animation: "spin 1s linear infinite" }} /> : <Plus size={13} />}
             إضافة الراتب
           </button>
         </div>
@@ -485,50 +440,50 @@ function GenerateModal({ onClose, onSave, month, year }: { onClose: () => void; 
     } finally { setLoading(false); }
   };
 
+  const gSel = { padding: "8px 11px", borderRadius: 9, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(0,245,255,0.1)", color: "#fff", fontSize: 12, outline: "none", colorScheme: "dark" as const };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", backdropFilter: "blur(8px)", zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }} dir="rtl">
       <motion.div initial={{ scale: 0.92, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-        className="bg-slate-900 border border-white/10 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden">
-        <div className="flex items-center justify-between p-5 border-b border-white/10">
+        style={{ background: "rgba(5,13,31,0.97)", border: "1px solid rgba(0,245,255,0.12)", borderRadius: 20, width: "100%", maxWidth: 440 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", borderBottom: "1px solid rgba(0,245,255,0.07)" }}>
           <div>
-            <h2 className="text-white font-bold text-lg">توليد رواتب جماعية</h2>
-            <p className="text-slate-400 text-sm">يتم إنشاء رواتب جميع الموظفين النشطين تلقائياً</p>
+            <h2 style={{ color: "#fff", fontWeight: 700, fontSize: 15, margin: 0 }}>توليد رواتب جماعية</h2>
+            <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 12, marginTop: 2 }}>يتم إنشاء رواتب جميع الموظفين النشطين تلقائياً</p>
           </div>
-          <button onClick={onClose} className="p-1.5 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-all"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.35)", cursor: "pointer" }}><X size={16} /></button>
         </div>
-        <div className="p-5 space-y-4">
+        <div style={{ padding: "14px 18px", display: "flex", flexDirection: "column", gap: 12 }}>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-slate-400 text-xs mb-1 block">الشهر</label>
-              <select value={selMonth} onChange={e => setSelMonth(parseInt(e.target.value))}
-                className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-indigo-500">
-                {MONTHS.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
+              <label style={{ display: "block", fontSize: 10, color: "rgba(255,255,255,0.35)", marginBottom: 4 }}>الشهر</label>
+              <select value={selMonth} onChange={e => setSelMonth(parseInt(e.target.value))} style={{ ...gSel, width: "100%" }}>
+                {MONTHS.map((m, i) => <option key={i} value={i + 1} style={{ background: "#050d1f" }}>{m}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-slate-400 text-xs mb-1 block">السنة</label>
-              <select value={selYear} onChange={e => setSelYear(parseInt(e.target.value))}
-                className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-indigo-500">
-                {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
+              <label style={{ display: "block", fontSize: 10, color: "rgba(255,255,255,0.35)", marginBottom: 4 }}>السنة</label>
+              <select value={selYear} onChange={e => setSelYear(parseInt(e.target.value))} style={{ ...gSel, width: "100%" }}>
+                {YEARS.map(y => <option key={y} value={y} style={{ background: "#050d1f" }}>{y}</option>)}
               </select>
             </div>
           </div>
-          <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 flex gap-2">
-            <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-            <p className="text-amber-300 text-xs">سيتم حساب التأخير والغياب والأوفر تايم تلقائياً من سجلات الحضور. الرواتب الموجودة مسبقاً لن تُحدَّث.</p>
+          <div style={{ background: "rgba(245,158,11,0.07)", border: "1px solid rgba(245,158,11,0.15)", borderRadius: 11, padding: "10px 12px", display: "flex", gap: 8 }}>
+            <AlertCircle size={14} style={{ color: "#f59e0b", flexShrink: 0, marginTop: 1 }} />
+            <p style={{ color: "#f59e0b", fontSize: 11, margin: 0 }}>سيتم حساب التأخير والغياب والأوفر تايم تلقائياً من سجلات الحضور. الرواتب الموجودة مسبقاً لن تُحدَّث.</p>
           </div>
           {result && (
-            <div className={`flex items-center gap-2 p-3 rounded-xl text-sm ${result.created > 0 ? "bg-emerald-500/10 border border-emerald-500/20 text-emerald-400" : "bg-amber-500/10 border border-amber-500/20 text-amber-400"}`}>
-              <CheckCircle className="w-4 h-4 shrink-0" />
+            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", borderRadius: 11, background: result.created > 0 ? "rgba(16,185,129,0.08)" : "rgba(245,158,11,0.08)", border: `1px solid ${result.created > 0 ? "rgba(16,185,129,0.2)" : "rgba(245,158,11,0.2)"}`, color: result.created > 0 ? "#10b981" : "#f59e0b", fontSize: 13 }}>
+              <CheckCircle size={14} />
               {result.message}
             </div>
           )}
         </div>
-        <div className="p-4 border-t border-white/10 flex gap-2 justify-end">
-          <button onClick={onClose} className="px-4 py-2 text-slate-400 hover:text-white text-sm transition-colors">إغلاق</button>
+        <div style={{ padding: "12px 18px", borderTop: "1px solid rgba(0,245,255,0.07)", display: "flex", gap: 8, justifyContent: "flex-end" }}>
+          <button onClick={onClose} style={{ padding: "8px 16px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.08)", background: "none", color: "rgba(255,255,255,0.4)", fontSize: 12, cursor: "pointer", fontFamily: "'Tajawal', sans-serif" }}>إغلاق</button>
           <button onClick={generate} disabled={loading}
-            className="flex items-center gap-2 px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold rounded-xl transition-all disabled:opacity-50">
-            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+            style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 18px", borderRadius: 10, border: "none", background: "linear-gradient(135deg, rgba(16,185,129,0.8), rgba(5,150,105,0.7))", color: "#fff", fontSize: 12, fontWeight: 700, cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.6 : 1, fontFamily: "'Tajawal', sans-serif" }}>
+            {loading ? <Loader2 size={13} style={{ animation: "spin 1s linear infinite" }} /> : <Zap size={13} />}
             توليد الرواتب
           </button>
         </div>
@@ -548,35 +503,35 @@ function LogsModal({ payrollId, employeeName, onClose }: { payrollId: number; em
   }, [payrollId]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", backdropFilter: "blur(8px)", zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }} dir="rtl">
       <motion.div initial={{ scale: 0.92, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-        className="bg-slate-900 border border-white/10 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden">
-        <div className="flex items-center justify-between p-5 border-b border-white/10">
+        style={{ background: "rgba(5,13,31,0.97)", border: "1px solid rgba(0,245,255,0.12)", borderRadius: 20, width: "100%", maxWidth: 500 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", borderBottom: "1px solid rgba(0,245,255,0.07)" }}>
           <div>
-            <h2 className="text-white font-bold text-lg">سجل التعديلات</h2>
-            <p className="text-slate-400 text-sm">{employeeName}</p>
+            <h2 style={{ color: "#fff", fontWeight: 700, fontSize: 15, margin: 0 }}>سجل التعديلات</h2>
+            <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 12, marginTop: 2 }}>{employeeName}</p>
           </div>
-          <button onClick={onClose} className="p-1.5 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-all"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.35)", cursor: "pointer" }}><X size={16} /></button>
         </div>
-        <div className="p-4 max-h-[60vh] overflow-y-auto">
+        <div style={{ padding: "14px 18px", maxHeight: "60vh", overflowY: "auto" }}>
           {loading ? (
-            <div className="flex justify-center py-8"><Loader2 className="w-8 h-8 text-indigo-400 animate-spin" /></div>
+            <div style={{ display: "flex", justifyContent: "center", padding: "32px 0" }}><Loader2 size={28} style={{ color: "#a855f7", animation: "spin 1s linear infinite" }} /></div>
           ) : logs.length === 0 ? (
-            <p className="text-center text-slate-400 py-8">لا توجد تعديلات مسجّلة</p>
+            <p style={{ textAlign: "center", color: "rgba(255,255,255,0.3)", padding: "32px 0", fontSize: 14 }}>لا توجد تعديلات مسجّلة</p>
           ) : (
-            <div className="space-y-2">
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {logs.map(l => (
-                <div key={l.id} className="bg-white/5 rounded-xl p-3">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-white text-sm font-medium">{fmtField(l.fieldName)}</span>
-                    <span className="text-slate-500 text-xs">{new Date(l.changedAt).toLocaleString("ar-IQ")}</span>
+                <div key={l.id} style={{ background: "rgba(255,255,255,0.03)", borderRadius: 11, padding: "10px 12px" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+                    <span style={{ color: "#fff", fontSize: 13, fontWeight: 600 }}>{fmtField(l.fieldName)}</span>
+                    <span style={{ color: "rgba(255,255,255,0.25)", fontSize: 10 }}>{new Date(l.changedAt).toLocaleString("ar-IQ")}</span>
                   </div>
-                  <div className="flex items-center gap-2 text-xs">
-                    <span className="text-red-400 line-through">{l.oldValue || "—"}</span>
-                    <span className="text-slate-500">→</span>
-                    <span className="text-emerald-400">{l.newValue || "—"}</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12 }}>
+                    <span style={{ color: "#f87171", textDecoration: "line-through" }}>{l.oldValue || "—"}</span>
+                    <span style={{ color: "rgba(255,255,255,0.2)" }}>←</span>
+                    <span style={{ color: "#10b981" }}>{l.newValue || "—"}</span>
                   </div>
-                  {l.changedByName && <p className="text-slate-500 text-xs mt-1">بواسطة: {l.changedByName}</p>}
+                  {l.changedByName && <p style={{ color: "rgba(255,255,255,0.25)", fontSize: 10, marginTop: 4 }}>بواسطة: {l.changedByName}</p>}
                 </div>
               ))}
             </div>
@@ -667,33 +622,35 @@ export default function Payroll() {
 
   const currency = records[0]?.currency ?? "IQD";
 
+  const selSt = { padding: "8px 12px", borderRadius: 10, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(0,245,255,0.1)", color: "#fff", fontSize: 12, outline: "none", colorScheme: "dark" as const };
+
   return (
-    <div className="space-y-6">
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }} dir="rtl">
       {/* Toast */}
       <AnimatePresence>
         {toast && (
           <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-            className={`fixed top-4 left-1/2 -translate-x-1/2 z-[60] flex items-center gap-2 px-5 py-3 rounded-2xl text-sm font-medium shadow-2xl border backdrop-blur-md ${toast.ok ? "bg-emerald-500/20 border-emerald-500/30 text-emerald-300" : "bg-red-500/20 border-red-500/30 text-red-300"}`}>
-            {toast.ok ? <CheckCircle className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
+            style={{ position: "fixed", top: 16, left: "50%", transform: "translateX(-50%)", zIndex: 60, display: "flex", alignItems: "center", gap: 8, padding: "10px 20px", borderRadius: 14, fontSize: 13, fontWeight: 600, backdropFilter: "blur(12px)", background: toast.ok ? "rgba(16,185,129,0.15)" : "rgba(239,68,68,0.15)", border: `1px solid ${toast.ok ? "rgba(16,185,129,0.3)" : "rgba(239,68,68,0.3)"}`, color: toast.ok ? "#10b981" : "#f87171" }}>
+            {toast.ok ? <CheckCircle size={15} /> : <XCircle size={15} />}
             {toast.msg}
           </motion.div>
         )}
       </AnimatePresence>
 
       {/* Header */}
-      <div className="flex items-start justify-between">
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
         <div>
-          <h1 className="text-2xl font-black text-white">الرواتب</h1>
-          <p className="text-slate-400 text-sm mt-0.5">إدارة وصرف رواتب الموظفين — {MONTHS[month - 1]} {year}</p>
+          <h1 style={{ fontSize: 20, fontWeight: 900, color: "#fff", margin: 0 }}>الرواتب</h1>
+          <p style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", marginTop: 4 }}>إدارة وصرف رواتب الموظفين — {MONTHS[month - 1]} {year}</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div style={{ display: "flex", gap: 8 }}>
           <button onClick={() => setShowGenerate(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold rounded-xl transition-all shadow-lg shadow-emerald-900/30">
-            <Zap className="w-4 h-4" /> توليد جماعي
+            style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 14px", borderRadius: 11, border: "none", background: "linear-gradient(135deg, rgba(16,185,129,0.8), rgba(5,150,105,0.7))", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "'Tajawal', sans-serif" }}>
+            <Zap size={14} /> توليد جماعي
           </button>
           <button onClick={() => setShowAdd(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold rounded-xl transition-all shadow-lg shadow-indigo-900/30">
-            <Plus className="w-4 h-4" /> إضافة راتب
+            style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 14px", borderRadius: 11, border: "none", background: "linear-gradient(135deg, rgba(168,85,247,0.8), rgba(99,102,241,0.7))", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "'Tajawal', sans-serif" }}>
+            <Plus size={14} /> إضافة راتب
           </button>
         </div>
       </div>
@@ -702,78 +659,75 @@ export default function Payroll() {
       {stats && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {[
-            { label: "إجمالي الرواتب", value: fmt(stats.totalNet, currency), icon: Banknote, color: "text-indigo-400", bg: "bg-indigo-500/10 border-indigo-500/20" },
-            { label: "مجموع المدفوع", value: fmt(stats.totalPaid, currency), icon: CheckCircle, color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20" },
-            { label: "إجمالي الخصومات", value: fmt(stats.totalDeductions + stats.totalAdvances, currency), icon: ArrowDownRight, color: "text-red-400", bg: "bg-red-500/10 border-red-500/20" },
-            { label: "رواتب غير مدفوعة", value: `${stats.unpaidCount} راتب`, icon: AlertCircle, color: "text-amber-400", bg: "bg-amber-500/10 border-amber-500/20" },
+            { label: "إجمالي الرواتب", value: fmt(stats.totalNet, currency), icon: Banknote, color: "#a855f7", glow: "rgba(168,85,247,0.1)", border: "rgba(168,85,247,0.2)" },
+            { label: "مجموع المدفوع", value: fmt(stats.totalPaid, currency), icon: CheckCircle, color: "#10b981", glow: "rgba(16,185,129,0.1)", border: "rgba(16,185,129,0.2)" },
+            { label: "إجمالي الخصومات", value: fmt(stats.totalDeductions + stats.totalAdvances, currency), icon: ArrowDownRight, color: "#f87171", glow: "rgba(248,113,113,0.1)", border: "rgba(248,113,113,0.2)" },
+            { label: "رواتب غير مدفوعة", value: `${stats.unpaidCount} راتب`, icon: AlertCircle, color: "#f59e0b", glow: "rgba(245,158,11,0.1)", border: "rgba(245,158,11,0.2)" },
           ].map(s => (
-            <div key={s.label} className={`rounded-2xl border p-4 ${s.bg}`}>
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-slate-400 text-xs">{s.label}</p>
-                <s.icon className={`w-4 h-4 ${s.color}`} />
+            <div key={s.label} style={{ borderRadius: 14, border: `1px solid ${s.border}`, background: s.glow, padding: "14px 16px" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                <p style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", margin: 0 }}>{s.label}</p>
+                <s.icon size={14} style={{ color: s.color }} />
               </div>
-              <p className={`text-xl font-black ${s.color}`}>{s.value}</p>
+              <p style={{ fontSize: 18, fontWeight: 900, color: s.color, margin: 0 }}>{s.value}</p>
             </div>
           ))}
         </div>
       )}
 
       {/* Filters */}
-      <div className="bg-slate-800/50 border border-white/10 rounded-2xl p-4">
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-3 py-2 flex-1 min-w-40">
-            <Search className="w-4 h-4 text-slate-400 shrink-0" />
+      <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(0,245,255,0.07)", borderRadius: 14, padding: "12px 14px" }}>
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, ...selSt, flex: 1, minWidth: 160 }}>
+            <Search size={13} style={{ color: "rgba(0,245,255,0.4)", flexShrink: 0 }} />
             <input value={search} onChange={e => setSearch(e.target.value)} placeholder="بحث باسم الموظف..."
-              className="bg-transparent text-white text-sm outline-none w-full placeholder-slate-500" />
+              style={{ background: "transparent", color: "#fff", fontSize: 12, outline: "none", border: "none", flex: 1 }} />
           </div>
-          <select value={month} onChange={e => setMonth(parseInt(e.target.value))}
-            className="px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-indigo-500">
-            {MONTHS.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
+          <select value={month} onChange={e => setMonth(parseInt(e.target.value))} style={selSt}>
+            {MONTHS.map((m, i) => <option key={i} value={i + 1} style={{ background: "#050d1f" }}>{m}</option>)}
           </select>
-          <select value={year} onChange={e => setYear(parseInt(e.target.value))}
-            className="px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-indigo-500">
-            {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
+          <select value={year} onChange={e => setYear(parseInt(e.target.value))} style={selSt}>
+            {YEARS.map(y => <option key={y} value={y} style={{ background: "#050d1f" }}>{y}</option>)}
           </select>
-          <select value={empFilter} onChange={e => setEmpFilter(e.target.value)}
-            className="px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-indigo-500 max-w-44">
-            <option value="">جميع الموظفين</option>
-            {employees.map(e => <option key={e.id} value={e.id}>{e.fullName}</option>)}
+          <select value={empFilter} onChange={e => setEmpFilter(e.target.value)} style={{ ...selSt, maxWidth: 176 }}>
+            <option value="" style={{ background: "#050d1f" }}>جميع الموظفين</option>
+            {employees.map(e => <option key={e.id} value={e.id} style={{ background: "#050d1f" }}>{e.fullName}</option>)}
           </select>
-          <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
-            className="px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-indigo-500">
-            <option value="">كل الحالات</option>
-            <option value="unpaid">غير مدفوع</option>
-            <option value="paid">مدفوع</option>
-            <option value="partial">جزئي</option>
+          <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={selSt}>
+            <option value="" style={{ background: "#050d1f" }}>كل الحالات</option>
+            <option value="unpaid" style={{ background: "#050d1f" }}>غير مدفوع</option>
+            <option value="paid" style={{ background: "#050d1f" }}>مدفوع</option>
+            <option value="partial" style={{ background: "#050d1f" }}>جزئي</option>
           </select>
-          <button onClick={fetchAll} className="p-2 text-slate-400 hover:text-white hover:bg-white/10 rounded-xl transition-colors" title="تحديث">
-            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+          <button onClick={fetchAll} title="تحديث"
+            style={{ padding: 8, borderRadius: 9, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.4)", cursor: "pointer" }}>
+            <RefreshCw size={13} className={loading ? "animate-spin" : ""} />
           </button>
         </div>
       </div>
 
       {/* Table */}
-      <div className="bg-slate-800/50 border border-white/10 rounded-2xl overflow-hidden">
+      <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(0,245,255,0.07)", borderRadius: 14, overflow: "hidden" }}>
         {loading ? (
-          <div className="flex items-center justify-center py-16">
-            <Loader2 className="w-8 h-8 text-indigo-400 animate-spin" />
+          <div style={{ display: "flex", justifyContent: "center", padding: "60px 0" }}>
+            <Loader2 size={28} style={{ color: "#a855f7", animation: "spin 1s linear infinite" }} />
           </div>
         ) : filtered.length === 0 ? (
-          <div className="text-center py-16">
-            <Banknote className="w-12 h-12 mx-auto mb-3 text-slate-600" />
-            <p className="text-slate-400">لا توجد سجلات رواتب لهذه الفترة</p>
+          <div style={{ textAlign: "center", padding: "60px 0" }}>
+            <Banknote size={40} style={{ margin: "0 auto 10px", color: "rgba(255,255,255,0.1)" }} />
+            <p style={{ fontSize: 13, color: "rgba(255,255,255,0.3)", marginBottom: 12 }}>لا توجد سجلات رواتب لهذه الفترة</p>
             <button onClick={() => setShowGenerate(true)}
-              className="mt-3 text-indigo-400 hover:text-indigo-300 text-sm flex items-center gap-1 mx-auto transition-colors">
-              <Zap className="w-3.5 h-3.5" /> توليد رواتب جماعية
+              style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12, color: "#a855f7", background: "none", border: "none", cursor: "pointer" }}>
+              <Zap size={12} /> توليد رواتب جماعية
             </button>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse" }}>
               <thead>
-                <tr className="border-b border-white/10">
+                <tr style={{ borderBottom: "1px solid rgba(0,245,255,0.07)" }}>
                   {["الموظف", "القسم", "الراتب الأساسي", "الحوافز", "الأوفر تايم", "الخصومات", "صافي الراتب", "الحضور", "الحالة", "إجراءات"].map(h => (
-                    <th key={h} className="text-right text-slate-400 text-xs font-semibold px-4 py-3 whitespace-nowrap">{h}</th>
+                    <th key={h} style={{ textAlign: "right", padding: "10px 12px", color: "rgba(0,245,255,0.45)", fontWeight: 600, fontSize: 10, whiteSpace: "nowrap" }}>{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -783,54 +737,49 @@ export default function Payroll() {
                     const st = STATUS_MAP[r.status] ?? STATUS_MAP.unpaid;
                     return (
                       <motion.tr key={r.id}
-                        initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: idx * 0.03 }}
-                        className="border-b border-white/5 hover:bg-white/5 transition-colors">
-                        <td className="px-4 py-3">
-                          <p className="text-white font-semibold">{r.employeeName}</p>
-                          {r.jobTitle && <p className="text-slate-500 text-xs">{r.jobTitle}</p>}
+                        initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.025 }}
+                        style={{ borderBottom: "1px solid rgba(255,255,255,0.03)" }}
+                        onMouseEnter={e => (e.currentTarget.style.background = "rgba(0,245,255,0.02)")}
+                        onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+                        <td style={{ padding: "10px 12px" }}>
+                          <p style={{ color: "#fff", fontWeight: 600, fontSize: 13, margin: 0 }}>{r.employeeName}</p>
+                          {r.jobTitle && <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 10, marginTop: 2 }}>{r.jobTitle}</p>}
                         </td>
-                        <td className="px-4 py-3 text-slate-400 whitespace-nowrap">{r.departmentName ?? "—"}</td>
-                        <td className="px-4 py-3 text-white font-medium whitespace-nowrap">{fmt(r.basicSalary, r.currency)}</td>
-                        <td className="px-4 py-3 text-emerald-400 whitespace-nowrap">{r.incentives > 0 ? `+${fmt(r.incentives, r.currency)}` : "—"}</td>
-                        <td className="px-4 py-3 text-blue-400 whitespace-nowrap">{r.overtimePay > 0 ? `+${fmt(r.overtimePay, r.currency)}` : "—"}</td>
-                        <td className="px-4 py-3 text-red-400 whitespace-nowrap">
+                        <td style={{ padding: "10px 12px", color: "rgba(255,255,255,0.4)", whiteSpace: "nowrap" }}>{r.departmentName ?? "—"}</td>
+                        <td style={{ padding: "10px 12px", color: "#fff", fontWeight: 600, whiteSpace: "nowrap" }}>{fmt(r.basicSalary, r.currency)}</td>
+                        <td style={{ padding: "10px 12px", color: "#10b981", whiteSpace: "nowrap" }}>{r.incentives > 0 ? `+${fmt(r.incentives, r.currency)}` : "—"}</td>
+                        <td style={{ padding: "10px 12px", color: "#00f5ff", whiteSpace: "nowrap" }}>{r.overtimePay > 0 ? `+${fmt(r.overtimePay, r.currency)}` : "—"}</td>
+                        <td style={{ padding: "10px 12px", color: "#f87171", whiteSpace: "nowrap" }}>
                           {(r.deductions + r.advances + r.lateDeduction + r.absenceDeduction) > 0
-                            ? `-${fmt(r.deductions + r.advances + r.lateDeduction + r.absenceDeduction, r.currency)}`
-                            : "—"}
+                            ? `-${fmt(r.deductions + r.advances + r.lateDeduction + r.absenceDeduction, r.currency)}` : "—"}
                         </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <span className="text-white font-black text-base">{fmt(r.netSalary, r.currency)}</span>
+                        <td style={{ padding: "10px 12px", whiteSpace: "nowrap" }}>
+                          <span style={{ color: "#fff", fontWeight: 900, fontSize: 14 }}>{fmt(r.netSalary, r.currency)}</span>
                         </td>
-                        <td className="px-4 py-3 text-slate-400 whitespace-nowrap">
-                          <span title="حضور">✓{r.workDays}</span>
-                          {r.absentDays > 0 && <span className="text-red-400 mr-1" title="غياب"> ✗{r.absentDays}</span>}
-                          {r.lateMinutes > 0 && <span className="text-amber-400 mr-1" title="تأخير"> ⏱{r.lateMinutes}د</span>}
+                        <td style={{ padding: "10px 12px", whiteSpace: "nowrap" }}>
+                          <span style={{ color: "#10b981" }}>✓{r.workDays}</span>
+                          {r.absentDays > 0 && <span style={{ color: "#f87171", marginRight: 5 }}>✗{r.absentDays}</span>}
+                          {r.lateMinutes > 0 && <span style={{ color: "#f59e0b", marginRight: 5 }}>⏱{r.lateMinutes}د</span>}
                         </td>
-                        <td className="px-4 py-3">
-                          <span className={`text-xs px-2 py-1 rounded-full font-bold border ${st.bg} ${st.color}`}>{st.label}</span>
+                        <td style={{ padding: "10px 12px" }}>
+                          <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 20, fontWeight: 700, color: st.color, background: st.bg, border: `1px solid ${st.border || "transparent"}` }}>{st.label}</span>
                         </td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-1">
-                            <button onClick={() => setShowSlip(r)} title="كشف الراتب"
-                              className="p-1.5 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
-                              <Eye className="w-3.5 h-3.5" />
-                            </button>
-                            <button onClick={() => setShowEdit(r)} title="تعديل"
-                              className="p-1.5 text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 rounded-lg transition-colors">
-                              <Edit className="w-3.5 h-3.5" />
-                            </button>
-                            <button onClick={() => handlePay(r.id, r.status)} disabled={payingId === r.id} title={r.status === "paid" ? "إلغاء الدفع" : "تسجيل كمدفوع"}
-                              className={`p-1.5 rounded-lg transition-colors ${r.status === "paid" ? "text-amber-400 hover:bg-amber-500/10" : "text-emerald-400 hover:bg-emerald-500/10"}`}>
-                              {payingId === r.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
-                            </button>
-                            <button onClick={() => setShowLogs(r)} title="سجل التعديلات"
-                              className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-white/10 rounded-lg transition-colors">
-                              <History className="w-3.5 h-3.5" />
-                            </button>
+                        <td style={{ padding: "10px 12px" }}>
+                          <div style={{ display: "flex", gap: 3 }}>
+                            {[
+                              { fn: () => setShowSlip(r), icon: Eye, title: "كشف الراتب", color: "rgba(255,255,255,0.4)" },
+                              { fn: () => setShowEdit(r), icon: Edit, title: "تعديل", color: "#00f5ff" },
+                              { fn: () => handlePay(r.id, r.status), icon: payingId === r.id ? Loader2 : Check, title: r.status === "paid" ? "إلغاء الدفع" : "تسجيل كمدفوع", color: r.status === "paid" ? "#f59e0b" : "#10b981" },
+                              { fn: () => setShowLogs(r), icon: History, title: "سجل التعديلات", color: "rgba(255,255,255,0.4)" },
+                            ].map(({ fn, icon: Ic, title, color }, i) => (
+                              <button key={i} onClick={fn} title={title}
+                                style={{ padding: 5, borderRadius: 7, background: "rgba(255,255,255,0.04)", border: "none", color, cursor: "pointer" }}>
+                                <Ic size={12} className={payingId === r.id && i === 2 ? "animate-spin" : ""} />
+                              </button>
+                            ))}
                             <button onClick={() => handleDelete(r.id)} disabled={deletingId === r.id} title="حذف"
-                              className="p-1.5 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors">
-                              {deletingId === r.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                              style={{ padding: 5, borderRadius: 7, background: "rgba(248,113,113,0.07)", border: "none", color: "#f87171", cursor: "pointer" }}>
+                              {deletingId === r.id ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
                             </button>
                           </div>
                         </td>
@@ -840,9 +789,9 @@ export default function Payroll() {
                 </AnimatePresence>
               </tbody>
               <tfoot>
-                <tr className="border-t border-white/20 bg-white/5">
-                  <td colSpan={6} className="px-4 py-3 text-slate-300 font-bold text-sm">المجموع ({filtered.length} موظف)</td>
-                  <td className="px-4 py-3 text-white font-black">{fmt(filtered.reduce((s, r) => s + r.netSalary, 0), currency)}</td>
+                <tr style={{ borderTop: "1px solid rgba(0,245,255,0.1)", background: "rgba(0,245,255,0.03)" }}>
+                  <td colSpan={6} style={{ padding: "10px 12px", color: "rgba(255,255,255,0.5)", fontWeight: 700, fontSize: 12 }}>المجموع ({filtered.length} موظف)</td>
+                  <td style={{ padding: "10px 12px", color: "#fff", fontWeight: 900, fontSize: 14 }}>{fmt(filtered.reduce((s, r) => s + r.netSalary, 0), currency)}</td>
                   <td colSpan={3} />
                 </tr>
               </tfoot>

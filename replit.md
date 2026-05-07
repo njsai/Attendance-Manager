@@ -5,10 +5,16 @@
 ## Run & Operate
 - API Server: `pnpm --filter @workspace/api-server run dev` (port 8080)
 - Frontend: `pnpm --filter @workspace/attendance-system run dev` (port 24620)
+- **Build DB declarations** (يجب تشغيله بعد تغيير lib/db/src/schema): `pnpm --filter @workspace/db run build`
 - DB push: `pnpm --filter @workspace/db run push` — **تجنّب** push لأنه يحذف جداول الأمان؛ استخدم SQL مباشراً
-- Typecheck: `pnpm run typecheck`
+- Typecheck: `pnpm --filter @workspace/api-server exec tsc --noEmit && PORT=3000 BASE_PATH=/ pnpm --filter @workspace/attendance-system exec tsc --noEmit`
 - **Required env**: `DATABASE_URL`, `SESSION_SECRET` (اختياري لكن مطلوب في prod)
 - **Backup dir**: `/home/runner/workspace/data/backups` (دائم)
+
+## Gotcha: DB declarations
+عند تعديل lib/db/src/schema، يجب إعادة بناء الـ dist لتحديث type declarations:
+`pnpm --filter @workspace/db run build`
+الملف `lib/db/dist/schema/index.d.ts` يجب أن لا يكون فارغاً — إذا كان فارغاً فعادة إعادة البناء.
 
 ## Stack
 - **Runtime**: Node.js 24, TypeScript 5.9

@@ -94,11 +94,11 @@ export default function FaceCapture({ mode, onCapture, onVerify, knownDescriptor
         setMessage("تم اكتشاف الوجه — اضغط 'تسجيل' لحفظ البصمة");
       } else if (mode === "verify" && knownDescriptors) {
         // Find best match
-        const descriptor = Array.from(detection.descriptor);
+        const descriptor = Array.from(detection.descriptor) as number[];
         let bestMatch: { id: number; fullName: string; dist: number } | null = null;
 
         for (const known of knownDescriptors) {
-          const dist = euclideanDist(descriptor, known.faceDescriptor);
+          const dist = euclideanDist(descriptor, known.faceDescriptor as number[]);
           if (!bestMatch || dist < bestMatch.dist) {
             bestMatch = { id: known.id, fullName: known.fullName, dist };
           }

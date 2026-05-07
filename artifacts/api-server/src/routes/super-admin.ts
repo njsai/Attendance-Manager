@@ -25,7 +25,7 @@ router.get("/companies", requireSuperAdmin, async (_req, res) => {
 // ─── Get single company ───────────────────────────────────────────────────────
 router.get("/companies/:id", requireSuperAdmin, async (req, res) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseInt(String(req.params.id));
     const [company] = await db.select().from(companiesTable).where(eq(companiesTable.id, id));
     if (!company) { res.status(404).json({ message: "Company not found" }); return; }
     const employees = await db.select({
@@ -80,7 +80,7 @@ router.post("/companies", requireSuperAdmin, async (req, res) => {
 // ─── Update company ───────────────────────────────────────────────────────────
 router.put("/companies/:id", requireSuperAdmin, async (req, res) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseInt(String(req.params.id));
     const { name, address, phone, email, isActive } = req.body;
     const [updated] = await db.update(companiesTable)
       .set({ name, address, phone, email, isActive })
@@ -93,7 +93,7 @@ router.put("/companies/:id", requireSuperAdmin, async (req, res) => {
 // ─── Delete company ───────────────────────────────────────────────────────────
 router.delete("/companies/:id", requireSuperAdmin, async (req, res) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseInt(String(req.params.id));
     await db.delete(companiesTable).where(eq(companiesTable.id, id));
     res.json({ message: "تم حذف الشركة وجميع بياناتها" });
   } catch (err) { console.error(err); res.status(500).json({ message: "Server error" }); }
@@ -102,7 +102,7 @@ router.delete("/companies/:id", requireSuperAdmin, async (req, res) => {
 // ─── Get employees of a company ───────────────────────────────────────────────
 router.get("/companies/:id/employees", requireSuperAdmin, async (req, res) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseInt(String(req.params.id));
     const employees = await db.select({
       id: employeesTable.id, username: employeesTable.username, fullName: employeesTable.fullName,
       role: employeesTable.role, isActive: employeesTable.isActive, jobTitle: employeesTable.jobTitle,
@@ -114,7 +114,7 @@ router.get("/companies/:id/employees", requireSuperAdmin, async (req, res) => {
 // ─── Add employee to company ──────────────────────────────────────────────────
 router.post("/companies/:id/employees", requireSuperAdmin, async (req, res) => {
   try {
-    const companyId = parseInt(req.params.id);
+    const companyId = parseInt(String(req.params.id));
     const { username, password, fullName, role } = req.body;
     if (!username || !password || !fullName) { res.status(400).json({ message: "البيانات مطلوبة" }); return; }
     const empHash = await hashPasswordBcrypt(password);
@@ -132,7 +132,7 @@ router.post("/companies/:id/employees", requireSuperAdmin, async (req, res) => {
 // ─── Change employee password ─────────────────────────────────────────────────
 router.put("/companies/:companyId/employees/:empId/change-password", requireSuperAdmin, async (req, res) => {
   try {
-    const empId = parseInt(req.params.empId);
+    const empId = parseInt(String(req.params.empId));
     const { newPassword } = req.body;
     if (!newPassword || newPassword.length < 6) { res.status(400).json({ message: "كلمة المرور يجب أن تكون 6 أحرف على الأقل" }); return; }
     const newHash = await hashPasswordBcrypt(newPassword);
@@ -144,7 +144,7 @@ router.put("/companies/:companyId/employees/:empId/change-password", requireSupe
 // ─── Toggle company active status ─────────────────────────────────────────────
 router.put("/companies/:id/toggle", requireSuperAdmin, async (req, res) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseInt(String(req.params.id));
     const [current] = await db.select({ isActive: companiesTable.isActive }).from(companiesTable).where(eq(companiesTable.id, id));
     if (!current) { res.status(404).json({ message: "Not found" }); return; }
     const [updated] = await db.update(companiesTable).set({ isActive: !current.isActive }).where(eq(companiesTable.id, id)).returning();
@@ -221,9 +221,9 @@ router.post("/backups", requireSuperAdmin, async (req, res) => {
 // Download a backup
 router.get("/backups/:filename/download", requireSuperAdmin, (req, res) => {
   try {
-    const filePath = join(BACKUP_DIR, req.params.filename);
+    const filePath = join(BACKUP_DIR, String(req.params.filename));
     if (!existsSync(filePath)) { res.status(404).json({ message: "الملف غير موجود" }); return; }
-    res.setHeader("Content-Disposition", `attachment; filename="${req.params.filename}"`);
+    res.setHeader("Content-Disposition", `attachment; filename="${String(req.params.filename)}"`);
     res.setHeader("Content-Type", "application/json");
     createReadStream(filePath).pipe(res);
   } catch (err) { console.error(err); res.status(500).json({ message: "Server error" }); }
@@ -232,7 +232,7 @@ router.get("/backups/:filename/download", requireSuperAdmin, (req, res) => {
 // Delete a backup
 router.delete("/backups/:filename", requireSuperAdmin, (req, res) => {
   try {
-    const filePath = join(BACKUP_DIR, req.params.filename);
+    const filePath = join(BACKUP_DIR, String(req.params.filename));
     if (!existsSync(filePath)) { res.status(404).json({ message: "الملف غير موجود" }); return; }
     unlinkSync(filePath);
     res.json({ message: "تم حذف النسخة الاحتياطية" });

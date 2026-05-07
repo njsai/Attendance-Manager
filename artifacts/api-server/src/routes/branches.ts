@@ -26,16 +26,12 @@ router.post("/", requireAdmin, async (req, res) => {
     if (!name) { res.status(400).json({ message: "اسم الفرع مطلوب" }); return; }
     const [branch] = await db.insert(branchesTable)
       .values({
-        companyId,
-        name,
-        address: address || null,
-        city: city || null,
-        phone: phone || null,
+        companyId, name,
+        address: address || null, city: city || null, phone: phone || null,
         latitude: latitude != null && latitude !== "" ? Number(latitude) : null,
         longitude: longitude != null && longitude !== "" ? Number(longitude) : null,
         radiusMeters: radiusMeters != null && radiusMeters !== "" ? Number(radiusMeters) : 200,
-      })
-      .returning();
+      }).returning();
     res.status(201).json(branch);
   } catch (err) {
     console.error(err);
@@ -46,15 +42,11 @@ router.post("/", requireAdmin, async (req, res) => {
 router.put("/:id", requireAdmin, async (req, res) => {
   try {
     const companyId = req.session.companyId!;
-    const id = parseInt(req.params.id);
+    const id = parseInt(String(req.params.id));
     const { name, address, city, phone, isActive, latitude, longitude, radiusMeters } = req.body;
     const [updated] = await db.update(branchesTable)
       .set({
-        name,
-        address: address ?? null,
-        city: city ?? null,
-        phone: phone ?? null,
-        isActive,
+        name, address: address ?? null, city: city ?? null, phone: phone ?? null, isActive,
         latitude: latitude != null && latitude !== "" ? Number(latitude) : null,
         longitude: longitude != null && longitude !== "" ? Number(longitude) : null,
         radiusMeters: radiusMeters != null && radiusMeters !== "" ? Number(radiusMeters) : 200,
@@ -72,7 +64,7 @@ router.put("/:id", requireAdmin, async (req, res) => {
 router.delete("/:id", requireAdmin, async (req, res) => {
   try {
     const companyId = req.session.companyId!;
-    const id = parseInt(req.params.id);
+    const id = parseInt(String(req.params.id));
     await db.delete(branchesTable)
       .where(and(eq(branchesTable.id, id), eq(branchesTable.companyId, companyId)));
     res.json({ message: "Deleted" });

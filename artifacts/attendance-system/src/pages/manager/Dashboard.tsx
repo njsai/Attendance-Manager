@@ -5,6 +5,7 @@ import {
   Timer, Users, UserCheck, ScanFace, MapPin, Calendar
 } from "lucide-react";
 import FaceCapture from "@/components/FaceCapture";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface TodayRecord {
   id: number; checkInTime: string | null; checkOutTime: string | null;
@@ -46,9 +47,15 @@ function WorkTimer({ checkInTime }: { checkInTime: string }) {
   const s = elapsed % 60;
   const pad = (n: number) => String(n).padStart(2, "0");
   return (
-    <div className="text-center">
-      <p className="text-xs text-gray-400 mb-1">مدة الدوام</p>
-      <div className="text-4xl font-mono font-bold text-green-400 tracking-widest">{pad(h)}:{pad(m)}:{pad(s)}</div>
+    <div style={{ textAlign: "center" }}>
+      <p style={{ fontSize: 11, color: "rgba(0,245,255,0.5)", marginBottom: 8 }}>مدة الدوام</p>
+      <motion.div
+        animate={{ textShadow: ["0 0 10px rgba(0,245,255,0.3)", "0 0 24px rgba(0,245,255,0.7)", "0 0 10px rgba(0,245,255,0.3)"] }}
+        transition={{ duration: 2, repeat: Infinity }}
+        style={{ fontSize: 40, fontFamily: "monospace", fontWeight: 800, color: "#00f5ff", letterSpacing: 4 }}
+      >
+        {pad(h)}:{pad(m)}:{pad(s)}
+      </motion.div>
     </div>
   );
 }
@@ -63,12 +70,9 @@ export default function ManagerDashboard() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [tab, setTab] = useState<"me" | "team">("me");
-
-  // Face recognition state
   const [showFace, setShowFace] = useState(false);
   const [faceMode, setFaceMode] = useState<"check-in" | "check-out">("check-in");
   const [knownDescriptors, setKnownDescriptors] = useState<KnownDescriptor[]>([]);
-
   const BASE = import.meta.env.BASE_URL;
 
   const fetchData = useCallback(async () => {
@@ -84,10 +88,8 @@ export default function ManagerDashboard() {
       const team = await teamRes.json();
       setToday(tRes.ok ? t : null);
       setStats(sRes.ok ? {
-        presentDays: s.presentDays ?? 0,
-        absentDays: s.absentDays ?? 0,
-        lateDays: s.lateDays ?? 0,
-        totalWorkingHours: s.totalWorkingHours ?? 0,
+        presentDays: s.presentDays ?? 0, absentDays: s.absentDays ?? 0,
+        lateDays: s.lateDays ?? 0, totalWorkingHours: s.totalWorkingHours ?? 0,
         recentRecords: Array.isArray(s.recentRecords) ? s.recentRecords : [],
       } : null);
       setTodayTeam(Array.isArray(team) ? team : []);
@@ -111,10 +113,8 @@ export default function ManagerDashboard() {
     try {
       const loc = await getLocation();
       const res = await fetch(`${BASE}api/attendance/${endpoint}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(loc || {}),
+        method: "POST", headers: { "Content-Type": "application/json" },
+        credentials: "include", body: JSON.stringify(loc || {}),
       });
       const data = await res.json();
       if (!res.ok) { setError(data.message || "فشل العملية"); return; }
@@ -125,28 +125,18 @@ export default function ManagerDashboard() {
   };
 
   const openFace = async (mode: "check-in" | "check-out") => {
-    setFaceMode(mode);
-    setError(""); setSuccess("");
+    setFaceMode(mode); setError(""); setSuccess("");
     try {
       const res = await fetch(`${BASE}api/employees/face-descriptors/all`, { credentials: "include" });
-      if (res.ok) {
-        const data = await res.json();
-        setKnownDescriptors(Array.isArray(data) ? data : []);
-      }
+      if (res.ok) setKnownDescriptors(Array.isArray(await res.json()) ? await res.json() : []);
     } catch { }
     setShowFace(true);
   };
 
   const handleFaceVerified = async (result: { matched: boolean; employeeId?: number; employeeName?: string }) => {
     setShowFace(false);
-    if (!result.matched || !result.employeeId) {
-      setError("لم يتم التعرف على الوجه — حاول مجدداً أو استخدم الدخول اليدوي");
-      return;
-    }
-    if (result.employeeId !== (user as any)?.id) {
-      setError(`تم التعرف على: ${result.employeeName}، لكن هذا ليس حسابك`);
-      return;
-    }
+    if (!result.matched || !result.employeeId) { setError("لم يتم التعرف على الوجه"); return; }
+    if (result.employeeId !== (user as any)?.id) { setError(`تم التعرف على: ${result.employeeName}، لكن هذا ليس حسابك`); return; }
     await doAction(faceMode);
   };
 
@@ -158,176 +148,167 @@ export default function ManagerDashboard() {
   const lateCount = todayTeam.filter(r => r.status === "late").length;
 
   if (loading) return (
-    <div className="flex items-center justify-center h-64">
-      <div className="w-8 h-8 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 280 }}>
+      <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+        style={{ width: 36, height: 36, borderRadius: "50%", border: "3px solid rgba(0,245,255,0.15)", borderTopColor: "#00f5ff" }} />
     </div>
   );
 
-  return (
-    <div className="p-4 space-y-4 max-w-3xl mx-auto" dir="rtl">
+  const cardStyle = { background: "rgba(255,255,255,0.02)", border: "1px solid rgba(0,245,255,0.08)", borderRadius: 18, padding: 18 };
+  const btnDisabledStyle = { background: "rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.2)", border: "none", cursor: "not-allowed" };
 
-      {/* Face Recognition Modal */}
+  const statusMeta: Record<string, { text: string; color: string; bg: string; border: string }> = {
+    present: { text: "حاضر", color: "#10b981", bg: "rgba(16,185,129,0.1)", border: "rgba(16,185,129,0.2)" },
+    late: { text: "متأخر", color: "#f59e0b", bg: "rgba(245,158,11,0.1)", border: "rgba(245,158,11,0.2)" },
+    absent: { text: "غائب", color: "#f87171", bg: "rgba(248,113,113,0.1)", border: "rgba(248,113,113,0.2)" },
+    leave: { text: "إجازة", color: "#3b82f6", bg: "rgba(59,130,246,0.1)", border: "rgba(59,130,246,0.2)" },
+  };
+
+  return (
+    <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 14, maxWidth: 720, margin: "0 auto" }} dir="rtl">
       {showFace && (
-        <FaceCapture
-          mode="verify"
-          knownDescriptors={knownDescriptors}
-          onVerify={handleFaceVerified}
-          onClose={() => setShowFace(false)}
-        />
+        <FaceCapture mode="verify" knownDescriptors={knownDescriptors} onVerify={handleFaceVerified} onClose={() => setShowFace(false)} />
       )}
 
       {/* Header */}
-      <div className="text-center mb-2">
-        <h1 className="text-xl font-bold text-white">مرحباً، {user?.fullName}</h1>
-        <p className="text-sm text-gray-400">
+      <div style={{ textAlign: "center", paddingBottom: 4 }}>
+        <h1 style={{ fontSize: 20, fontWeight: 800, color: "#fff", margin: 0 }}>
+          مرحباً، <span style={{ color: "#a855f7", textShadow: "0 0 20px rgba(168,85,247,0.4)" }}>{user?.fullName}</span>
+        </h1>
+        <p style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", marginTop: 6 }}>
           {new Date().toLocaleDateString("ar-IQ", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
         </p>
       </div>
 
       {/* Tabs */}
-      <div className="flex bg-gray-800/60 rounded-xl p-1 gap-1">
+      <div style={{ display: "flex", background: "rgba(255,255,255,0.04)", borderRadius: 14, padding: 4, gap: 4 }}>
         {[{ k: "me", label: "حضوري" }, { k: "team", label: "الفريق" }].map(t2 => (
           <button key={t2.k} onClick={() => setTab(t2.k as any)}
-            className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${tab === t2.k ? "bg-blue-600 text-white shadow" : "text-gray-400 hover:text-white"}`}>
+            style={{
+              flex: 1, padding: "9px", borderRadius: 10, border: "none", fontWeight: 700, fontSize: 13, cursor: "pointer",
+              background: tab === t2.k ? "linear-gradient(135deg, rgba(0,245,255,0.15), rgba(168,85,247,0.15))" : "transparent",
+              color: tab === t2.k ? "#fff" : "rgba(255,255,255,0.35)",
+              borderBottom: tab === t2.k ? "1px solid rgba(0,245,255,0.3)" : "1px solid transparent",
+              fontFamily: "'Tajawal', sans-serif", transition: "all 0.2s",
+            }}>
             {t2.label}
           </button>
         ))}
       </div>
 
       {/* Alerts */}
-      {error && (
-        <div className="bg-red-900/50 border border-red-500/50 rounded-xl p-3 flex items-center gap-2">
-          <AlertTriangle size={16} className="text-red-400 shrink-0" />
-          <p className="text-red-300 text-sm">{error}</p>
-        </div>
-      )}
-      {success && (
-        <div className="bg-green-900/50 border border-green-500/50 rounded-xl p-3 flex items-center gap-2">
-          <CheckCircle size={16} className="text-green-400 shrink-0" />
-          <p className="text-green-300 text-sm">{success}</p>
-        </div>
-      )}
+      <AnimatePresence>
+        {error && <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+          style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 12, background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.2)", color: "#f87171", fontSize: 13 }}>
+          <AlertTriangle size={14} /> {error}
+        </motion.div>}
+        {success && <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+          style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 12, background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.2)", color: "#10b981", fontSize: 13 }}>
+          <CheckCircle size={14} /> {success}
+        </motion.div>}
+      </AnimatePresence>
 
       {/* ── MY ATTENDANCE TAB ── */}
       {tab === "me" && (
-        <div className="space-y-4">
-          <div className="bg-[#1a2234] border border-white/10 rounded-2xl p-5 space-y-4">
-            <div className="flex items-center gap-2">
-              <Clock size={18} className="text-blue-400" />
-              <h2 className="text-white font-semibold">حضور اليوم</h2>
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <div style={{ ...cardStyle, display: "flex", flexDirection: "column", gap: 14 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div style={{ width: 34, height: 34, borderRadius: 10, background: "rgba(168,85,247,0.08)", border: "1px solid rgba(168,85,247,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Clock size={16} style={{ color: "#a855f7" }} />
+              </div>
+              <h2 style={{ color: "#fff", fontWeight: 700, fontSize: 14, margin: 0 }}>حضور اليوم</h2>
             </div>
 
-            {/* Timer when checked in */}
             {isCheckedIn && today?.checkInTime && (
-              <div className="bg-green-900/20 border border-green-500/30 rounded-xl p-5 space-y-2">
+              <div style={{ padding: 20, borderRadius: 14, background: "rgba(0,245,255,0.03)", border: "1px solid rgba(0,245,255,0.1)", display: "flex", flexDirection: "column", gap: 8 }}>
                 <WorkTimer checkInTime={today.checkInTime} />
-                <p className="text-center text-xs text-green-300">وقت الدخول: {fmt12(today.checkInTime)}</p>
+                <p style={{ textAlign: "center", fontSize: 12, color: "rgba(0,245,255,0.5)" }}>وقت الدخول: {fmt12(today.checkInTime)}</p>
                 {(today.lateMinutes ?? 0) > 0 && (
-                  <div className="flex items-center justify-center gap-1">
-                    <AlertTriangle size={14} className="text-yellow-400" />
-                    <p className="text-yellow-400 text-sm font-bold">تأخير {today.lateMinutes} دقيقة</p>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}>
+                    <AlertTriangle size={13} style={{ color: "#f59e0b" }} />
+                    <p style={{ fontSize: 13, fontWeight: 700, color: "#f59e0b" }}>تأخير {today.lateMinutes} دقيقة</p>
                   </div>
                 )}
               </div>
             )}
 
-            {/* Summary when checked out */}
             {isCheckedOut && (
-              <div className="grid grid-cols-3 gap-3 text-center bg-gray-800/50 rounded-xl p-4">
-                <div>
-                  <p className="text-xs text-gray-400 mb-1">دخول</p>
-                  <p className="text-green-400 font-bold">{fmt12(today?.checkInTime)}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-400 mb-1">خروج</p>
-                  <p className="text-red-400 font-bold">{fmt12(today?.checkOutTime)}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-400 mb-1">ساعات</p>
-                  <p className="text-blue-400 font-bold">{today?.workingHours?.toFixed(1)}h</p>
-                </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, padding: "12px", borderRadius: 12, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)" }}>
+                {[
+                  { label: "دخول", val: fmt12(today?.checkInTime), color: "#10b981" },
+                  { label: "خروج", val: fmt12(today?.checkOutTime), color: "#f87171" },
+                  { label: "ساعات", val: `${today?.workingHours?.toFixed(1)}h`, color: "#00f5ff" },
+                ].map(({ label, val, color }) => (
+                  <div key={label} style={{ textAlign: "center" }}>
+                    <p style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", marginBottom: 4 }}>{label}</p>
+                    <p style={{ fontSize: 16, fontWeight: 700, color }}>{val}</p>
+                  </div>
+                ))}
                 {(today?.lateMinutes ?? 0) > 0 && (
-                  <div className="col-span-3 flex items-center justify-center gap-1">
-                    <AlertTriangle size={13} className="text-yellow-400" />
-                    <p className="text-yellow-400 text-xs">تأخير {today?.lateMinutes} دقيقة</p>
+                  <div style={{ gridColumn: "1/-1", display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}>
+                    <AlertTriangle size={12} style={{ color: "#f59e0b" }} />
+                    <p style={{ fontSize: 11, color: "#f59e0b" }}>تأخير {today?.lateMinutes} دقيقة</p>
                   </div>
                 )}
               </div>
             )}
 
             {!today && (
-              <div className="text-center py-4">
-                <XCircle size={32} className="text-gray-500 mx-auto mb-2" />
-                <p className="text-gray-400 text-sm">لم تسجل حضورك اليوم بعد</p>
+              <div style={{ textAlign: "center", padding: "20px 0" }}>
+                <XCircle size={32} style={{ color: "rgba(255,255,255,0.12)", margin: "0 auto 10px" }} />
+                <p style={{ fontSize: 13, color: "rgba(255,255,255,0.3)" }}>لم تسجل حضورك اليوم بعد</p>
               </div>
             )}
 
-            {/* Location info */}
             {today?.checkInLat && today?.checkInLng && (
-              <div className="flex items-center gap-2 text-xs text-gray-400 bg-gray-800/50 rounded-lg p-2">
-                <MapPin size={12} className="text-blue-400" />
-                <span>الموقع: {today.checkInLat.toFixed(5)}, {today.checkInLng.toFixed(5)}</span>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 11px", borderRadius: 9, background: "rgba(0,245,255,0.03)", border: "1px solid rgba(0,245,255,0.07)" }}>
+                <MapPin size={11} style={{ color: "#00f5ff" }} />
+                <span style={{ fontSize: 10, color: "rgba(255,255,255,0.3)" }}>الموقع: {today.checkInLat.toFixed(5)}, {today.checkInLng.toFixed(5)}</span>
               </div>
             )}
 
-            {/* Manual buttons */}
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                onClick={() => doAction("check-in")}
-                disabled={actionLoading || isCheckedIn || isCheckedOut}
-                className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-500 disabled:bg-gray-700 disabled:text-gray-500 text-white font-bold py-3 rounded-xl transition-all"
-              >
-                <LogIn size={18} /><span>تسجيل الحضور</span>
-              </button>
-              <button
-                onClick={() => doAction("check-out")}
-                disabled={actionLoading || !isCheckedIn || isCheckedOut}
-                className="flex items-center justify-center gap-2 bg-red-600 hover:bg-red-500 disabled:bg-gray-700 disabled:text-gray-500 text-white font-bold py-3 rounded-xl transition-all"
-              >
-                <LogOut size={18} /><span>تسجيل الانصراف</span>
-              </button>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+              {[
+                { label: "تسجيل الحضور", icon: LogIn, action: "check-in", disabled: actionLoading || isCheckedIn || isCheckedOut, grad: "linear-gradient(135deg, rgba(16,185,129,0.85), rgba(5,150,105,0.85))", shadow: "0 4px 14px rgba(16,185,129,0.25)" },
+                { label: "تسجيل الانصراف", icon: LogOut, action: "check-out", disabled: actionLoading || !isCheckedIn || isCheckedOut, grad: "linear-gradient(135deg, rgba(248,113,113,0.85), rgba(220,38,38,0.85))", shadow: "0 4px 14px rgba(248,113,113,0.25)" },
+              ].map(({ label, icon: Icon, action, disabled, grad, shadow }) => (
+                <button key={action} onClick={() => doAction(action)} disabled={disabled}
+                  style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7, padding: "11px", borderRadius: 12, border: "none", fontWeight: 700, fontSize: 13, cursor: disabled ? "not-allowed" : "pointer", background: disabled ? "rgba(255,255,255,0.04)" : grad, color: disabled ? "rgba(255,255,255,0.2)" : "#fff", boxShadow: disabled ? "none" : shadow, transition: "all 0.2s", fontFamily: "'Tajawal', sans-serif" }}>
+                  <Icon size={15} /> {label}
+                </button>
+              ))}
             </div>
 
-            {/* Face recognition buttons */}
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                onClick={() => openFace("check-in")}
-                disabled={actionLoading || isCheckedIn || isCheckedOut}
-                className="flex items-center justify-center gap-2 border border-blue-500/30 hover:border-blue-400/60 bg-blue-500/10 hover:bg-blue-500/20 disabled:opacity-40 disabled:cursor-not-allowed text-blue-300 py-2.5 rounded-xl text-sm transition-all"
-              >
-                <ScanFace size={16} />
-                <span>حضور بالوجه</span>
-              </button>
-              <button
-                onClick={() => openFace("check-out")}
-                disabled={actionLoading || !isCheckedIn || isCheckedOut}
-                className="flex items-center justify-center gap-2 border border-orange-500/30 hover:border-orange-400/60 bg-orange-500/10 hover:bg-orange-500/20 disabled:opacity-40 disabled:cursor-not-allowed text-orange-300 py-2.5 rounded-xl text-sm transition-all"
-              >
-                <ScanFace size={16} />
-                <span>انصراف بالوجه</span>
-              </button>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+              {[
+                { label: "حضور بالوجه", mode: "check-in" as const, disabled: actionLoading || isCheckedIn || isCheckedOut, color: "#00f5ff", borderColor: "rgba(0,245,255,0.2)", bg: "rgba(0,245,255,0.05)" },
+                { label: "انصراف بالوجه", mode: "check-out" as const, disabled: actionLoading || !isCheckedIn || isCheckedOut, color: "#f97316", borderColor: "rgba(249,115,22,0.2)", bg: "rgba(249,115,22,0.05)" },
+              ].map(({ label, mode, disabled, color, borderColor, bg }) => (
+                <button key={mode} onClick={() => openFace(mode)} disabled={disabled}
+                  style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "9px", borderRadius: 10, border: `1px solid ${disabled ? "rgba(255,255,255,0.05)" : borderColor}`, background: disabled ? "transparent" : bg, color: disabled ? "rgba(255,255,255,0.15)" : color, fontSize: 12, cursor: disabled ? "not-allowed" : "pointer", fontFamily: "'Tajawal', sans-serif", transition: "all 0.2s" }}>
+                  <ScanFace size={14} /> {label}
+                </button>
+              ))}
             </div>
 
             {!hasFaceDescriptor && (
-              <p className="text-xs text-center text-yellow-500/70">
-                ⚠️ لم يتم تسجيل بصمة وجهك بعد — تواصل مع الأدمن لتسجيلها من صفحة الموظفين
-              </p>
+              <p style={{ fontSize: 11, textAlign: "center", color: "rgba(245,158,11,0.45)" }}>⚠️ لم يتم تسجيل بصمة وجهك بعد</p>
             )}
           </div>
 
           {/* Monthly stats */}
           {stats && (
-            <div className="grid grid-cols-2 gap-3">
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
               {[
-                { icon: <CheckCircle size={20} className="text-green-400 mx-auto mb-1" />, val: stats.presentDays, label: "أيام الحضور" },
-                { icon: <XCircle size={20} className="text-red-400 mx-auto mb-1" />, val: stats.absentDays, label: "أيام الغياب" },
-                { icon: <AlertTriangle size={20} className="text-yellow-400 mx-auto mb-1" />, val: stats.lateDays, label: "أيام التأخير" },
-                { icon: <Timer size={20} className="text-blue-400 mx-auto mb-1" />, val: (stats.totalWorkingHours ?? 0).toFixed(1), label: "ساعات العمل" },
-              ].map((item, i) => (
-                <div key={i} className="bg-[#1a2234] border border-white/10 rounded-2xl p-4 text-center">
-                  {item.icon}
-                  <p className="text-2xl font-bold text-white">{item.val}</p>
-                  <p className="text-xs text-gray-400">{item.label}</p>
+                { icon: CheckCircle, val: stats.presentDays, label: "أيام الحضور", color: "#10b981", glow: "rgba(16,185,129,0.12)" },
+                { icon: XCircle, val: stats.absentDays, label: "أيام الغياب", color: "#f87171", glow: "rgba(248,113,113,0.12)" },
+                { icon: AlertTriangle, val: stats.lateDays, label: "أيام التأخير", color: "#f59e0b", glow: "rgba(245,158,11,0.12)" },
+                { icon: Timer, val: (stats.totalWorkingHours ?? 0).toFixed(1), label: "ساعات العمل", color: "#00f5ff", glow: "rgba(0,245,255,0.12)" },
+              ].map(({ icon: Icon, val, label, color, glow }) => (
+                <div key={label} style={{ background: "rgba(255,255,255,0.02)", border: `1px solid ${glow}`, borderRadius: 16, padding: "14px 10px", textAlign: "center" }}>
+                  <Icon size={18} style={{ color, margin: "0 auto 6px", display: "block" }} />
+                  <p style={{ fontSize: 22, fontWeight: 800, color: "#fff", margin: 0 }}>{val}</p>
+                  <p style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", marginTop: 3 }}>{label}</p>
                 </div>
               ))}
             </div>
@@ -335,24 +316,23 @@ export default function ManagerDashboard() {
 
           {/* Recent records */}
           {stats && stats.recentRecords.length > 0 && (
-            <div className="bg-[#1a2234] border border-white/10 rounded-2xl p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <Calendar size={16} className="text-purple-400" />
-                <h3 className="text-white font-semibold text-sm">السجل الأخير</h3>
+            <div style={cardStyle}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                <Calendar size={14} style={{ color: "#a855f7" }} />
+                <h3 style={{ color: "#fff", fontWeight: 700, fontSize: 13, margin: 0 }}>السجل الأخير</h3>
               </div>
-              <div className="space-y-2">
+              <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
                 {stats.recentRecords.map((r: any) => {
-                  const colors: Record<string, string> = { present: "text-green-400", late: "text-yellow-400", absent: "text-red-400", leave: "text-blue-400" };
-                  const labels: Record<string, string> = { present: "حاضر", late: "متأخر", absent: "غائب", leave: "إجازة" };
+                  const m = statusMeta[r.status] || { text: r.status, color: "rgba(255,255,255,0.4)", bg: "rgba(255,255,255,0.04)", border: "rgba(255,255,255,0.08)" };
                   return (
-                    <div key={r.id} className="flex items-center justify-between bg-gray-800/50 rounded-lg px-3 py-2 text-xs">
-                      <div className="flex items-center gap-2">
-                        <span className={`font-medium ${colors[r.status] ?? "text-gray-400"}`}>{labels[r.status] ?? r.status}</span>
-                        <span className="text-gray-400">{fmtDate(r.date)}</span>
+                    <div key={r.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 11px", borderRadius: 9, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                        <span style={{ fontSize: 10, padding: "2px 7px", borderRadius: 20, fontWeight: 600, background: m.bg, border: `1px solid ${m.border}`, color: m.color }}>{m.text}</span>
+                        <span style={{ fontSize: 11, color: "rgba(255,255,255,0.3)" }}>{fmtDate(r.date)}</span>
                       </div>
-                      <div className="flex gap-3 text-gray-400">
-                        <span>{fmt12(r.checkInTime)}</span>
-                        <span>{fmt12(r.checkOutTime)}</span>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <span style={{ fontSize: 11, color: "rgba(255,255,255,0.3)" }}>{fmt12(r.checkInTime)}</span>
+                        <span style={{ fontSize: 11, color: "rgba(255,255,255,0.2)" }}>{fmt12(r.checkOutTime)}</span>
                       </div>
                     </div>
                   );
@@ -365,52 +345,46 @@ export default function ManagerDashboard() {
 
       {/* ── TEAM TAB ── */}
       {tab === "team" && (
-        <div className="space-y-4">
-          <div className="grid grid-cols-3 gap-3">
-            <div className="bg-[#1a2234] border border-white/10 rounded-2xl p-4 text-center">
-              <UserCheck size={20} className="text-green-400 mx-auto mb-1" />
-              <p className="text-2xl font-bold text-white">{presentCount}</p>
-              <p className="text-xs text-gray-400">حاضر</p>
-            </div>
-            <div className="bg-[#1a2234] border border-white/10 rounded-2xl p-4 text-center">
-              <AlertTriangle size={20} className="text-yellow-400 mx-auto mb-1" />
-              <p className="text-2xl font-bold text-white">{lateCount}</p>
-              <p className="text-xs text-gray-400">متأخر</p>
-            </div>
-            <div className="bg-[#1a2234] border border-white/10 rounded-2xl p-4 text-center">
-              <XCircle size={20} className="text-red-400 mx-auto mb-1" />
-              <p className="text-2xl font-bold text-white">{absentCount}</p>
-              <p className="text-xs text-gray-400">غائب</p>
-            </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+            {[
+              { icon: UserCheck, val: presentCount, label: "حاضر", color: "#10b981", glow: "rgba(16,185,129,0.12)" },
+              { icon: AlertTriangle, val: lateCount, label: "متأخر", color: "#f59e0b", glow: "rgba(245,158,11,0.12)" },
+              { icon: XCircle, val: absentCount, label: "غائب", color: "#f87171", glow: "rgba(248,113,113,0.12)" },
+            ].map(({ icon: Icon, val, label, color, glow }) => (
+              <div key={label} style={{ background: "rgba(255,255,255,0.02)", border: `1px solid ${glow}`, borderRadius: 15, padding: "14px 8px", textAlign: "center" }}>
+                <Icon size={18} style={{ color, margin: "0 auto 6px", display: "block" }} />
+                <p style={{ fontSize: 22, fontWeight: 800, color: "#fff", margin: 0 }}>{val}</p>
+                <p style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", marginTop: 3 }}>{label}</p>
+              </div>
+            ))}
           </div>
 
-          <div className="bg-[#1a2234] border border-white/10 rounded-2xl overflow-hidden">
-            <div className="p-4 border-b border-white/10 flex items-center gap-2">
-              <Users size={16} className="text-blue-400" />
-              <h3 className="text-white font-semibold text-sm">حضور الفريق اليوم</h3>
+          <div style={{ ...cardStyle, padding: 0, overflow: "hidden" }}>
+            <div style={{ padding: "14px 16px", borderBottom: "1px solid rgba(0,245,255,0.07)", display: "flex", alignItems: "center", gap: 8 }}>
+              <Users size={15} style={{ color: "#00f5ff" }} />
+              <h3 style={{ color: "#fff", fontWeight: 700, fontSize: 13, margin: 0 }}>حضور الفريق اليوم</h3>
             </div>
             {todayTeam.length === 0 ? (
-              <p className="text-center text-gray-400 text-sm py-8">لا توجد سجلات اليوم</p>
+              <p style={{ textAlign: "center", color: "rgba(255,255,255,0.3)", fontSize: 13, padding: "32px 0" }}>لا توجد سجلات اليوم</p>
             ) : (
-              <div className="divide-y divide-white/5">
-                {todayTeam.map(r => (
-                  <div key={r.id} className="px-4 py-3 flex items-center justify-between text-sm">
-                    <div>
-                      <p className="text-white font-medium">{r.employeeName}</p>
-                      <p className="text-gray-400 text-xs">
-                        دخول: {fmt12(r.checkInTime)} — خروج: {fmt12(r.checkOutTime)}
-                      </p>
+              <div>
+                {todayTeam.map((r, i) => {
+                  const m = statusMeta[r.status] || { text: r.status, color: "rgba(255,255,255,0.4)", bg: "rgba(255,255,255,0.04)", border: "rgba(255,255,255,0.08)" };
+                  return (
+                    <div key={r.id} style={{ padding: "12px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: i < todayTeam.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none" }}>
+                      <div>
+                        <p style={{ color: "#fff", fontSize: 13, fontWeight: 600, margin: 0 }}>{r.employeeName}</p>
+                        <p style={{ color: "rgba(255,255,255,0.3)", fontSize: 11, marginTop: 3 }}>
+                          دخول: {fmt12(r.checkInTime)} — خروج: {fmt12(r.checkOutTime)}
+                        </p>
+                      </div>
+                      <span style={{ fontSize: 10, padding: "3px 9px", borderRadius: 20, fontWeight: 600, background: m.bg, border: `1px solid ${m.border}`, color: m.color }}>
+                        {r.status === "late" ? `متأخر ${r.lateMinutes}د` : m.text}
+                      </span>
                     </div>
-                    <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${
-                      r.status === "present" ? "bg-green-900/50 text-green-400" :
-                      r.status === "late" ? "bg-yellow-900/50 text-yellow-400" :
-                      "bg-red-900/50 text-red-400"
-                    }`}>
-                      {r.status === "present" ? "حاضر" :
-                       r.status === "late" ? `متأخر ${r.lateMinutes}د` : "غائب"}
-                    </span>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>

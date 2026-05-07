@@ -179,7 +179,7 @@ router.get("/stats", requireAdmin, async (req, res) => {
 router.get("/:id/logs", requireAdmin, async (req, res) => {
   try {
     const companyId = req.session.companyId!;
-    const id = parseInt(req.params.id);
+    const id = parseInt(String(req.params.id));
     const rows = await db.select({
       id: payrollLogsTable.id,
       fieldName: payrollLogsTable.fieldName,
@@ -300,7 +300,7 @@ router.put("/:id", requireAdmin, async (req, res) => {
   try {
     const companyId = req.session.companyId!;
     const userId = req.session.userId!;
-    const id = parseInt(req.params.id);
+    const id = parseInt(String(req.params.id));
 
     const [existing] = await db.select().from(payrollTable)
       .where(and(eq(payrollTable.id, id), eq(payrollTable.companyId, companyId)));
@@ -337,7 +337,7 @@ router.post("/:id/pay", requireAdmin, async (req, res) => {
   try {
     const companyId = req.session.companyId!;
     const userId = req.session.userId!;
-    const id = parseInt(req.params.id);
+    const id = parseInt(String(req.params.id));
     const { status = "paid" } = req.body;
 
     const [existing] = await db.select({ status: payrollTable.status })
@@ -359,7 +359,7 @@ router.post("/:id/pay", requireAdmin, async (req, res) => {
 router.delete("/:id", requireAdmin, async (req, res) => {
   try {
     const companyId = req.session.companyId!;
-    const id = parseInt(req.params.id);
+    const id = parseInt(String(req.params.id));
     await db.delete(payrollTable).where(and(eq(payrollTable.id, id), eq(payrollTable.companyId, companyId)));
     res.json({ message: "تم حذف سجل الراتب" });
   } catch (err) { console.error(err); res.status(500).json({ message: "خطأ في الخادم" }); }

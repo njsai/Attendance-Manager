@@ -58,105 +58,71 @@ function EmployeeModal({ emp, depts, shifts, branches, onClose, onSave }: {
     finally { setSaving(false); }
   };
 
+  const inpSt = { width: "100%", padding: "9px 11px", borderRadius: 9, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(0,245,255,0.1)", color: "#fff", fontSize: 12, outline: "none", boxSizing: "border-box" as const, colorScheme: "dark" as const };
+  const lbl = { display: "block", fontSize: 10, color: "rgba(255,255,255,0.35)", marginBottom: 4 };
+
   return (
-    <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" dir="rtl">
-      <div className="bg-[#1a2234] border border-white/10 rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-5 border-b border-white/10">
-          <h2 className="text-white font-bold">{emp?.id ? "تعديل موظف" : "إضافة موظف جديد"}</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-white"><X size={20} /></button>
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", backdropFilter: "blur(8px)", zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }} dir="rtl">
+      <div style={{ background: "rgba(5,13,31,0.97)", border: "1px solid rgba(0,245,255,0.12)", borderRadius: 20, width: "100%", maxWidth: 520, maxHeight: "90vh", overflowY: "auto" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", borderBottom: "1px solid rgba(0,245,255,0.07)" }}>
+          <h2 style={{ color: "#fff", fontWeight: 700, fontSize: 15, margin: 0 }}>{emp?.id ? "تعديل موظف" : "إضافة موظف جديد"}</h2>
+          <button onClick={onClose} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.4)", cursor: "pointer" }}><X size={18} /></button>
         </div>
-        <form onSubmit={handleSubmit} className="p-5 space-y-4">
-          {err && <div className="bg-red-900/50 border border-red-500/50 rounded-lg p-3 text-red-300 text-sm">{err}</div>}
+        <form onSubmit={handleSubmit} style={{ padding: 20, display: "flex", flexDirection: "column", gap: 12 }}>
+          {err && <div style={{ background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.2)", borderRadius: 10, padding: "10px 14px", color: "#f87171", fontSize: 12 }}>{err}</div>}
           <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-gray-400 text-xs mb-1 block">الاسم الكامل *</label>
-              <input value={form.fullName} onChange={e => set("fullName", e.target.value)} required
-                className="w-full bg-gray-800 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:border-blue-500 outline-none" />
+            {[
+              { label: "الاسم الكامل *", key: "fullName", type: "text", required: true },
+              { label: "اسم المستخدم *", key: "username", type: "text", required: true, disabled: !!emp?.id },
+              { label: emp?.id ? "كلمة مرور جديدة" : "كلمة المرور *", key: "password", type: "password", required: !emp?.id },
+              { label: "البريد الإلكتروني", key: "email", type: "email" },
+              { label: "رقم الهاتف", key: "phone", type: "text" },
+              { label: "المسمى الوظيفي", key: "jobTitle", type: "text" },
+              { label: "الراتب", key: "salary", type: "number" },
+            ].map(f => (
+              <div key={f.key}>
+                <label style={lbl}>{f.label}</label>
+                <input type={f.type} value={form[f.key]} onChange={e => set(f.key, e.target.value)}
+                  required={f.required} disabled={f.disabled}
+                  style={{ ...inpSt, opacity: f.disabled ? 0.5 : 1 }} />
+              </div>
+            ))}
+            <div style={{ gridColumn: "1 / -1" }}>
+              <label style={lbl}>العنوان</label>
+              <input value={form.address} onChange={e => set("address", e.target.value)} style={inpSt} />
             </div>
-            <div>
-              <label className="text-gray-400 text-xs mb-1 block">اسم المستخدم *</label>
-              <input value={form.username} onChange={e => set("username", e.target.value)} required disabled={!!emp?.id}
-                className="w-full bg-gray-800 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:border-blue-500 outline-none disabled:opacity-50" />
-            </div>
-            <div>
-              <label className="text-gray-400 text-xs mb-1 block">{emp?.id ? "كلمة مرور جديدة" : "كلمة المرور *"}</label>
-              <input type="password" value={form.password} onChange={e => set("password", e.target.value)} required={!emp?.id}
-                className="w-full bg-gray-800 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:border-blue-500 outline-none" />
-            </div>
-            <div>
-              <label className="text-gray-400 text-xs mb-1 block">الدور</label>
-              <select value={form.role} onChange={e => set("role", e.target.value)}
-                className="w-full bg-gray-800 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:border-blue-500 outline-none">
-                <option value="employee">موظف</option>
-                <option value="manager">مدير</option>
-                <option value="admin">إدارة عليا</option>
-              </select>
-            </div>
-            <div>
-              <label className="text-gray-400 text-xs mb-1 block">البريد الإلكتروني</label>
-              <input type="email" value={form.email} onChange={e => set("email", e.target.value)}
-                className="w-full bg-gray-800 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:border-blue-500 outline-none" />
-            </div>
-            <div>
-              <label className="text-gray-400 text-xs mb-1 block">رقم الهاتف</label>
-              <input value={form.phone} onChange={e => set("phone", e.target.value)}
-                className="w-full bg-gray-800 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:border-blue-500 outline-none" />
-            </div>
-            <div className="col-span-2">
-              <label className="text-gray-400 text-xs mb-1 block">العنوان</label>
-              <input value={form.address} onChange={e => set("address", e.target.value)}
-                className="w-full bg-gray-800 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:border-blue-500 outline-none" />
-            </div>
-            <div>
-              <label className="text-gray-400 text-xs mb-1 block">المسمى الوظيفي</label>
-              <input value={form.jobTitle} onChange={e => set("jobTitle", e.target.value)}
-                className="w-full bg-gray-800 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:border-blue-500 outline-none" />
-            </div>
-            <div>
-              <label className="text-gray-400 text-xs mb-1 block">الراتب</label>
-              <input type="number" value={form.salary} onChange={e => set("salary", e.target.value)}
-                className="w-full bg-gray-800 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:border-blue-500 outline-none" />
-            </div>
-            <div>
-              <label className="text-gray-400 text-xs mb-1 block">القسم</label>
-              <select value={form.departmentId} onChange={e => set("departmentId", e.target.value ? parseInt(e.target.value) : "")}
-                className="w-full bg-gray-800 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:border-blue-500 outline-none">
-                <option value="">-- بدون قسم --</option>
-                {depts.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="text-gray-400 text-xs mb-1 block">الفرع</label>
-              <select value={form.branchId} onChange={e => set("branchId", e.target.value ? parseInt(e.target.value) : "")}
-                className="w-full bg-gray-800 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:border-blue-500 outline-none">
-                <option value="">-- بدون فرع --</option>
-                {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="text-gray-400 text-xs mb-1 block">الوردية</label>
-              <select value={form.shiftId} onChange={e => set("shiftId", e.target.value ? parseInt(e.target.value) : "")}
-                className="w-full bg-gray-800 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:border-blue-500 outline-none">
-                <option value="">-- بدون وردية --</option>
-                {shifts.map(s => <option key={s.id} value={s.id}>{s.name} ({fmt12(s.startTime)} - {fmt12(s.endTime)})</option>)}
-              </select>
-            </div>
+            {[
+              { label: "الدور", key: "role", opts: [{ v: "employee", l: "موظف" }, { v: "manager", l: "مدير" }, { v: "admin", l: "إدارة عليا" }] },
+              { label: "القسم", key: "departmentId", opts: [{ v: "", l: "-- بدون قسم --" }, ...depts.map(d => ({ v: String(d.id), l: d.name }))] },
+              { label: "الفرع", key: "branchId", opts: [{ v: "", l: "-- بدون فرع --" }, ...branches.map(b => ({ v: String(b.id), l: b.name }))] },
+              { label: "الوردية", key: "shiftId", opts: [{ v: "", l: "-- بدون وردية --" }, ...shifts.map(s => ({ v: String(s.id), l: `${s.name} (${fmt12(s.startTime)} - ${fmt12(s.endTime)})` }))] },
+            ].map(f => (
+              <div key={f.key}>
+                <label style={lbl}>{f.label}</label>
+                <select value={form[f.key]} onChange={e => set(f.key, e.target.value ? (f.key === "role" ? e.target.value : parseInt(e.target.value)) : "")} style={inpSt}>
+                  {f.opts.map(o => <option key={o.v} value={o.v} style={{ background: "#050d1f" }}>{o.l}</option>)}
+                </select>
+              </div>
+            ))}
             {emp?.id && (
-              <div className="flex items-center gap-3">
-                <label className="text-gray-400 text-xs">الحالة</label>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <label style={lbl}>الحالة</label>
                 <button type="button" onClick={() => set("isActive", !form.isActive)}
-                  className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium transition-all ${form.isActive ? "bg-green-900/50 text-green-400" : "bg-red-900/50 text-red-400"}`}>
+                  style={{ display: "flex", alignItems: "center", gap: 5, padding: "4px 12px", borderRadius: 20, border: "none", cursor: "pointer", fontSize: 11, fontWeight: 600, background: form.isActive ? "rgba(16,185,129,0.12)" : "rgba(248,113,113,0.12)", color: form.isActive ? "#10b981" : "#f87171" }}>
                   {form.isActive ? "نشط" : "موقوف"}
                 </button>
               </div>
             )}
           </div>
-          <div className="flex gap-3 pt-2">
+          <div style={{ display: "flex", gap: 10, paddingTop: 4 }}>
             <button type="submit" disabled={saving}
-              className="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 rounded-xl transition-all disabled:opacity-50">
+              style={{ flex: 1, padding: "10px", borderRadius: 11, border: "none", background: "linear-gradient(135deg, rgba(0,245,255,0.7), rgba(59,130,246,0.7))", color: "#020817", fontWeight: 700, fontSize: 13, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.6 : 1, fontFamily: "'Tajawal', sans-serif" }}>
               {saving ? "جاري الحفظ..." : "حفظ"}
             </button>
-            <button type="button" onClick={onClose} className="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 rounded-xl transition-all">إلغاء</button>
+            <button type="button" onClick={onClose}
+              style={{ flex: 1, padding: "10px", borderRadius: 11, border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.03)", color: "rgba(255,255,255,0.5)", fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: "'Tajawal', sans-serif" }}>
+              إلغاء
+            </button>
           </div>
         </form>
       </div>
@@ -167,30 +133,30 @@ function EmployeeModal({ emp, depts, shifts, branches, onClose, onSave }: {
 function EmployeeCard({ emp, onEdit, onDelete, onToggle, onFaceEnroll }: { emp: Employee; onEdit: () => void; onDelete: () => void; onToggle: () => void; onFaceEnroll: () => void; }) {
   const [open, setOpen] = useState(false);
   const roleLabel = emp.role === "admin" ? "إدارة عليا" : emp.role === "manager" ? "مدير" : "موظف";
-  const roleColor = emp.role === "admin" ? "text-purple-400 bg-purple-900/30" : emp.role === "manager" ? "text-blue-400 bg-blue-900/30" : "text-gray-400 bg-gray-700/30";
+  const roleColor = emp.role === "admin" ? { color: "#a855f7", bg: "rgba(168,85,247,0.1)" } : emp.role === "manager" ? { color: "#00f5ff", bg: "rgba(0,245,255,0.08)" } : { color: "rgba(255,255,255,0.4)", bg: "rgba(255,255,255,0.06)" };
 
   return (
-    <div className={`bg-[#1a2234] border rounded-2xl overflow-hidden transition-all ${emp.isActive ? "border-white/10" : "border-red-500/20 opacity-70"}`}>
-      <button onClick={() => setOpen(!open)} className="w-full text-right p-4 flex items-center gap-3">
-        <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold shrink-0 ${emp.isActive ? "bg-blue-600" : "bg-gray-600"}`}>
+    <div style={{ background: "rgba(255,255,255,0.02)", border: `1px solid ${emp.isActive ? "rgba(0,245,255,0.07)" : "rgba(248,113,113,0.15)"}`, borderRadius: 14, overflow: "hidden", opacity: emp.isActive ? 1 : 0.75 }}>
+      <button onClick={() => setOpen(!open)} style={{ width: "100%", textAlign: "right", padding: "12px 14px", display: "flex", alignItems: "center", gap: 12, background: "none", border: "none", cursor: "pointer" }}>
+        <div style={{ width: 40, height: 40, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 700, background: emp.isActive ? "linear-gradient(135deg, rgba(0,245,255,0.3), rgba(59,130,246,0.3))" : "rgba(255,255,255,0.08)", color: emp.isActive ? "#00f5ff" : "rgba(255,255,255,0.4)", flexShrink: 0 }}>
           {emp.fullName[0]}
         </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <p className="text-white font-semibold text-sm">{emp.fullName}</p>
-            <span className={`text-xs px-2 py-0.5 rounded-full ${roleColor}`}>{roleLabel}</span>
-            <span className={`text-xs px-2 py-0.5 rounded-full ${emp.isActive ? "bg-green-900/30 text-green-400" : "bg-red-900/30 text-red-400"}`}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
+            <p style={{ color: "#fff", fontWeight: 600, fontSize: 13, margin: 0 }}>{emp.fullName}</p>
+            <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 20, color: roleColor.color, background: roleColor.bg }}>{roleLabel}</span>
+            <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 20, color: emp.isActive ? "#10b981" : "#f87171", background: emp.isActive ? "rgba(16,185,129,0.1)" : "rgba(248,113,113,0.1)" }}>
               {emp.isActive ? "● نشط" : "○ موقوف"}
             </span>
           </div>
-          <p className="text-gray-400 text-xs mt-0.5">{emp.jobTitle || "—"} {emp.branchName ? `· ${emp.branchName}` : ""}</p>
+          <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 11, marginTop: 3 }}>{emp.jobTitle || "—"} {emp.branchName ? `· ${emp.branchName}` : ""}</p>
         </div>
-        <span className="text-gray-500 text-xs">{open ? "▲" : "▼"}</span>
+        <span style={{ color: "rgba(255,255,255,0.25)", fontSize: 10 }}>{open ? "▲" : "▼"}</span>
       </button>
 
       {open && (
-        <div className="border-t border-white/10 p-4 space-y-3">
-          <div className="grid grid-cols-2 gap-2 text-sm">
+        <div style={{ borderTop: "1px solid rgba(0,245,255,0.06)", padding: "12px 14px", display: "flex", flexDirection: "column", gap: 10 }}>
+          <div className="grid grid-cols-2 gap-2">
             {[
               { icon: <Mail size={14} />, label: "البريد", val: emp.email },
               { icon: <Phone size={14} />, label: "الهاتف", val: emp.phone },
@@ -203,27 +169,27 @@ function EmployeeCard({ emp, onEdit, onDelete, onToggle, onFaceEnroll }: { emp: 
               { icon: <Shield size={14} />, label: "الدور", val: roleLabel },
               { icon: <User size={14} />, label: "المستخدم", val: emp.username },
             ].map((item, i) => (
-              <div key={i} className="flex items-center gap-2 bg-gray-800/50 rounded-lg px-3 py-2">
-                <span className="text-blue-400 shrink-0">{item.icon}</span>
-                <div className="min-w-0">
-                  <p className="text-gray-400 text-xs">{item.label}</p>
-                  <p className="text-white text-xs font-medium truncate">{item.val || "—"}</p>
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,0.03)", borderRadius: 9, padding: "7px 10px" }}>
+                <span style={{ color: "#00f5ff", flexShrink: 0 }}>{item.icon}</span>
+                <div style={{ minWidth: 0 }}>
+                  <p style={{ color: "rgba(255,255,255,0.3)", fontSize: 10, margin: 0 }}>{item.label}</p>
+                  <p style={{ color: "#fff", fontSize: 11, fontWeight: 600, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.val || "—"}</p>
                 </div>
               </div>
             ))}
           </div>
-          <div className="flex gap-2 pt-1 flex-wrap">
-            <button onClick={onEdit} className="flex items-center gap-1 bg-blue-600/20 text-blue-400 hover:bg-blue-600/40 px-3 py-2 rounded-lg text-xs font-medium transition-all">
-              <Edit2 size={14} />تعديل
+          <div style={{ display: "flex", gap: 6, paddingTop: 4, flexWrap: "wrap" }}>
+            <button onClick={onEdit} style={{ display: "flex", alignItems: "center", gap: 4, padding: "6px 10px", borderRadius: 8, border: "none", background: "rgba(0,245,255,0.07)", color: "#00f5ff", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "'Tajawal', sans-serif" }}>
+              <Edit2 size={12} /> تعديل
             </button>
-            <button onClick={onToggle} className={`flex items-center gap-1 px-3 py-2 rounded-lg text-xs font-medium transition-all ${emp.isActive ? "bg-yellow-600/20 text-yellow-400 hover:bg-yellow-600/40" : "bg-green-600/20 text-green-400 hover:bg-green-600/40"}`}>
-              {emp.isActive ? <><ToggleLeft size={14} />إيقاف</> : <><ToggleRight size={14} />تفعيل</>}
+            <button onClick={onToggle} style={{ display: "flex", alignItems: "center", gap: 4, padding: "6px 10px", borderRadius: 8, border: "none", background: emp.isActive ? "rgba(245,158,11,0.08)" : "rgba(16,185,129,0.08)", color: emp.isActive ? "#f59e0b" : "#10b981", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "'Tajawal', sans-serif" }}>
+              {emp.isActive ? <><ToggleLeft size={12} /> إيقاف</> : <><ToggleRight size={12} /> تفعيل</>}
             </button>
-            <button onClick={onFaceEnroll} className={`flex items-center gap-1 px-3 py-2 rounded-lg text-xs font-medium transition-all ${emp.hasFace ? "bg-green-600/20 text-green-400 hover:bg-green-600/40" : "bg-purple-600/20 text-purple-400 hover:bg-purple-600/40"}`}>
-              <ScanFace size={14} />{emp.hasFace ? "بصمة مسجلة ✓" : "تسجيل بصمة"}
+            <button onClick={onFaceEnroll} style={{ display: "flex", alignItems: "center", gap: 4, padding: "6px 10px", borderRadius: 8, border: "none", background: emp.hasFace ? "rgba(16,185,129,0.08)" : "rgba(168,85,247,0.08)", color: emp.hasFace ? "#10b981" : "#a855f7", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "'Tajawal', sans-serif" }}>
+              <ScanFace size={12} /> {emp.hasFace ? "بصمة مسجلة ✓" : "تسجيل بصمة"}
             </button>
-            <button onClick={onDelete} className="flex items-center gap-1 bg-red-600/20 text-red-400 hover:bg-red-600/40 px-3 py-2 rounded-lg text-xs font-medium transition-all">
-              <Trash2 size={14} />حذف
+            <button onClick={onDelete} style={{ display: "flex", alignItems: "center", gap: 4, padding: "6px 10px", borderRadius: 8, border: "none", background: "rgba(248,113,113,0.07)", color: "#f87171", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "'Tajawal', sans-serif" }}>
+              <Trash2 size={12} /> حذف
             </button>
           </div>
         </div>
@@ -307,10 +273,16 @@ export default function AdminEmployees() {
 
   const activeCount = employees.filter(e => e.isActive).length;
 
-  if (loading) return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" /></div>;
+  const selStyle = { padding: "9px 12px", borderRadius: 11, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(0,245,255,0.1)", color: "#fff", fontSize: 13, outline: "none", colorScheme: "dark" as const };
+
+  if (loading) return (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 200 }}>
+      <div style={{ width: 32, height: 32, borderRadius: "50%", border: "3px solid rgba(0,245,255,0.15)", borderTopColor: "#00f5ff", animation: "spin 1s linear infinite" }} />
+    </div>
+  );
 
   return (
-    <div className="p-4 space-y-4 max-w-3xl mx-auto" dir="rtl">
+    <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 14, maxWidth: 720, margin: "0 auto" }} dir="rtl">
       {showModal && (
         <EmployeeModal emp={editEmp} depts={depts} shifts={shifts} branches={branches}
           onClose={() => setShowModal(false)} onSave={handleSave} />
@@ -319,48 +291,47 @@ export default function AdminEmployees() {
         <FaceCapture mode="enroll" onCapture={handleFaceCapture} onClose={() => setFaceEnrollEmp(null)} />
       )}
       {faceMsg && (
-        <div className={`fixed bottom-6 right-6 px-5 py-3 rounded-2xl text-sm font-bold shadow-xl z-50 ${faceMsg.startsWith("✓") ? "bg-green-600 text-white" : "bg-red-600 text-white"}`}>
+        <div style={{ position: "fixed", bottom: 24, right: 24, padding: "10px 20px", borderRadius: 14, fontSize: 13, fontWeight: 700, zIndex: 9999, background: faceMsg.startsWith("✓") ? "rgba(16,185,129,0.9)" : "rgba(239,68,68,0.9)", color: "#fff", backdropFilter: "blur(12px)" }}>
           {faceMsg}
         </div>
       )}
 
-      <div className="flex items-center justify-between">
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div>
-          <h1 className="text-xl font-bold text-white">إدارة الموظفين</h1>
-          <p className="text-gray-400 text-sm">{employees.length} موظف — {activeCount} نشط</p>
+          <h1 style={{ fontSize: 18, fontWeight: 800, color: "#fff", margin: 0 }}>إدارة الموظفين</h1>
+          <p style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", marginTop: 4 }}>{employees.length} موظف — {activeCount} نشط</p>
         </div>
         <button onClick={() => { setEditEmp(null); setShowModal(true); }}
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-bold px-4 py-2 rounded-xl text-sm transition-all">
-          <Plus size={16} />إضافة موظف
+          style={{ display: "flex", alignItems: "center", gap: 7, padding: "9px 16px", borderRadius: 11, border: "none", background: "linear-gradient(135deg, rgba(0,245,255,0.75), rgba(59,130,246,0.75))", color: "#020817", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "'Tajawal', sans-serif" }}>
+          <Plus size={14} /> إضافة موظف
         </button>
       </div>
 
       {/* Filters */}
-      <div className="flex gap-2 flex-wrap">
-        <div className="flex items-center gap-2 bg-gray-800 border border-white/10 rounded-xl px-3 py-2 flex-1 min-w-[160px]">
-          <Search size={16} className="text-gray-400" />
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 12px", borderRadius: 11, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(0,245,255,0.1)", flex: 1, minWidth: 160 }}>
+          <Search size={14} style={{ color: "rgba(0,245,255,0.4)", flexShrink: 0 }} />
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="بحث..."
-            className="bg-transparent text-white text-sm outline-none flex-1 min-w-0" />
+            style={{ background: "transparent", color: "#fff", fontSize: 13, outline: "none", border: "none", flex: 1, minWidth: 0 }} />
         </div>
-        <select value={filterBranch} onChange={e => setFilterBranch(e.target.value)}
-          className="bg-gray-800 border border-white/10 rounded-xl px-3 py-2 text-white text-sm outline-none">
-          <option value="">كل الفروع</option>
-          {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+        <select value={filterBranch} onChange={e => setFilterBranch(e.target.value)} style={selStyle}>
+          <option value="" style={{ background: "#050d1f" }}>كل الفروع</option>
+          {branches.map(b => <option key={b.id} value={b.id} style={{ background: "#050d1f" }}>{b.name}</option>)}
         </select>
-        <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
-          className="bg-gray-800 border border-white/10 rounded-xl px-3 py-2 text-white text-sm outline-none">
-          <option value="">كل الحالات</option>
-          <option value="active">نشط</option>
-          <option value="inactive">موقوف</option>
+        <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} style={selStyle}>
+          <option value="" style={{ background: "#050d1f" }}>كل الحالات</option>
+          <option value="active" style={{ background: "#050d1f" }}>نشط</option>
+          <option value="inactive" style={{ background: "#050d1f" }}>موقوف</option>
         </select>
       </div>
 
       {/* Employee Cards */}
-      <div className="space-y-3">
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         {employees.length === 0 ? (
-          <div className="text-center py-12 text-gray-400">
-            <User size={40} className="mx-auto mb-3 opacity-30" />
-            <p>لا يوجد موظفون</p>
+          <div style={{ textAlign: "center", padding: "50px 0", color: "rgba(255,255,255,0.25)", background: "rgba(255,255,255,0.02)", borderRadius: 16, border: "1px solid rgba(255,255,255,0.05)" }}>
+            <User size={40} style={{ margin: "0 auto 10px", opacity: 0.2 }} />
+            <p style={{ fontSize: 13 }}>لا يوجد موظفون</p>
           </div>
         ) : (
           employees.map(emp => (

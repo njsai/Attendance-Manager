@@ -75,7 +75,7 @@ router.get("/events", requireSuperAdmin, async (req, res) => {
 router.put("/events/:id/resolve", requireSuperAdmin, async (req, res) => {
   try {
     await db.execute(sql`
-      UPDATE security_events SET resolved = true WHERE id = ${parseInt(req.params.id)}
+      UPDATE security_events SET resolved = true WHERE id = ${parseInt(String(req.params.id))}
     `);
     res.json({ message: "تم حل الحادثة" });
   } catch (err) {
@@ -180,7 +180,7 @@ router.post("/unlock/:employeeId", requireSuperAdmin, async (req, res) => {
   try {
     await db.execute(sql`
       UPDATE employees SET failed_login_attempts = 0, locked_until = NULL
-      WHERE id = ${parseInt(req.params.employeeId)}
+      WHERE id = ${parseInt(String(req.params.employeeId))}
     `);
     res.json({ message: "تم فتح قفل الحساب" });
   } catch (err) {

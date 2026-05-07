@@ -49,87 +49,74 @@
   --color-sidebar-accent-foreground: hsl(var(--sidebar-accent-foreground));
 
   --font-sans: 'Tajawal', sans-serif;
-  
+
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 }
 
+/* ── Neon Cyberpunk Dark Theme ─────────────────────────────────────────────── */
 :root {
-  --background: 210 20% 98%;
-  --foreground: 222 47% 11%;
-  
-  --card: 0 0% 100%;
-  --card-foreground: 222 47% 11%;
-  --card-border: 214 32% 91%;
+  /* Deep navy background */
+  --background: 222 47% 4%;
+  --foreground: 210 40% 95%;
 
-  --popover: 0 0% 100%;
-  --popover-foreground: 222 47% 11%;
-  --popover-border: 214 32% 91%;
+  --card: 220 40% 7%;
+  --card-foreground: 210 40% 95%;
+  --card-border: 220 30% 14%;
 
-  /* Navy Blue Primary */
-  --primary: 222 47% 11%; 
-  --primary-foreground: 210 40% 98%;
-  --primary-border: 222 47% 11%;
+  --popover: 222 45% 6%;
+  --popover-foreground: 210 40% 95%;
+  --popover-border: 220 30% 14%;
 
-  --secondary: 210 40% 96%;
-  --secondary-foreground: 222 47% 11%;
-  --secondary-border: 214 32% 91%;
+  /* Cyan neon primary */
+  --primary: 185 100% 50%;
+  --primary-foreground: 222 47% 4%;
+  --primary-border: 185 100% 50%;
 
-  --muted: 210 40% 96%;
-  --muted-foreground: 215 16% 47%;
-  --muted-border: 214 32% 91%;
+  --secondary: 220 35% 12%;
+  --secondary-foreground: 210 40% 85%;
+  --secondary-border: 220 30% 18%;
 
-  /* Gold Accent */
-  --accent: 38 92% 50%;
+  --muted: 220 35% 10%;
+  --muted-foreground: 215 20% 50%;
+  --muted-border: 220 30% 16%;
+
+  /* Orange accent */
+  --accent: 25 95% 55%;
   --accent-foreground: 0 0% 100%;
-  --accent-border: 38 92% 50%;
+  --accent-border: 25 95% 55%;
 
   --destructive: 0 84% 60%;
   --destructive-foreground: 210 40% 98%;
   --destructive-border: 0 84% 60%;
 
-  --border: 214 32% 91%;
-  --input: 214 32% 91%;
-  --ring: 222 47% 11%;
+  --border: 220 30% 14%;
+  --input: 220 35% 10%;
+  --ring: 185 100% 50%;
 
-  --sidebar: 222 47% 11%;
-  --sidebar-foreground: 210 40% 98%;
-  --sidebar-border: 215 28% 17%;
-  --sidebar-primary: 210 40% 98%;
-  --sidebar-primary-foreground: 222 47% 11%;
-  --sidebar-accent: 215 28% 17%;
-  --sidebar-accent-foreground: 210 40% 98%;
-  --sidebar-ring: 210 40% 98%;
+  /* Sidebar - slightly lighter navy */
+  --sidebar: 222 47% 5%;
+  --sidebar-foreground: 210 40% 95%;
+  --sidebar-border: 220 30% 12%;
+  --sidebar-primary: 185 100% 50%;
+  --sidebar-primary-foreground: 222 47% 4%;
+  --sidebar-accent: 220 40% 10%;
+  --sidebar-accent-foreground: 210 40% 90%;
 
   --radius: 0.75rem;
 
-  --elevate-1: rgba(0,0,0, .05);
-  --elevate-2: rgba(0,0,0, .1);
-}
+  --elevate-1: rgba(0, 245, 255, 0.04);
+  --elevate-2: rgba(0, 245, 255, 0.08);
 
-/* ─── Light Theme Overrides (html.light) ─────────────────────────────────── */
-html.light {
-  --background: 220 18% 96%;
-  --foreground: 222 47% 11%;
-  --card: 0 0% 100%;
-  --card-foreground: 222 47% 11%;
+  /* Neon colors as CSS vars */
+  --neon-cyan: #00f5ff;
+  --neon-purple: #a855f7;
+  --neon-orange: #f97316;
+  --neon-green: #00ff9f;
+  --neon-blue: #3b82f6;
 }
-
-/* Dark-theme pages (hardcoded bg-[#0f1623]) inside light mode get a subtle lift */
-html.light .bg-\[\#0f1623\] { background-color: #f0f4f8 !important; }
-html.light .bg-\[\#1a2234\] { background-color: #ffffff !important; border-color: #e2e8f0 !important; }
-html.light .text-white { color: #1e293b !important; }
-html.light .text-gray-400 { color: #64748b !important; }
-html.light .text-gray-300 { color: #475569 !important; }
-html.light .border-white\/10 { border-color: rgba(0,0,0,0.1) !important; }
-html.light .border-white\/5 { border-color: rgba(0,0,0,0.06) !important; }
-html.light .bg-gray-800 { background-color: #f1f5f9 !important; }
-html.light .bg-white\/5 { background-color: rgba(0,0,0,0.03) !important; }
-html.light .bg-white\/10 { background-color: rgba(0,0,0,0.06) !important; }
-html.light .hover\:bg-white\/5:hover { background-color: rgba(0,0,0,0.03) !important; }
-html.light .hover\:bg-white\/10:hover { background-color: rgba(0,0,0,0.06) !important; }
 
 @layer base {
   * {
@@ -138,38 +125,158 @@ html.light .hover\:bg-white\/10:hover { background-color: rgba(0,0,0,0.06) !impo
   body {
     @apply font-sans antialiased bg-background text-foreground;
     direction: rtl;
+    background: linear-gradient(135deg, #020817 0%, #050d1f 50%, #080318 100%);
+    min-height: 100vh;
   }
-  
+
   h1, h2, h3, h4, h5, h6 {
     @apply font-bold tracking-tight;
   }
+
+  /* Scrollbar styling */
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(0, 245, 255, 0.2); border-radius: 99px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(0, 245, 255, 0.4); }
+  * { scrollbar-width: thin; scrollbar-color: rgba(0,245,255,0.2) transparent; }
 }
 
 @layer utilities {
+  /* Glassmorphism card */
+  .glass-card {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+  }
+
+  /* Neon card with cyan glow */
+  .neon-card {
+    background: rgba(0, 245, 255, 0.04);
+    border: 1px solid rgba(0, 245, 255, 0.18);
+    box-shadow: 0 0 20px rgba(0, 245, 255, 0.06), inset 0 1px 0 rgba(0, 245, 255, 0.1);
+  }
+  .neon-card:hover {
+    border-color: rgba(0, 245, 255, 0.35);
+    box-shadow: 0 0 30px rgba(0, 245, 255, 0.12), inset 0 1px 0 rgba(0, 245, 255, 0.15);
+  }
+
+  /* Neon glow text */
+  .neon-text-cyan { color: #00f5ff; text-shadow: 0 0 20px rgba(0, 245, 255, 0.6); }
+  .neon-text-purple { color: #a855f7; text-shadow: 0 0 20px rgba(168, 85, 247, 0.6); }
+  .neon-text-orange { color: #f97316; text-shadow: 0 0 20px rgba(249, 115, 22, 0.5); }
+  .neon-text-green { color: #00ff9f; text-shadow: 0 0 20px rgba(0, 255, 159, 0.5); }
+
+  /* Glowing input */
+  .neon-input {
+    background: rgba(0, 245, 255, 0.03);
+    border: 1px solid rgba(0, 245, 255, 0.12);
+    color: white;
+    transition: all 0.2s;
+  }
+  .neon-input:focus {
+    outline: none;
+    border-color: rgba(0, 245, 255, 0.5);
+    box-shadow: 0 0 0 3px rgba(0, 245, 255, 0.08), 0 0 20px rgba(0, 245, 255, 0.1);
+    background: rgba(0, 245, 255, 0.05);
+  }
+  .neon-input::placeholder { color: rgba(255, 255, 255, 0.25); }
+
+  /* Gradient neon button */
+  .btn-neon {
+    background: linear-gradient(135deg, rgba(0, 245, 255, 0.9), rgba(59, 130, 246, 0.9));
+    color: #020817;
+    font-weight: 700;
+    box-shadow: 0 4px 20px rgba(0, 245, 255, 0.35);
+    transition: all 0.2s;
+  }
+  .btn-neon:hover {
+    box-shadow: 0 6px 28px rgba(0, 245, 255, 0.5);
+    transform: translateY(-1px);
+  }
+  .btn-neon:active { transform: translateY(0); }
+  .btn-neon:disabled { opacity: 0.5; transform: none; cursor: not-allowed; }
+
+  /* Neon top-line accent */
+  .neon-top-line::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--neon-cyan), transparent);
+    border-radius: 2px 2px 0 0;
+  }
+
+  /* Ambient glow backgrounds */
+  .ambient-glow {
+    position: relative;
+  }
+  .ambient-glow::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(ellipse 60% 50% at 10% 15%, rgba(0, 245, 255, 0.05) 0%, transparent 70%),
+      radial-gradient(ellipse 50% 60% at 90% 85%, rgba(168, 85, 247, 0.06) 0%, transparent 70%);
+    z-index: 0;
+  }
+
   .hover-elevate {
     position: relative;
     z-index: 0;
+    transition: all 0.2s;
   }
-  .hover-elevate::after {
-    content: "";
-    pointer-events: none;
-    position: absolute;
-    inset: 0px;
-    border-radius: inherit;
-    z-index: 999;
-    transition: background-color 0.2s ease;
+  .hover-elevate:hover {
+    transform: translateY(-2px);
   }
-  .hover-elevate:hover::after {
-    background-color: var(--elevate-1);
-  }
-  .hover-elevate:active::after {
-    background-color: var(--elevate-2);
-  }
-  
+
   .glass-panel {
-    @apply bg-white/70 backdrop-blur-md border border-white/20 shadow-xl;
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
   }
 }
+
+/* ── Light mode kept for legacy ─────────────────────────────────────────────── */
+html.light {
+  --background: 220 18% 96%;
+  --foreground: 222 47% 11%;
+  --card: 0 0% 100%;
+  --card-foreground: 222 47% 11%;
+  --card-border: 214 32% 91%;
+  --primary: 222 47% 11%;
+  --primary-foreground: 210 40% 98%;
+  --sidebar: 222 47% 11%;
+  --sidebar-foreground: 210 40% 98%;
+  --border: 214 32% 91%;
+  --input: 214 32% 91%;
+  --muted: 210 40% 96%;
+  --muted-foreground: 215 16% 47%;
+}
+
+html.light body {
+  background: #f0f4f8;
+}
+
+html.light .glass-card,
+html.light .neon-card {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+html.light .neon-input {
+  background: rgba(0, 0, 0, 0.03);
+  border-color: rgba(0, 0, 0, 0.15);
+  color: #1e293b;
+}
+html.light .neon-input:focus {
+  border-color: rgba(14, 165, 233, 0.5);
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+}
+html.light .neon-input::placeholder { color: rgba(0, 0, 0, 0.3); }
 
 @media print {
   .no-print { display: none !important; }

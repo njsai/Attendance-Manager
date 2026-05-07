@@ -25,15 +25,15 @@ interface Employee {
 }
 
 const STATUS_OPTIONS = [
-  { value: "present", label: "حاضر", cls: "bg-green-900/30 text-green-400" },
-  { value: "late", label: "متأخر", cls: "bg-yellow-900/30 text-yellow-400" },
-  { value: "absent", label: "غائب", cls: "bg-red-900/30 text-red-400" },
-  { value: "on_leave", label: "إجازة", cls: "bg-blue-900/30 text-blue-400" },
-  { value: "half_day", label: "نصف يوم", cls: "bg-purple-900/30 text-purple-400" },
+  { value: "present",  label: "حاضر",      color: "#10b981", bg: "rgba(16,185,129,0.1)",  border: "rgba(16,185,129,0.2)" },
+  { value: "late",     label: "متأخر",      color: "#f59e0b", bg: "rgba(245,158,11,0.1)",  border: "rgba(245,158,11,0.2)" },
+  { value: "absent",   label: "غائب",       color: "#f87171", bg: "rgba(248,113,113,0.1)", border: "rgba(248,113,113,0.2)" },
+  { value: "on_leave", label: "إجازة",      color: "#3b82f6", bg: "rgba(59,130,246,0.1)",  border: "rgba(59,130,246,0.2)" },
+  { value: "half_day", label: "نصف يوم",   color: "#a855f7", bg: "rgba(168,85,247,0.1)",  border: "rgba(168,85,247,0.2)" },
 ];
 
 function statusInfo(s: string) {
-  return STATUS_OPTIONS.find((o) => o.value === s) ?? { label: s, cls: "bg-gray-700 text-gray-400" };
+  return STATUS_OPTIONS.find((o) => o.value === s) ?? { label: s, color: "rgba(255,255,255,0.4)", bg: "rgba(255,255,255,0.07)", border: "rgba(255,255,255,0.1)" };
 }
 
 function fmt12(d: string | null | undefined) {
@@ -251,71 +251,49 @@ export default function AdminAttendance() {
     "w-full bg-[#0f1623] border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-blue-500 transition-colors";
   const labelCls = "block text-gray-400 text-xs mb-1.5 font-medium";
 
+  const inputSt = { padding: "9px 12px", borderRadius: 11, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(0,245,255,0.1)", color: "#fff", fontSize: 13, outline: "none", colorScheme: "dark" as const };
+
   return (
-    <div className="p-4 space-y-4 max-w-5xl mx-auto" dir="rtl">
+    <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 14, maxWidth: 960, margin: "0 auto" }} dir="rtl">
       {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-2">
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
         <div>
-          <h1 className="text-xl font-bold text-white">سجل الحضور والانصراف</h1>
-          <p className="text-gray-400 text-sm">إدارة ومتابعة حضور الموظفين</p>
+          <h1 style={{ fontSize: 18, fontWeight: 800, color: "#fff", margin: 0 }}>سجل الحضور والانصراف</h1>
+          <p style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", marginTop: 4 }}>إدارة ومتابعة حضور الموظفين</p>
         </div>
-        <button
-          onClick={openCreate}
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-sm font-medium transition-colors"
-        >
-          <Plus size={16} />
-          إضافة سجل حضور
+        <button onClick={openCreate}
+          style={{ display: "flex", alignItems: "center", gap: 7, padding: "9px 16px", borderRadius: 11, border: "none", background: "linear-gradient(135deg, rgba(0,245,255,0.75), rgba(59,130,246,0.75))", color: "#020817", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "'Tajawal', sans-serif" }}>
+          <Plus size={14} /> إضافة سجل حضور
         </button>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3">
-        <div className="bg-[#1a2234] border border-white/10 rounded-2xl p-3 text-center">
-          <UserCheck size={18} className="text-green-400 mx-auto mb-1" />
-          <p className="text-xl font-bold text-white">{presentCount}</p>
-          <p className="text-xs text-gray-400">حاضر اليوم</p>
-        </div>
-        <div className="bg-[#1a2234] border border-white/10 rounded-2xl p-3 text-center">
-          <AlertTriangle size={18} className="text-yellow-400 mx-auto mb-1" />
-          <p className="text-xl font-bold text-white">{lateCount}</p>
-          <p className="text-xs text-gray-400">متأخر</p>
-        </div>
-        <div className="bg-[#1a2234] border border-white/10 rounded-2xl p-3 text-center">
-          <Clock size={18} className="text-blue-400 mx-auto mb-1" />
-          <p className="text-xl font-bold text-white">{totalHours.toFixed(1)}</p>
-          <p className="text-xs text-gray-400">ساعات إجمالية</p>
-        </div>
+        {[
+          { icon: UserCheck, label: "حاضر اليوم", val: presentCount, color: "#10b981", glow: "rgba(16,185,129,0.1)" },
+          { icon: AlertTriangle, label: "متأخر", val: lateCount, color: "#f59e0b", glow: "rgba(245,158,11,0.1)" },
+          { icon: Clock, label: "ساعات إجمالية", val: totalHours.toFixed(1), color: "#00f5ff", glow: "rgba(0,245,255,0.1)" },
+        ].map(({ icon: Icon, label, val, color, glow }) => (
+          <div key={label} style={{ background: "rgba(255,255,255,0.02)", border: `1px solid ${glow}`, borderRadius: 14, padding: "12px 8px", textAlign: "center" }}>
+            <Icon size={18} style={{ color, margin: "0 auto 6px" }} />
+            <p style={{ fontSize: 22, fontWeight: 800, color, margin: 0 }}>{val}</p>
+            <p style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", marginTop: 3 }}>{label}</p>
+          </div>
+        ))}
       </div>
 
       {/* Controls */}
-      <div className="flex gap-2 flex-wrap">
-        <input
-          type="date"
-          value={filterDate}
-          onChange={(e) => setFilterDate(e.target.value)}
-          className="bg-gray-800 border border-white/10 rounded-xl px-3 py-2 text-white text-sm outline-none"
-        />
-        <div className="flex items-center gap-2 bg-gray-800 border border-white/10 rounded-xl px-3 py-2 flex-1 min-w-[140px]">
-          <Search size={16} className="text-gray-400" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="بحث بالاسم..."
-            className="bg-transparent text-white text-sm outline-none flex-1"
-          />
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <input type="date" value={filterDate} onChange={e => setFilterDate(e.target.value)} style={inputSt} />
+        <div style={{ display: "flex", alignItems: "center", gap: 8, ...inputSt, flex: 1, minWidth: 140 }}>
+          <Search size={14} style={{ color: "rgba(0,245,255,0.4)", flexShrink: 0 }} />
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="بحث بالاسم..."
+            style={{ background: "transparent", color: "#fff", fontSize: 13, outline: "none", border: "none", flex: 1 }} />
         </div>
-        <div className="flex bg-gray-800 rounded-xl p-1 gap-1">
-          {[
-            { k: "present", label: "الحاضرون" },
-            { k: "all", label: "الكل" },
-          ].map((t) => (
-            <button
-              key={t.k}
-              onClick={() => setTab(t.k as any)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                tab === t.k ? "bg-blue-600 text-white" : "text-gray-400 hover:text-white"
-              }`}
-            >
+        <div style={{ display: "flex", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(0,245,255,0.1)", borderRadius: 11, padding: 4, gap: 4 }}>
+          {[{ k: "present", label: "الحاضرون" }, { k: "all", label: "الكل" }].map(t => (
+            <button key={t.k} onClick={() => setTab(t.k as any)}
+              style={{ padding: "6px 14px", borderRadius: 8, border: "none", background: tab === t.k ? "rgba(0,245,255,0.15)" : "transparent", color: tab === t.k ? "#00f5ff" : "rgba(255,255,255,0.4)", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "'Tajawal', sans-serif" }}>
               {t.label}
             </button>
           ))}
@@ -323,82 +301,60 @@ export default function AdminAttendance() {
       </div>
 
       {/* Records Table */}
-      <div className="bg-[#1a2234] border border-white/10 rounded-2xl overflow-hidden">
+      <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(0,245,255,0.07)", borderRadius: 16, overflow: "hidden" }}>
         {loading ? (
-          <div className="flex items-center justify-center h-32">
-            <div className="w-6 h-6 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+          <div style={{ display: "flex", justifyContent: "center", padding: "40px 0" }}>
+            <div style={{ width: 24, height: 24, borderRadius: "50%", border: "3px solid rgba(0,245,255,0.15)", borderTopColor: "#00f5ff", animation: "spin 1s linear infinite" }} />
           </div>
         ) : filtered.length === 0 ? (
-          <div className="text-center py-12 text-gray-400 text-sm">لا توجد سجلات</div>
+          <div style={{ textAlign: "center", padding: "40px 0", fontSize: 13, color: "rgba(255,255,255,0.25)" }}>لا توجد سجلات</div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse" }}>
               <thead>
-                <tr className="border-b border-white/10">
-                  <th className="text-right text-gray-400 font-medium px-4 py-3">الموظف</th>
-                  <th className="text-right text-gray-400 font-medium px-4 py-3">الحالة</th>
-                  <th className="text-right text-gray-400 font-medium px-4 py-3">الدخول</th>
-                  <th className="text-right text-gray-400 font-medium px-4 py-3">الخروج</th>
-                  <th className="text-right text-gray-400 font-medium px-4 py-3">ساعات</th>
-                  <th className="text-right text-gray-400 font-medium px-4 py-3">الموقع</th>
-                  <th className="text-right text-gray-400 font-medium px-4 py-3">إجراءات</th>
+                <tr style={{ borderBottom: "1px solid rgba(0,245,255,0.07)" }}>
+                  {["الموظف", "الحالة", "الدخول", "الخروج", "ساعات", "الموقع", "إجراءات"].map(h => (
+                    <th key={h} style={{ textAlign: "right", padding: "11px 14px", color: "rgba(0,245,255,0.5)", fontWeight: 600, fontSize: 11 }}>{h}</th>
+                  ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/5">
-                {filtered.map((r) => {
+              <tbody>
+                {filtered.map((r, i) => {
                   const st = statusInfo(r.status);
                   const hasLoc = r.checkInLat && r.checkInLng;
                   return (
-                    <tr key={r.id} className="hover:bg-white/5 transition-colors">
-                      <td className="px-4 py-3">
-                        <p className="text-white font-medium">{r.employeeName}</p>
-                        <p className="text-gray-400 text-xs">{r.departmentName || "—"}</p>
+                    <tr key={r.id} style={{ borderBottom: i < filtered.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none" }}
+                      onMouseEnter={e => (e.currentTarget.style.background = "rgba(0,245,255,0.03)")}
+                      onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+                      <td style={{ padding: "10px 14px" }}>
+                        <p style={{ color: "#fff", fontWeight: 600, fontSize: 13, margin: 0 }}>{r.employeeName}</p>
+                        <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 11 }}>{r.departmentName || "—"}</p>
                       </td>
-                      <td className="px-4 py-3">
-                        <span className={`text-xs font-medium px-2 py-1 rounded-full ${st.cls}`}>
-                          {st.label}
-                        </span>
-                        {(r.lateMinutes ?? 0) > 0 && (
-                          <p className="text-yellow-400 text-xs mt-1">تأخير {r.lateMinutes}د</p>
-                        )}
+                      <td style={{ padding: "10px 14px" }}>
+                        <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 20, color: st.color, background: st.bg, border: `1px solid ${st.border}` }}>{st.label}</span>
+                        {(r.lateMinutes ?? 0) > 0 && <p style={{ color: "#f59e0b", fontSize: 10, marginTop: 3 }}>تأخير {r.lateMinutes}د</p>}
                       </td>
-                      <td className="px-4 py-3 text-green-400 font-medium">{fmt12(r.checkInTime)}</td>
-                      <td className="px-4 py-3 text-red-400 font-medium">{fmt12(r.checkOutTime)}</td>
-                      <td className="px-4 py-3 text-blue-400">
-                        {r.workingHours ? r.workingHours.toFixed(1) + "h" : "—"}
-                      </td>
-                      <td className="px-4 py-3">
+                      <td style={{ padding: "10px 14px", color: "#10b981", fontWeight: 600 }}>{fmt12(r.checkInTime)}</td>
+                      <td style={{ padding: "10px 14px", color: "#f87171", fontWeight: 600 }}>{fmt12(r.checkOutTime)}</td>
+                      <td style={{ padding: "10px 14px", color: "#00f5ff" }}>{r.workingHours ? r.workingHours.toFixed(1) + "h" : "—"}</td>
+                      <td style={{ padding: "10px 14px" }}>
                         {hasLoc ? (
-                          <a
-                            href={`https://maps.google.com/?q=${r.checkInLat},${r.checkInLng}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-1 text-blue-400 hover:text-blue-300 text-xs"
-                          >
-                            <MapPin size={12} />
-                            <span>
-                              {r.checkInLat!.toFixed(3)}, {r.checkInLng!.toFixed(3)}
-                            </span>
+                          <a href={`https://maps.google.com/?q=${r.checkInLat},${r.checkInLng}`} target="_blank" rel="noopener noreferrer"
+                            style={{ display: "flex", alignItems: "center", gap: 4, color: "#00f5ff", fontSize: 11, textDecoration: "none" }}>
+                            <MapPin size={11} />
+                            {r.checkInLat!.toFixed(3)}, {r.checkInLng!.toFixed(3)}
                           </a>
-                        ) : (
-                          <span className="text-gray-500 text-xs">—</span>
-                        )}
+                        ) : <span style={{ color: "rgba(255,255,255,0.2)", fontSize: 11 }}>—</span>}
                       </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-1">
-                          <button
-                            onClick={() => openEdit(r)}
-                            className="p-1.5 rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition-colors"
-                            title="تعديل"
-                          >
-                            <Edit2 size={14} />
+                      <td style={{ padding: "10px 14px" }}>
+                        <div style={{ display: "flex", gap: 5 }}>
+                          <button onClick={() => openEdit(r)} title="تعديل"
+                            style={{ padding: 6, borderRadius: 8, background: "rgba(0,245,255,0.07)", border: "1px solid rgba(0,245,255,0.15)", color: "#00f5ff", cursor: "pointer" }}>
+                            <Edit2 size={13} />
                           </button>
-                          <button
-                            onClick={() => openDelete(r)}
-                            className="p-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors"
-                            title="حذف"
-                          >
-                            <Trash2 size={14} />
+                          <button onClick={() => openDelete(r)} title="حذف"
+                            style={{ padding: 6, borderRadius: 8, background: "rgba(248,113,113,0.07)", border: "1px solid rgba(248,113,113,0.15)", color: "#f87171", cursor: "pointer" }}>
+                            <Trash2 size={13} />
                           </button>
                         </div>
                       </td>
@@ -413,153 +369,94 @@ export default function AdminAttendance() {
 
       {/* ── CREATE / EDIT MODAL ────────────────────────────────────────────────── */}
       {(modal === "create" || modal === "edit") && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#1a2234] border border-white/10 rounded-2xl w-full max-w-md shadow-2xl">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-white/10">
-              <h2 className="text-white font-bold text-base">
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", backdropFilter: "blur(8px)", zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }} dir="rtl">
+          <div style={{ background: "rgba(5,13,31,0.97)", border: "1px solid rgba(0,245,255,0.12)", borderRadius: 20, width: "100%", maxWidth: 440 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", borderBottom: "1px solid rgba(0,245,255,0.07)" }}>
+              <h2 style={{ color: "#fff", fontWeight: 700, fontSize: 14, margin: 0 }}>
                 {modal === "create" ? "إضافة سجل حضور جديد" : "تعديل سجل الحضور"}
               </h2>
-              <button onClick={closeModal} className="text-gray-400 hover:text-white">
-                <X size={18} />
+              <button onClick={closeModal} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.4)", cursor: "pointer" }}>
+                <X size={16} />
               </button>
             </div>
 
             {/* Form */}
-            <div className="p-5 space-y-4">
-              {/* Employee (create only) */}
+            <div style={{ padding: 18, display: "flex", flexDirection: "column", gap: 12 }}>
               {modal === "create" && (
                 <div>
-                  <label className={labelCls}>الموظف *</label>
-                  <select
-                    value={form.employeeId}
-                    onChange={(e) => setForm((f) => ({ ...f, employeeId: e.target.value }))}
-                    className={inputCls}
-                  >
-                    <option value="">— اختر الموظف —</option>
-                    {employees.map((e) => (
-                      <option key={e.id} value={e.id}>
-                        {e.fullName}
-                        {e.departmentName ? ` (${e.departmentName})` : ""}
+                  <label style={{ display: "block", fontSize: 10, color: "rgba(255,255,255,0.35)", marginBottom: 4 }}>الموظف *</label>
+                  <select value={form.employeeId} onChange={e => setForm(f => ({ ...f, employeeId: e.target.value }))}
+                    style={{ width: "100%", padding: "9px 11px", borderRadius: 9, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(0,245,255,0.1)", color: "#fff", fontSize: 12, outline: "none", colorScheme: "dark" }}>
+                    <option value="" style={{ background: "#050d1f" }}>— اختر الموظف —</option>
+                    {employees.map(e => (
+                      <option key={e.id} value={e.id} style={{ background: "#050d1f" }}>
+                        {e.fullName}{e.departmentName ? ` (${e.departmentName})` : ""}
                       </option>
                     ))}
                   </select>
                 </div>
               )}
 
-              {/* Date */}
               <div>
-                <label className={labelCls}>التاريخ *</label>
-                <input
-                  type="date"
-                  value={form.date}
-                  onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
-                  className={inputCls}
-                />
+                <label style={{ display: "block", fontSize: 10, color: "rgba(255,255,255,0.35)", marginBottom: 4 }}>التاريخ *</label>
+                <input type="date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))}
+                  style={{ width: "100%", padding: "9px 11px", borderRadius: 9, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(0,245,255,0.1)", color: "#fff", fontSize: 12, outline: "none", colorScheme: "dark", boxSizing: "border-box" }} />
               </div>
 
-              {/* Times */}
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className={labelCls}>وقت الدخول *</label>
-                  <input
-                    type="time"
-                    value={form.checkIn}
-                    onChange={(e) => setForm((f) => ({ ...f, checkIn: e.target.value }))}
-                    className={inputCls}
-                  />
-                </div>
-                <div>
-                  <label className={labelCls}>وقت الخروج</label>
-                  <input
-                    type="time"
-                    value={form.checkOut}
-                    onChange={(e) => setForm((f) => ({ ...f, checkOut: e.target.value }))}
-                    className={inputCls}
-                  />
-                </div>
+                {[{ label: "وقت الدخول *", key: "checkIn", type: "time" }, { label: "وقت الخروج", key: "checkOut", type: "time" }].map(f => (
+                  <div key={f.key}>
+                    <label style={{ display: "block", fontSize: 10, color: "rgba(255,255,255,0.35)", marginBottom: 4 }}>{f.label}</label>
+                    <input type={f.type} value={form[f.key as keyof typeof form] as string}
+                      onChange={e => setForm(fm => ({ ...fm, [f.key]: e.target.value }))}
+                      style={{ width: "100%", padding: "9px 11px", borderRadius: 9, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(0,245,255,0.1)", color: "#fff", fontSize: 12, outline: "none", colorScheme: "dark", boxSizing: "border-box" as const }} />
+                  </div>
+                ))}
               </div>
 
-              {/* Status */}
               <div>
-                <label className={labelCls}>الحالة</label>
-                <select
-                  value={form.status}
-                  onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}
-                  className={inputCls}
-                >
-                  {STATUS_OPTIONS.map((o) => (
-                    <option key={o.value} value={o.value}>
-                      {o.label}
-                    </option>
-                  ))}
+                <label style={{ display: "block", fontSize: 10, color: "rgba(255,255,255,0.35)", marginBottom: 4 }}>الحالة</label>
+                <select value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))}
+                  style={{ width: "100%", padding: "9px 11px", borderRadius: 9, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(0,245,255,0.1)", color: "#fff", fontSize: 12, outline: "none", colorScheme: "dark" }}>
+                  {STATUS_OPTIONS.map(o => <option key={o.value} value={o.value} style={{ background: "#050d1f" }}>{o.label}</option>)}
                 </select>
               </div>
 
-              {/* Late / Overtime */}
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className={labelCls}>دقائق التأخير</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={form.lateMinutes}
-                    onChange={(e) => setForm((f) => ({ ...f, lateMinutes: e.target.value }))}
-                    className={inputCls}
-                    placeholder="0"
-                  />
-                </div>
-                <div>
-                  <label className={labelCls}>دقائق الإضافي</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={form.overtimeMinutes}
-                    onChange={(e) => setForm((f) => ({ ...f, overtimeMinutes: e.target.value }))}
-                    className={inputCls}
-                    placeholder="0"
-                  />
-                </div>
+                {[{ label: "دقائق التأخير", key: "lateMinutes" }, { label: "دقائق الإضافي", key: "overtimeMinutes" }].map(f => (
+                  <div key={f.key}>
+                    <label style={{ display: "block", fontSize: 10, color: "rgba(255,255,255,0.35)", marginBottom: 4 }}>{f.label}</label>
+                    <input type="number" min="0" placeholder="0"
+                      value={form[f.key as keyof typeof form] as string}
+                      onChange={e => setForm(fm => ({ ...fm, [f.key]: e.target.value }))}
+                      style={{ width: "100%", padding: "9px 11px", borderRadius: 9, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(0,245,255,0.1)", color: "#fff", fontSize: 12, outline: "none", colorScheme: "dark", boxSizing: "border-box" as const }} />
+                  </div>
+                ))}
               </div>
 
-              {/* Notes */}
               <div>
-                <label className={labelCls}>ملاحظات</label>
-                <textarea
-                  value={form.notes}
-                  onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
-                  rows={2}
-                  className={inputCls + " resize-none"}
+                <label style={{ display: "block", fontSize: 10, color: "rgba(255,255,255,0.35)", marginBottom: 4 }}>ملاحظات</label>
+                <textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={2}
                   placeholder="ملاحظات اختيارية..."
-                />
+                  style={{ width: "100%", padding: "9px 11px", borderRadius: 9, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(0,245,255,0.1)", color: "#fff", fontSize: 12, outline: "none", resize: "none", colorScheme: "dark", boxSizing: "border-box" as const }} />
               </div>
 
-              {/* Error */}
               {error && (
-                <div className="bg-red-500/10 border border-red-500/30 rounded-xl px-3 py-2 text-red-400 text-sm">
+                <div style={{ background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.2)", borderRadius: 10, padding: "9px 12px", color: "#f87171", fontSize: 12 }}>
                   {error}
                 </div>
               )}
             </div>
 
             {/* Actions */}
-            <div className="flex gap-2 px-5 pb-5">
-              <button
-                onClick={modal === "create" ? handleCreate : handleUpdate}
-                disabled={saving}
-                className="flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
-              >
-                {saving ? (
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <Check size={16} />
-                )}
+            <div style={{ display: "flex", gap: 8, padding: "0 18px 18px" }}>
+              <button onClick={modal === "create" ? handleCreate : handleUpdate} disabled={saving}
+                style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px", borderRadius: 11, border: "none", background: "linear-gradient(135deg, rgba(0,245,255,0.7), rgba(59,130,246,0.7))", color: "#020817", fontSize: 13, fontWeight: 700, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.6 : 1, fontFamily: "'Tajawal', sans-serif" }}>
+                {saving ? <div style={{ width: 14, height: 14, borderRadius: "50%", border: "2px solid rgba(2,8,23,0.3)", borderTopColor: "#020817", animation: "spin 1s linear infinite" }} /> : <Check size={14} />}
                 {modal === "create" ? "حفظ السجل" : "حفظ التعديلات"}
               </button>
-              <button
-                onClick={closeModal}
-                className="px-4 py-2.5 rounded-xl border border-white/10 text-gray-400 hover:text-white text-sm transition-colors"
-              >
+              <button onClick={closeModal}
+                style={{ flex: 1, padding: "10px", borderRadius: 11, border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.03)", color: "rgba(255,255,255,0.5)", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "'Tajawal', sans-serif" }}>
                 إلغاء
               </button>
             </div>
@@ -569,42 +466,33 @@ export default function AdminAttendance() {
 
       {/* ── DELETE CONFIRM MODAL ───────────────────────────────────────────────── */}
       {modal === "delete" && selectedRecord && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#1a2234] border border-white/10 rounded-2xl w-full max-w-sm shadow-2xl p-6 text-center space-y-4">
-            <div className="w-12 h-12 bg-red-500/20 rounded-full flex items-center justify-center mx-auto">
-              <Trash2 size={22} className="text-red-400" />
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", backdropFilter: "blur(8px)", zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }} dir="rtl">
+          <div style={{ background: "rgba(5,13,31,0.97)", border: "1px solid rgba(248,113,113,0.2)", borderRadius: 20, width: "100%", maxWidth: 360, padding: 28, textAlign: "center", display: "flex", flexDirection: "column", gap: 16 }}>
+            <div style={{ width: 52, height: 52, borderRadius: "50%", background: "rgba(248,113,113,0.1)", border: "1px solid rgba(248,113,113,0.2)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto" }}>
+              <Trash2 size={22} style={{ color: "#f87171" }} />
             </div>
             <div>
-              <h3 className="text-white font-bold mb-1">تأكيد الحذف</h3>
-              <p className="text-gray-400 text-sm">
+              <h3 style={{ color: "#fff", fontWeight: 700, fontSize: 15, marginBottom: 8 }}>تأكيد الحذف</h3>
+              <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 13 }}>
                 هل تريد حذف سجل حضور{" "}
-                <span className="text-white font-medium">{selectedRecord.employeeName}</span> بتاريخ{" "}
-                <span className="text-white font-medium">{selectedRecord.date}</span>؟
+                <span style={{ color: "#fff", fontWeight: 600 }}>{selectedRecord.employeeName}</span> بتاريخ{" "}
+                <span style={{ color: "#fff", fontWeight: 600 }}>{selectedRecord.date}</span>؟
               </p>
-              <p className="text-red-400 text-xs mt-2">هذا الإجراء لا يمكن التراجع عنه</p>
+              <p style={{ color: "#f87171", fontSize: 11, marginTop: 8 }}>هذا الإجراء لا يمكن التراجع عنه</p>
             </div>
             {error && (
-              <div className="bg-red-500/10 border border-red-500/30 rounded-xl px-3 py-2 text-red-400 text-sm">
+              <div style={{ background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.2)", borderRadius: 10, padding: "9px 12px", color: "#f87171", fontSize: 12 }}>
                 {error}
               </div>
             )}
-            <div className="flex gap-2">
-              <button
-                onClick={handleDelete}
-                disabled={saving}
-                className="flex-1 flex items-center justify-center gap-2 bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
-              >
-                {saving ? (
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <Trash2 size={14} />
-                )}
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={handleDelete} disabled={saving}
+                style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px", borderRadius: 11, border: "none", background: "rgba(248,113,113,0.8)", color: "#fff", fontSize: 13, fontWeight: 700, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.6 : 1, fontFamily: "'Tajawal', sans-serif" }}>
+                {saving ? <div style={{ width: 14, height: 14, borderRadius: "50%", border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "#fff", animation: "spin 1s linear infinite" }} /> : <Trash2 size={14} />}
                 حذف السجل
               </button>
-              <button
-                onClick={closeModal}
-                className="flex-1 px-4 py-2.5 rounded-xl border border-white/10 text-gray-400 hover:text-white text-sm transition-colors"
-              >
+              <button onClick={closeModal}
+                style={{ flex: 1, padding: "10px", borderRadius: 11, border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.03)", color: "rgba(255,255,255,0.5)", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "'Tajawal', sans-serif" }}>
                 إلغاء
               </button>
             </div>

@@ -129,38 +129,41 @@ export default function AdminReports() {
     window.print();
   };
 
+  const cardStyle = { background: "rgba(255,255,255,0.02)", border: "1px solid rgba(0,245,255,0.08)", borderRadius: 16, padding: 16 };
+  const inputStyle = { width: "100%", padding: "9px 12px", borderRadius: 10, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(0,245,255,0.1)", color: "#fff", fontSize: 13, outline: "none", boxSizing: "border-box" as const, colorScheme: "dark" };
+
   return (
-    <div className="p-4 space-y-4 max-w-5xl mx-auto" dir="rtl">
+    <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 14, maxWidth: 960, margin: "0 auto" }} dir="rtl">
       <div>
-        <h1 className="text-xl font-bold text-white">التقارير</h1>
-        <p className="text-gray-400 text-sm">تقارير الحضور والانصراف</p>
+        <h1 style={{ fontSize: 18, fontWeight: 800, color: "#fff", margin: 0 }}>التقارير</h1>
+        <p style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", marginTop: 4 }}>تقارير الحضور والانصراف</p>
       </div>
 
       {/* Filters */}
-      <div className="bg-[#1a2234] border border-white/10 rounded-2xl p-4 space-y-3">
-        <div className="flex items-center gap-2 mb-1"><Filter size={16} className="text-blue-400" /><span className="text-white font-semibold text-sm">تصفية التقارير</span></div>
+      <div style={cardStyle}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+          <Filter size={15} style={{ color: "#00f5ff" }} />
+          <span style={{ color: "#fff", fontWeight: 700, fontSize: 13 }}>تصفية التقارير</span>
+        </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <div>
-            <label className="text-gray-400 text-xs mb-1 block">من تاريخ</label>
-            <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)}
-              className="w-full bg-gray-800 border border-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none" />
+            <label style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, display: "block", marginBottom: 5 }}>من تاريخ</label>
+            <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} style={inputStyle} />
           </div>
           <div>
-            <label className="text-gray-400 text-xs mb-1 block">إلى تاريخ</label>
-            <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)}
-              className="w-full bg-gray-800 border border-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none" />
+            <label style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, display: "block", marginBottom: 5 }}>إلى تاريخ</label>
+            <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} style={inputStyle} />
           </div>
           <div>
-            <label className="text-gray-400 text-xs mb-1 block">الموظف</label>
-            <select value={empId} onChange={e => setEmpId(e.target.value)}
-              className="w-full bg-gray-800 border border-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none">
-              <option value="">كل الموظفين</option>
-              {employees.map(e => <option key={e.id} value={e.id}>{e.fullName}</option>)}
+            <label style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, display: "block", marginBottom: 5 }}>الموظف</label>
+            <select value={empId} onChange={e => setEmpId(e.target.value)} style={inputStyle}>
+              <option value="" style={{ background: "#050d1f" }}>كل الموظفين</option>
+              {employees.map(e => <option key={e.id} value={e.id} style={{ background: "#050d1f" }}>{e.fullName}</option>)}
             </select>
           </div>
-          <div className="flex items-end">
+          <div style={{ display: "flex", alignItems: "flex-end" }}>
             <button onClick={fetchReports} disabled={loading}
-              className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 rounded-lg text-sm transition-all disabled:opacity-50">
+              style={{ width: "100%", padding: "9px", borderRadius: 10, border: "none", background: "linear-gradient(135deg, rgba(0,245,255,0.8), rgba(59,130,246,0.8))", color: "#020817", fontWeight: 700, fontSize: 13, cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.6 : 1, fontFamily: "'Tajawal', sans-serif" }}>
               {loading ? "جاري..." : "عرض"}
             </button>
           </div>
@@ -172,69 +175,64 @@ export default function AdminReports() {
           {/* Summary */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {[
-              { label: "إجمالي السجلات", val: records.length, color: "text-white" },
-              { label: "أيام الحضور", val: presentCount, color: "text-green-400" },
-              { label: "أيام الغياب", val: absentCount, color: "text-red-400" },
-              { label: "ساعات العمل", val: totalHours.toFixed(1), color: "text-blue-400" },
+              { label: "إجمالي السجلات", val: records.length, color: "#fff", glow: "rgba(255,255,255,0.06)" },
+              { label: "أيام الحضور", val: presentCount, color: "#10b981", glow: "rgba(16,185,129,0.12)" },
+              { label: "أيام الغياب", val: absentCount, color: "#f87171", glow: "rgba(248,113,113,0.12)" },
+              { label: "ساعات العمل", val: totalHours.toFixed(1), color: "#00f5ff", glow: "rgba(0,245,255,0.12)" },
             ].map((item, i) => (
-              <div key={i} className="bg-[#1a2234] border border-white/10 rounded-2xl p-3 text-center">
-                <p className={`text-xl font-bold ${item.color}`}>{item.val}</p>
-                <p className="text-xs text-gray-400">{item.label}</p>
+              <div key={i} style={{ background: "rgba(255,255,255,0.02)", border: `1px solid ${item.glow}`, borderRadius: 14, padding: "12px 8px", textAlign: "center" }}>
+                <p style={{ fontSize: 20, fontWeight: 800, color: item.color, margin: 0 }}>{item.val}</p>
+                <p style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", marginTop: 3 }}>{item.label}</p>
               </div>
             ))}
           </div>
 
           {/* Export Buttons */}
-          <div className="flex gap-3 flex-wrap no-print">
-            <button onClick={exportExcel}
-              className="flex items-center gap-2 bg-green-700 hover:bg-green-600 text-white font-bold px-4 py-2 rounded-xl text-sm transition-all">
-              <FileSpreadsheet size={16} />تصدير Excel
-            </button>
-            <button onClick={exportCSV}
-              className="flex items-center gap-2 bg-teal-700 hover:bg-teal-600 text-white font-bold px-4 py-2 rounded-xl text-sm transition-all">
-              <FileDown size={16} />تصدير CSV
-            </button>
-            <button onClick={exportPDF}
-              className="flex items-center gap-2 bg-red-700 hover:bg-red-600 text-white font-bold px-4 py-2 rounded-xl text-sm transition-all">
-              <FileText size={16} />تصدير PDF
-            </button>
-            <button onClick={handlePrint}
-              className="flex items-center gap-2 bg-gray-700 hover:bg-gray-600 text-white font-bold px-4 py-2 rounded-xl text-sm transition-all">
-              <Printer size={16} />طباعة
-            </button>
+          <div className="flex gap-2 flex-wrap no-print">
+            {[
+              { label: "Excel", icon: FileSpreadsheet, action: exportExcel, color: "#10b981", glow: "rgba(16,185,129,0.2)" },
+              { label: "CSV", icon: FileDown, action: exportCSV, color: "#06b6d4", glow: "rgba(6,182,212,0.2)" },
+              { label: "PDF", icon: FileText, action: exportPDF, color: "#f87171", glow: "rgba(248,113,113,0.2)" },
+              { label: "طباعة", icon: Printer, action: handlePrint, color: "rgba(255,255,255,0.5)", glow: "rgba(255,255,255,0.08)" },
+            ].map(({ label, icon: Icon, action, color, glow }) => (
+              <button key={label} onClick={action}
+                style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 10, border: `1px solid ${glow}`, background: glow, color, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "'Tajawal', sans-serif" }}>
+                <Icon size={14} /> تصدير {label}
+              </button>
+            ))}
           </div>
 
           {/* Table */}
-          <div className="bg-[#1a2234] border border-white/10 rounded-2xl overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+          <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(0,245,255,0.07)", borderRadius: 16, overflow: "hidden" }}>
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", fontSize: 13, borderCollapse: "collapse" }}>
                 <thead>
-                  <tr className="border-b border-white/10">
-                    <th className="text-right text-gray-400 font-medium px-4 py-3">التاريخ</th>
-                    <th className="text-right text-gray-400 font-medium px-4 py-3">الموظف</th>
-                    <th className="text-right text-gray-400 font-medium px-4 py-3">الحالة</th>
-                    <th className="text-right text-gray-400 font-medium px-4 py-3">الدخول</th>
-                    <th className="text-right text-gray-400 font-medium px-4 py-3">الخروج</th>
-                    <th className="text-right text-gray-400 font-medium px-4 py-3">ساعات</th>
-                    <th className="text-right text-gray-400 font-medium px-4 py-3">تأخير</th>
+                  <tr style={{ borderBottom: "1px solid rgba(0,245,255,0.07)" }}>
+                    {["التاريخ", "الموظف", "الحالة", "الدخول", "الخروج", "ساعات", "تأخير"].map(h => (
+                      <th key={h} style={{ textAlign: "right", color: "rgba(0,245,255,0.5)", fontWeight: 600, padding: "11px 14px", fontSize: 11 }}>{h}</th>
+                    ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-white/5">
-                  {records.map(r => (
-                    <tr key={r.id} className="hover:bg-white/5">
-                      <td className="px-4 py-2.5 text-gray-300 text-xs">{fmtDate(r.date)}</td>
-                      <td className="px-4 py-2.5 text-white font-medium">{r.employeeName}</td>
-                      <td className="px-4 py-2.5">
-                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${r.status === "present" ? "bg-green-900/30 text-green-400" : r.status === "late" ? "bg-yellow-900/30 text-yellow-400" : r.status === "absent" ? "bg-red-900/30 text-red-400" : "bg-blue-900/30 text-blue-400"}`}>
-                          {statusAr(r.status)}
-                        </span>
-                      </td>
-                      <td className="px-4 py-2.5 text-green-400">{fmt12(r.checkInTime)}</td>
-                      <td className="px-4 py-2.5 text-red-400">{fmt12(r.checkOutTime)}</td>
-                      <td className="px-4 py-2.5 text-blue-400">{r.workingHours ? r.workingHours.toFixed(1) + "h" : "—"}</td>
-                      <td className="px-4 py-2.5 text-yellow-400">{r.lateMinutes ? r.lateMinutes + "د" : "—"}</td>
-                    </tr>
-                  ))}
+                <tbody>
+                  {records.map((r, i) => {
+                    const sColor = r.status === "present" ? "#10b981" : r.status === "late" ? "#f59e0b" : r.status === "absent" ? "#f87171" : "#3b82f6";
+                    const sBg = r.status === "present" ? "rgba(16,185,129,0.1)" : r.status === "late" ? "rgba(245,158,11,0.1)" : r.status === "absent" ? "rgba(248,113,113,0.1)" : "rgba(59,130,246,0.1)";
+                    return (
+                      <tr key={r.id} style={{ borderBottom: i < records.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none", transition: "background 0.15s" }}
+                        onMouseEnter={e => (e.currentTarget.style.background = "rgba(0,245,255,0.03)")}
+                        onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+                        <td style={{ padding: "10px 14px", color: "rgba(255,255,255,0.4)", fontSize: 12 }}>{fmtDate(r.date)}</td>
+                        <td style={{ padding: "10px 14px", color: "#fff", fontWeight: 600 }}>{r.employeeName}</td>
+                        <td style={{ padding: "10px 14px" }}>
+                          <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 20, fontWeight: 600, color: sColor, background: sBg }}>{statusAr(r.status)}</span>
+                        </td>
+                        <td style={{ padding: "10px 14px", color: "#10b981", fontSize: 12 }}>{fmt12(r.checkInTime)}</td>
+                        <td style={{ padding: "10px 14px", color: "#f87171", fontSize: 12 }}>{fmt12(r.checkOutTime)}</td>
+                        <td style={{ padding: "10px 14px", color: "#00f5ff", fontSize: 12 }}>{r.workingHours ? r.workingHours.toFixed(1) + "h" : "—"}</td>
+                        <td style={{ padding: "10px 14px", color: "#f59e0b", fontSize: 12 }}>{r.lateMinutes ? r.lateMinutes + "د" : "—"}</td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -243,9 +241,9 @@ export default function AdminReports() {
       )}
 
       {records.length === 0 && !loading && (
-        <div className="text-center py-16 text-gray-400">
-          <Calendar size={40} className="mx-auto mb-3 opacity-30" />
-          <p>اختر الفترة الزمنية ثم اضغط عرض</p>
+        <div style={{ textAlign: "center", padding: "60px 0", color: "rgba(255,255,255,0.25)" }}>
+          <Calendar size={40} style={{ margin: "0 auto 12px", opacity: 0.2 }} />
+          <p style={{ fontSize: 13 }}>اختر الفترة الزمنية ثم اضغط عرض</p>
         </div>
       )}
     </div>

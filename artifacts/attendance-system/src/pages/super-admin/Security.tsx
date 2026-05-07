@@ -74,10 +74,10 @@ interface ActiveSession {
 }
 
 const SEVERITY_CONFIG = {
-  low: { label: "منخفض", cls: "bg-blue-500/20 text-blue-400 border-blue-500/30" },
-  medium: { label: "متوسط", cls: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30" },
-  high: { label: "عالي", cls: "bg-orange-500/20 text-orange-400 border-orange-500/30" },
-  critical: { label: "حرج", cls: "bg-red-500/20 text-red-400 border-red-500/30" },
+  low: { label: "منخفض", cls: "", color: "#3b82f6", bg: "rgba(59,130,246,0.1)", border: "rgba(59,130,246,0.25)" },
+  medium: { label: "متوسط", cls: "", color: "#f59e0b", bg: "rgba(245,158,11,0.1)", border: "rgba(245,158,11,0.25)" },
+  high: { label: "عالي", cls: "", color: "#f97316", bg: "rgba(249,115,22,0.1)", border: "rgba(249,115,22,0.25)" },
+  critical: { label: "حرج", cls: "", color: "#f87171", bg: "rgba(248,113,113,0.1)", border: "rgba(248,113,113,0.25)" },
 };
 
 function formatTime(iso: string) {
@@ -86,7 +86,7 @@ function formatTime(iso: string) {
 
 function SeverityBadge({ s }: { s: string }) {
   const cfg = SEVERITY_CONFIG[s as keyof typeof SEVERITY_CONFIG] ?? SEVERITY_CONFIG.medium;
-  return <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${cfg.cls}`}>{cfg.label}</span>;
+  return <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 20, border: `1px solid ${cfg.border}`, background: cfg.bg, color: cfg.color, fontWeight: 600 }}>{cfg.label}</span>;
 }
 
 type Tab = "overview" | "events" | "audit" | "sessions" | "locked";
@@ -179,38 +179,39 @@ export default function SecurityDashboard() {
     { id: "locked", label: "حسابات مقفلة", icon: Lock, badge: summary?.lockedAccounts },
   ];
 
+  const nCard = { background: "rgba(255,255,255,0.02)", border: "1px solid rgba(0,245,255,0.08)", borderRadius: 16, padding: 16 };
+  const loadingEl = <div style={{ textAlign: "center", padding: "40px 0", color: "rgba(255,255,255,0.3)", fontSize: 13 }}>جاري التحميل...</div>;
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-900" dir="rtl">
+    <div style={{ minHeight: "100vh", background: "#020817" }} dir="rtl">
       {/* Header */}
-      <div className="bg-white/5 border-b border-white/10 backdrop-blur sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-green-600/20 border border-green-500/30 flex items-center justify-center">
-              <Shield className="w-5 h-5 text-green-400" />
+      <div style={{ background: "rgba(255,255,255,0.02)", borderBottom: "1px solid rgba(0,245,255,0.07)", backdropFilter: "blur(12px)", position: "sticky", top: 0, zIndex: 10 }}>
+        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "14px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={{ width: 40, height: 40, borderRadius: 12, background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Shield size={18} style={{ color: "#10b981" }} />
             </div>
             <div>
-              <h1 className="text-white font-bold text-lg">مركز الأمان</h1>
-              <p className="text-slate-400 text-xs">مراقبة شاملة للنظام</p>
+              <h1 style={{ color: "#fff", fontWeight: 800, fontSize: 16, margin: 0 }}>مركز الأمان</h1>
+              <p style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", marginTop: 2 }}>مراقبة شاملة للنظام</p>
             </div>
           </div>
-          <button onClick={() => loadTabData(tab)} className="text-slate-400 hover:text-white p-2 rounded-lg hover:bg-white/5 transition-colors">
-            <RefreshCw className="w-5 h-5" />
+          <button onClick={() => loadTabData(tab)} style={{ padding: 8, borderRadius: 10, background: "none", border: "1px solid rgba(0,245,255,0.1)", cursor: "pointer", color: "rgba(0,245,255,0.5)" }}>
+            <RefreshCw size={16} />
           </button>
         </div>
         {/* Tabs */}
-        <div className="max-w-7xl mx-auto px-4 flex gap-1 overflow-x-auto pb-1">
+        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 16px 0", display: "flex", gap: 4, overflowX: "auto" }}>
           {TABS.map(t => {
             const Icon = t.icon;
             const active = tab === t.id;
             return (
               <button key={t.id} onClick={() => setTab(t.id)}
-                className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-t-lg whitespace-nowrap transition-all border-b-2 ${
-                  active ? "border-green-500 text-white bg-white/5" : "border-transparent text-slate-400 hover:text-white"
-                }`}>
-                <Icon className="w-4 h-4" />
+                style={{ display: "flex", alignItems: "center", gap: 6, padding: "10px 14px", fontSize: 12, fontWeight: 600, borderRadius: "10px 10px 0 0", whiteSpace: "nowrap", cursor: "pointer", background: active ? "rgba(0,245,255,0.06)" : "transparent", border: "none", borderBottom: active ? "2px solid #00f5ff" : "2px solid transparent", color: active ? "#00f5ff" : "rgba(255,255,255,0.4)", transition: "all 0.15s", fontFamily: "'Tajawal', sans-serif" }}>
+                <Icon size={13} />
                 {t.label}
                 {t.badge !== undefined && t.badge > 0 && (
-                  <span className="bg-red-500 text-white text-xs rounded-full px-1.5 min-w-[1.2rem] text-center">{t.badge}</span>
+                  <span style={{ background: "#f87171", color: "#fff", fontSize: 10, fontWeight: 700, borderRadius: 20, padding: "1px 6px" }}>{t.badge}</span>
                 )}
               </button>
             );
@@ -218,95 +219,78 @@ export default function SecurityDashboard() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
-        {/* Feedback */}
+      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "20px 16px", display: "flex", flexDirection: "column", gap: 16 }}>
         {feedback && (
-          <div className="p-3 bg-green-500/10 border border-green-500/20 text-green-400 rounded-xl text-sm text-center">{feedback}</div>
+          <div style={{ padding: "10px 14px", background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.2)", color: "#10b981", borderRadius: 12, fontSize: 13, textAlign: "center" }}>{feedback}</div>
         )}
 
-        {/* ── Overview Tab ─────────────────────────────────────────── */}
+        {/* ── Overview Tab ─────────────────────────────── */}
         {tab === "overview" && (
           <>
-            {/* Summary Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {[
-                { label: "حوادث مفتوحة (7 أيام)", value: summary?.openEvents ?? 0, icon: AlertTriangle, color: "red", warn: (summary?.openEvents ?? 0) > 0 },
-                { label: "فشل تسجيل الدخول (24س)", value: summary?.failedLogins24h ?? 0, icon: XCircle, color: "orange", warn: (summary?.failedLogins24h ?? 0) > 10 },
-                { label: "حسابات مقفلة", value: summary?.lockedAccounts ?? 0, icon: Lock, color: "yellow", warn: (summary?.lockedAccounts ?? 0) > 0 },
-                { label: "جلسات نشطة (1س)", value: summary?.activeSessions ?? 0, icon: Users, color: "green" },
+                { label: "حوادث مفتوحة (7 أيام)", value: summary?.openEvents ?? 0, icon: AlertTriangle, iconColor: "#f87171", glow: "rgba(248,113,113,0.12)", warn: (summary?.openEvents ?? 0) > 0 },
+                { label: "فشل تسجيل الدخول (24س)", value: summary?.failedLogins24h ?? 0, icon: XCircle, iconColor: "#f97316", glow: "rgba(249,115,22,0.12)", warn: (summary?.failedLogins24h ?? 0) > 10 },
+                { label: "حسابات مقفلة", value: summary?.lockedAccounts ?? 0, icon: Lock, iconColor: "#f59e0b", glow: "rgba(245,158,11,0.12)", warn: (summary?.lockedAccounts ?? 0) > 0 },
+                { label: "جلسات نشطة (1س)", value: summary?.activeSessions ?? 0, icon: Users, iconColor: "#10b981", glow: "rgba(16,185,129,0.12)" },
               ].map(s => (
-                <div key={s.label} className={`bg-white/5 border ${s.warn ? "border-red-500/30" : "border-white/10"} rounded-2xl p-4`}>
-                  <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-xl bg-${s.color}-500/20 flex items-center justify-center flex-shrink-0`}>
-                      <s.icon className={`w-5 h-5 text-${s.color}-400`} />
+                <div key={s.label} style={{ background: "rgba(255,255,255,0.02)", border: `1px solid ${s.warn ? "rgba(248,113,113,0.25)" : "rgba(0,245,255,0.07)"}`, borderRadius: 14, padding: "14px 12px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <div style={{ width: 40, height: 40, borderRadius: 11, background: s.glow, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <s.icon size={18} style={{ color: s.iconColor }} />
                     </div>
                     <div>
-                      <div className={`text-3xl font-bold ${s.warn ? "text-red-400" : "text-white"}`}>{s.value}</div>
-                      <div className="text-xs text-slate-400">{s.label}</div>
+                      <div style={{ fontSize: 26, fontWeight: 800, color: s.warn ? "#f87171" : "#fff" }}>{s.value}</div>
+                      <div style={{ fontSize: 10, color: "rgba(255,255,255,0.35)" }}>{s.label}</div>
                     </div>
                   </div>
                 </div>
               ))}
             </div>
 
-            {/* Security Features Info */}
-            <div className="grid md:grid-cols-2 gap-6">
-              <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
-                <h3 className="text-white font-bold mb-4 flex items-center gap-2">
-                  <Shield className="w-5 h-5 text-green-400" /> طبقات الحماية المفعّلة
+            <div className="grid md:grid-cols-2 gap-4">
+              <div style={nCard}>
+                <h3 style={{ color: "#10b981", fontWeight: 700, fontSize: 13, display: "flex", alignItems: "center", gap: 7, marginBottom: 14 }}>
+                  <Shield size={14} /> طبقات الحماية المفعّلة
                 </h3>
-                <div className="space-y-2.5">
-                  {[
-                    { label: "تشفير كلمات المرور (bcrypt 12 rounds)", status: true },
-                    { label: "حظر IP بعد 20 محاولة فاشلة", status: true },
-                    { label: "قفل الحساب بعد 5 محاولات", status: true },
-                    { label: "Security Headers (Helmet.js)", status: true },
-                    { label: "Rate Limiting (500 req/15min)", status: true },
-                    { label: "CSRF Protection (SameSite + Origin Check)", status: true },
-                    { label: "Session Expiration (8 ساعات)", status: true },
-                    { label: "Audit Log لكل العمليات", status: true },
-                    { label: "Tenant Isolation (company_id)", status: true },
-                    { label: "SQL Injection Prevention (Drizzle ORM)", status: true },
-                    { label: "XSS Prevention (Input Sanitization)", status: true },
-                    { label: "Device Tracking & Session Management", status: true },
-                  ].map(f => (
-                    <div key={f.label} className="flex items-center gap-3">
-                      <CheckCircle className="w-4 h-4 text-green-400 flex-shrink-0" />
-                      <span className="text-slate-300 text-sm">{f.label}</span>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {["تشفير كلمات المرور (bcrypt 12 rounds)", "حظر IP بعد 20 محاولة فاشلة", "قفل الحساب بعد 5 محاولات", "Security Headers (Helmet.js)", "Rate Limiting (500 req/15min)", "CSRF Protection (SameSite + Origin Check)", "Session Expiration (8 ساعات)", "Audit Log لكل العمليات", "Tenant Isolation (company_id)", "SQL Injection Prevention (Drizzle ORM)", "XSS Prevention (Input Sanitization)", "Device Tracking & Session Management"].map(f => (
+                    <div key={f} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <CheckCircle size={13} style={{ color: "#10b981", flexShrink: 0 }} />
+                      <span style={{ fontSize: 12, color: "rgba(255,255,255,0.6)" }}>{f}</span>
                     </div>
                   ))}
                 </div>
               </div>
 
-              {/* Login stats */}
               {loginStats && (
-                <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
-                  <h3 className="text-white font-bold mb-4 flex items-center gap-2">
-                    <Activity className="w-5 h-5 text-blue-400" /> إحصائيات تسجيل الدخول
+                <div style={nCard}>
+                  <h3 style={{ color: "#00f5ff", fontWeight: 700, fontSize: 13, display: "flex", alignItems: "center", gap: 7, marginBottom: 14 }}>
+                    <Activity size={14} /> إحصائيات تسجيل الدخول
                   </h3>
-                  <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div className="grid grid-cols-2 gap-3" style={{ marginBottom: 14 }}>
                     {[
-                      { label: "ناجح (إجمالي)", value: loginStats.stats.successful, color: "text-green-400" },
-                      { label: "فاشل (إجمالي)", value: loginStats.stats.failed, color: "text-red-400" },
-                      { label: "IPs فريدة", value: loginStats.stats.unique_ips, color: "text-blue-400" },
-                      { label: "آخر 24 ساعة", value: loginStats.stats.last_24h, color: "text-yellow-400" },
+                      { label: "ناجح (إجمالي)", value: loginStats.stats.successful, color: "#10b981" },
+                      { label: "فاشل (إجمالي)", value: loginStats.stats.failed, color: "#f87171" },
+                      { label: "IPs فريدة", value: loginStats.stats.unique_ips, color: "#00f5ff" },
+                      { label: "آخر 24 ساعة", value: loginStats.stats.last_24h, color: "#f59e0b" },
                     ].map(s => (
-                      <div key={s.label} className="bg-white/5 rounded-xl p-3 text-center">
-                        <div className={`text-2xl font-bold ${s.color}`}>{s.value}</div>
-                        <div className="text-xs text-slate-400 mt-1">{s.label}</div>
+                      <div key={s.label} style={{ background: "rgba(255,255,255,0.04)", borderRadius: 11, padding: "10px 8px", textAlign: "center" }}>
+                        <div style={{ fontSize: 22, fontWeight: 800, color: s.color }}>{s.value}</div>
+                        <div style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", marginTop: 3 }}>{s.label}</div>
                       </div>
                     ))}
                   </div>
                   {loginStats.topIps.length > 0 && (
                     <div>
-                      <p className="text-slate-400 text-xs mb-2">أعلى IPs بمحاولات الدخول (24س)</p>
-                      <div className="space-y-1">
+                      <p style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", marginBottom: 8 }}>أعلى IPs بمحاولات الدخول (24س)</p>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
                         {loginStats.topIps.slice(0, 5).map((ip, i) => (
-                          <div key={i} className="flex items-center justify-between text-xs bg-white/5 rounded-lg px-3 py-2">
-                            <span className="text-white font-mono">{ip.ip_address}</span>
-                            <div className="flex gap-3">
-                              <span className="text-green-400">{ip.attempts} طلب</span>
-                              {Number(ip.failures) > 0 && <span className="text-red-400">{ip.failures} فشل</span>}
+                          <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 11, background: "rgba(255,255,255,0.04)", borderRadius: 9, padding: "7px 10px" }}>
+                            <span style={{ color: "#fff", fontFamily: "monospace" }}>{ip.ip_address}</span>
+                            <div style={{ display: "flex", gap: 12 }}>
+                              <span style={{ color: "#10b981" }}>{ip.attempts} طلب</span>
+                              {Number(ip.failures) > 0 && <span style={{ color: "#f87171" }}>{ip.failures} فشل</span>}
                             </div>
                           </div>
                         ))}
@@ -319,91 +303,93 @@ export default function SecurityDashboard() {
           </>
         )}
 
-        {/* ── Security Events Tab ──────────────────────────────────── */}
+        {/* ── Security Events Tab ──────────────────────── */}
         {tab === "events" && (
-          <div className="space-y-4">
-            <div className="flex items-center gap-3 flex-wrap">
-              <h2 className="text-white font-bold text-lg flex-1">الحوادث الأمنية</h2>
-              <div className="flex gap-2 flex-wrap">
-                {["all", "critical", "high", "medium", "low"].map(s => (
-                  <button key={s} onClick={() => setSeverityFilter(s)}
-                    className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${severityFilter === s ? "bg-white/20 text-white" : "bg-white/5 text-slate-400 hover:bg-white/10"}`}>
-                    {s === "all" ? "الكل" : SEVERITY_CONFIG[s as keyof typeof SEVERITY_CONFIG]?.label}
-                  </button>
-                ))}
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+              <h2 style={{ color: "#fff", fontWeight: 800, fontSize: 16, flex: 1, margin: 0 }}>الحوادث الأمنية</h2>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                {["all", "critical", "high", "medium", "low"].map(s => {
+                  const cfg = SEVERITY_CONFIG[s as keyof typeof SEVERITY_CONFIG];
+                  const active = severityFilter === s;
+                  return (
+                    <button key={s} onClick={() => setSeverityFilter(s)}
+                      style={{ padding: "5px 12px", borderRadius: 9, border: active ? `1px solid ${cfg?.border ?? "rgba(0,245,255,0.3)"}` : "1px solid rgba(255,255,255,0.07)", background: active ? (cfg?.bg ?? "rgba(0,245,255,0.08)") : "rgba(255,255,255,0.03)", color: active ? (cfg?.color ?? "#00f5ff") : "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "'Tajawal', sans-serif" }}>
+                      {s === "all" ? "الكل" : cfg?.label}
+                    </button>
+                  );
+                })}
               </div>
             </div>
-
-            {loading ? (
-              <div className="text-center py-10 text-slate-400">جاري التحميل...</div>
-            ) : filteredEvents.length === 0 ? (
-              <div className="text-center py-16 bg-white/5 rounded-2xl border border-white/10">
-                <Shield className="w-12 h-12 text-green-400 mx-auto mb-3 opacity-50" />
-                <p className="text-slate-400">لا توجد حوادث {severityFilter !== "all" ? `من نوع ${SEVERITY_CONFIG[severityFilter as keyof typeof SEVERITY_CONFIG]?.label}` : ""}</p>
+            {loading ? loadingEl : filteredEvents.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "50px 0", background: "rgba(255,255,255,0.02)", borderRadius: 16, border: "1px solid rgba(16,185,129,0.1)" }}>
+                <Shield size={40} style={{ margin: "0 auto 12px", color: "#10b981", opacity: 0.4 }} />
+                <p style={{ fontSize: 13, color: "rgba(255,255,255,0.3)" }}>لا توجد حوادث</p>
               </div>
             ) : (
-              <div className="space-y-2">
-                {filteredEvents.map(ev => (
-                  <div key={ev.id} className={`bg-white/5 border rounded-xl p-4 ${ev.resolved ? "opacity-50" : "border-white/10"}`}>
-                    <div className="flex items-start gap-4">
-                      <AlertTriangle className={`w-5 h-5 mt-0.5 flex-shrink-0 ${ev.severity === "critical" ? "text-red-400" : ev.severity === "high" ? "text-orange-400" : "text-yellow-400"}`} />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap mb-1">
-                          <SeverityBadge s={ev.severity} />
-                          {ev.company_name && <span className="text-xs bg-indigo-500/20 text-indigo-400 px-2 py-0.5 rounded-full">{ev.company_name}</span>}
-                          {ev.resolved && <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full">تم الحل</span>}
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {filteredEvents.map(ev => {
+                  const cfg = SEVERITY_CONFIG[ev.severity as keyof typeof SEVERITY_CONFIG] ?? SEVERITY_CONFIG.medium;
+                  return (
+                    <div key={ev.id} style={{ background: "rgba(255,255,255,0.02)", border: `1px solid ${cfg.border}`, borderRadius: 13, padding: "12px 14px", opacity: ev.resolved ? 0.5 : 1 }}>
+                      <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+                        <AlertTriangle size={16} style={{ color: cfg.color, flexShrink: 0, marginTop: 1 }} />
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginBottom: 5 }}>
+                            <SeverityBadge s={ev.severity} />
+                            {ev.company_name && <span style={{ fontSize: 10, color: "#a855f7", background: "rgba(168,85,247,0.1)", border: "1px solid rgba(168,85,247,0.2)", padding: "1px 7px", borderRadius: 20 }}>{ev.company_name}</span>}
+                            {ev.resolved && <span style={{ fontSize: 10, color: "#10b981", background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.2)", padding: "1px 7px", borderRadius: 20 }}>تم الحل</span>}
+                          </div>
+                          <p style={{ color: "#fff", fontSize: 13 }}>{ev.description}</p>
+                          <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 4, fontSize: 11, color: "rgba(255,255,255,0.35)" }}>
+                            {ev.ip_address && <span style={{ fontFamily: "monospace" }}>{ev.ip_address}</span>}
+                            <span>{formatTime(ev.created_at)}</span>
+                          </div>
                         </div>
-                        <p className="text-white text-sm">{ev.description}</p>
-                        <div className="flex items-center gap-3 mt-1 text-xs text-slate-400">
-                          {ev.ip_address && <span className="font-mono">{ev.ip_address}</span>}
-                          <span>{formatTime(ev.created_at)}</span>
-                        </div>
+                        {!ev.resolved && (
+                          <button onClick={() => resolveEvent(ev.id)}
+                            style={{ flexShrink: 0, padding: "5px 12px", background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.2)", color: "#10b981", borderRadius: 9, fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "'Tajawal', sans-serif" }}>
+                            حل الحادثة
+                          </button>
+                        )}
                       </div>
-                      {!ev.resolved && (
-                        <button onClick={() => resolveEvent(ev.id)}
-                          className="flex-shrink-0 px-3 py-1.5 bg-green-600/20 hover:bg-green-600/30 text-green-400 rounded-lg text-xs font-medium transition-all">
-                          حل الحادثة
-                        </button>
-                      )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
         )}
 
-        {/* ── Audit Log Tab ────────────────────────────────────────── */}
+        {/* ── Audit Log Tab ────────────────────────────── */}
         {tab === "audit" && (
-          <div className="space-y-4">
-            <h2 className="text-white font-bold text-lg">سجل التدقيق</h2>
-            {loading ? (
-              <div className="text-center py-10 text-slate-400">جاري التحميل...</div>
-            ) : (
-              <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <h2 style={{ color: "#fff", fontWeight: 800, fontSize: 16, margin: 0 }}>سجل التدقيق</h2>
+            {loading ? loadingEl : (
+              <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(0,245,255,0.07)", borderRadius: 16, overflow: "hidden" }}>
+                <div style={{ overflowX: "auto" }}>
+                  <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse" }}>
                     <thead>
-                      <tr className="border-b border-white/10 bg-white/5">
+                      <tr style={{ borderBottom: "1px solid rgba(0,245,255,0.07)", background: "rgba(0,245,255,0.03)" }}>
                         {["الوقت", "الشركة", "المستخدم", "الدور", "العملية", "المورد", "IP", "الحالة"].map(h => (
-                          <th key={h} className="text-right px-4 py-3 text-slate-400 font-medium whitespace-nowrap">{h}</th>
+                          <th key={h} style={{ textAlign: "right", padding: "11px 12px", color: "rgba(0,245,255,0.5)", fontWeight: 600, whiteSpace: "nowrap", fontSize: 11 }}>{h}</th>
                         ))}
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-white/5">
-                      {audit.map(log => (
-                        <tr key={log.id} className="hover:bg-white/5 transition-colors">
-                          <td className="px-4 py-3 text-slate-400 whitespace-nowrap text-xs">{formatTime(log.created_at)}</td>
-                          <td className="px-4 py-3 text-white whitespace-nowrap">{log.company_name ?? "—"}</td>
-                          <td className="px-4 py-3 text-white whitespace-nowrap">{log.user_name ?? "—"}</td>
-                          <td className="px-4 py-3 whitespace-nowrap">
-                            <span className="text-xs bg-white/10 text-slate-300 px-2 py-0.5 rounded">{log.user_role ?? "—"}</span>
+                    <tbody>
+                      {audit.map((log, i) => (
+                        <tr key={log.id} style={{ borderBottom: i < audit.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none" }}>
+                          <td style={{ padding: "9px 12px", color: "rgba(255,255,255,0.35)", whiteSpace: "nowrap" }}>{formatTime(log.created_at)}</td>
+                          <td style={{ padding: "9px 12px", color: "#fff", whiteSpace: "nowrap" }}>{log.company_name ?? "—"}</td>
+                          <td style={{ padding: "9px 12px", color: "#fff", whiteSpace: "nowrap" }}>{log.user_name ?? "—"}</td>
+                          <td style={{ padding: "9px 12px", whiteSpace: "nowrap" }}>
+                            <span style={{ fontSize: 10, background: "rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.5)", padding: "2px 8px", borderRadius: 8 }}>{log.user_role ?? "—"}</span>
                           </td>
-                          <td className="px-4 py-3 text-slate-300 font-mono text-xs whitespace-nowrap">{log.action}</td>
-                          <td className="px-4 py-3 text-slate-400 whitespace-nowrap">{log.resource}</td>
-                          <td className="px-4 py-3 font-mono text-xs text-slate-400 whitespace-nowrap">{log.ip_address ?? "—"}</td>
-                          <td className="px-4 py-3 whitespace-nowrap">
-                            <span className={`text-xs px-2 py-0.5 rounded-full ${log.status === "success" ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"}`}>
+                          <td style={{ padding: "9px 12px", color: "rgba(255,255,255,0.6)", fontFamily: "monospace", whiteSpace: "nowrap" }}>{log.action}</td>
+                          <td style={{ padding: "9px 12px", color: "rgba(255,255,255,0.4)", whiteSpace: "nowrap" }}>{log.resource}</td>
+                          <td style={{ padding: "9px 12px", fontFamily: "monospace", color: "rgba(255,255,255,0.35)", whiteSpace: "nowrap" }}>{log.ip_address ?? "—"}</td>
+                          <td style={{ padding: "9px 12px", whiteSpace: "nowrap" }}>
+                            <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 20, color: log.status === "success" ? "#10b981" : "#f87171", background: log.status === "success" ? "rgba(16,185,129,0.1)" : "rgba(248,113,113,0.1)" }}>
                               {log.status === "success" ? "نجاح" : "فشل"}
                             </span>
                           </td>
@@ -411,45 +397,41 @@ export default function SecurityDashboard() {
                       ))}
                     </tbody>
                   </table>
-                  {audit.length === 0 && (
-                    <div className="text-center py-10 text-slate-400">لا توجد سجلات</div>
-                  )}
+                  {audit.length === 0 && <div style={{ textAlign: "center", padding: "30px 0", fontSize: 13, color: "rgba(255,255,255,0.25)" }}>لا توجد سجلات</div>}
                 </div>
               </div>
             )}
           </div>
         )}
 
-        {/* ── Sessions Tab ─────────────────────────────────────────── */}
+        {/* ── Sessions Tab ─────────────────────────────── */}
         {tab === "sessions" && (
-          <div className="space-y-4">
-            <h2 className="text-white font-bold text-lg">الجلسات النشطة</h2>
-            {loading ? (
-              <div className="text-center py-10 text-slate-400">جاري التحميل...</div>
-            ) : sessions.length === 0 ? (
-              <div className="text-center py-16 bg-white/5 rounded-2xl border border-white/10 text-slate-400">لا توجد جلسات نشطة</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <h2 style={{ color: "#fff", fontWeight: 800, fontSize: 16, margin: 0 }}>الجلسات النشطة</h2>
+            {loading ? loadingEl : sessions.length === 0 ? (
+              <div style={{ textAlign: "center", ...nCard, color: "rgba(255,255,255,0.3)", fontSize: 13, paddingTop: "50px", paddingBottom: "50px" }}>لا توجد جلسات نشطة</div>
             ) : (
-              <div className="space-y-2">
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {sessions.map(s => (
-                  <div key={s.session_id} className="bg-white/5 border border-white/10 rounded-xl p-4 flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center flex-shrink-0">
-                      {s.device_name?.includes("محمول") ? <Smartphone className="w-5 h-5 text-blue-400" /> : <Monitor className="w-5 h-5 text-blue-400" />}
+                  <div key={s.session_id} style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(0,245,255,0.07)", borderRadius: 13, padding: "12px 14px", display: "flex", alignItems: "center", gap: 12 }}>
+                    <div style={{ width: 38, height: 38, borderRadius: 11, background: "rgba(0,245,255,0.08)", border: "1px solid rgba(0,245,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      {s.device_name?.includes("محمول") ? <Smartphone size={16} style={{ color: "#00f5ff" }} /> : <Monitor size={16} style={{ color: "#00f5ff" }} />}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-white font-medium text-sm">{s.full_name ?? "سوبر ادمن"}</span>
-                        {s.username && <span className="text-slate-400 text-xs">({s.username})</span>}
-                        {s.company_name && <span className="text-xs bg-indigo-500/20 text-indigo-400 px-2 py-0.5 rounded">{s.company_name}</span>}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                        <span style={{ color: "#fff", fontWeight: 600, fontSize: 13 }}>{s.full_name ?? "سوبر ادمن"}</span>
+                        {s.username && <span style={{ color: "rgba(255,255,255,0.35)", fontSize: 11 }}>({s.username})</span>}
+                        {s.company_name && <span style={{ fontSize: 10, color: "#a855f7", background: "rgba(168,85,247,0.1)", border: "1px solid rgba(168,85,247,0.2)", padding: "1px 7px", borderRadius: 20 }}>{s.company_name}</span>}
                       </div>
-                      <div className="flex items-center gap-4 mt-1 text-xs text-slate-400">
-                        <span className="flex items-center gap-1"><Globe className="w-3 h-3" />{s.ip_address}</span>
+                      <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 4, fontSize: 11, color: "rgba(255,255,255,0.35)" }}>
+                        <span style={{ display: "flex", alignItems: "center", gap: 3 }}><Globe size={10} />{s.ip_address}</span>
                         <span>{s.device_name}</span>
-                        <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{formatTime(s.last_active_at)}</span>
+                        <span style={{ display: "flex", alignItems: "center", gap: 3 }}><Clock size={10} />{formatTime(s.last_active_at)}</span>
                       </div>
                     </div>
                     <button onClick={() => terminateSession(s.session_id)}
-                      className="flex-shrink-0 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg text-xs font-medium transition-all flex items-center gap-1">
-                      <LogOut className="w-3 h-3" /> إنهاء
+                      style={{ flexShrink: 0, padding: "6px 12px", background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.2)", color: "#f87171", borderRadius: 9, fontSize: 11, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 5, fontFamily: "'Tajawal', sans-serif" }}>
+                      <LogOut size={11} /> إنهاء
                     </button>
                   </div>
                 ))}
@@ -458,38 +440,36 @@ export default function SecurityDashboard() {
           </div>
         )}
 
-        {/* ── Locked Accounts Tab ──────────────────────────────────── */}
+        {/* ── Locked Accounts Tab ──────────────────────── */}
         {tab === "locked" && (
-          <div className="space-y-4">
-            <h2 className="text-white font-bold text-lg">الحسابات المقفلة</h2>
-            {loading ? (
-              <div className="text-center py-10 text-slate-400">جاري التحميل...</div>
-            ) : locked.length === 0 ? (
-              <div className="text-center py-16 bg-white/5 rounded-2xl border border-white/10">
-                <CheckCircle className="w-12 h-12 text-green-400 mx-auto mb-3 opacity-50" />
-                <p className="text-slate-400">لا توجد حسابات مقفلة</p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <h2 style={{ color: "#fff", fontWeight: 800, fontSize: 16, margin: 0 }}>الحسابات المقفلة</h2>
+            {loading ? loadingEl : locked.length === 0 ? (
+              <div style={{ textAlign: "center", ...nCard, paddingTop: "50px", paddingBottom: "50px" }}>
+                <CheckCircle size={40} style={{ margin: "0 auto 12px", color: "#10b981", opacity: 0.4 }} />
+                <p style={{ fontSize: 13, color: "rgba(255,255,255,0.3)" }}>لا توجد حسابات مقفلة</p>
               </div>
             ) : (
-              <div className="space-y-2">
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {locked.map(acc => (
-                  <div key={acc.id} className="bg-white/5 border border-orange-500/20 rounded-xl p-4 flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-xl bg-orange-500/20 flex items-center justify-center flex-shrink-0">
-                      <Lock className="w-5 h-5 text-orange-400" />
+                  <div key={acc.id} style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(249,115,22,0.2)", borderRadius: 13, padding: "12px 14px", display: "flex", alignItems: "center", gap: 12 }}>
+                    <div style={{ width: 38, height: 38, borderRadius: 11, background: "rgba(249,115,22,0.1)", border: "1px solid rgba(249,115,22,0.2)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <Lock size={16} style={{ color: "#f97316" }} />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-white font-medium">{acc.full_name}</span>
-                        <span className="text-slate-400 text-xs">({acc.username})</span>
-                        <span className="text-xs bg-indigo-500/20 text-indigo-400 px-2 py-0.5 rounded">{acc.company_name}</span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                        <span style={{ color: "#fff", fontWeight: 600, fontSize: 13 }}>{acc.full_name}</span>
+                        <span style={{ color: "rgba(255,255,255,0.35)", fontSize: 11 }}>({acc.username})</span>
+                        <span style={{ fontSize: 10, color: "#a855f7", background: "rgba(168,85,247,0.1)", border: "1px solid rgba(168,85,247,0.2)", padding: "1px 7px", borderRadius: 20 }}>{acc.company_name}</span>
                       </div>
-                      <div className="flex items-center gap-4 mt-1 text-xs text-slate-400">
-                        <span className="text-red-400">{acc.failed_login_attempts} محاولة فاشلة</span>
-                        {acc.locked_until && <span>مقفل حتى: {formatTime(acc.locked_until)}</span>}
+                      <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 4, fontSize: 11 }}>
+                        <span style={{ color: "#f87171" }}>{acc.failed_login_attempts} محاولة فاشلة</span>
+                        {acc.locked_until && <span style={{ color: "rgba(255,255,255,0.35)" }}>مقفل حتى: {formatTime(acc.locked_until)}</span>}
                       </div>
                     </div>
                     <button onClick={() => unlockAccount(acc.id)}
-                      className="flex-shrink-0 px-3 py-1.5 bg-green-600/20 hover:bg-green-600/30 text-green-400 rounded-lg text-xs font-medium transition-all flex items-center gap-1">
-                      <Unlock className="w-3 h-3" /> فتح القفل
+                      style={{ flexShrink: 0, padding: "6px 12px", background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.2)", color: "#10b981", borderRadius: 9, fontSize: 11, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 5, fontFamily: "'Tajawal', sans-serif" }}>
+                      <Unlock size={11} /> فتح القفل
                     </button>
                   </div>
                 ))}

@@ -6,10 +6,20 @@ interface Shift { id: number; name: string; startTime: string; endTime: string; 
 
 const BASE = import.meta.env.BASE_URL;
 
+const nInp = { width: "100%", padding: "9px 12px", borderRadius: 10, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(0,245,255,0.1)", color: "#fff", fontSize: 13, outline: "none", boxSizing: "border-box" as const, colorScheme: "dark" as const, fontFamily: "'Tajawal', sans-serif" };
+const nLbl = { display: "block", fontSize: 11, color: "rgba(255,255,255,0.4)", marginBottom: 5 };
+const mSt = { position: "fixed" as const, inset: 0, background: "rgba(0,0,0,0.8)", backdropFilter: "blur(8px)", zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 };
+const mBox = { background: "rgba(5,13,31,0.97)", border: "1px solid rgba(0,245,255,0.12)", borderRadius: 20, width: "100%", maxWidth: 440 };
+const mHead = { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", borderBottom: "1px solid rgba(0,245,255,0.07)" };
+const mBody = { padding: "16px 18px", display: "flex", flexDirection: "column" as const, gap: 12 };
+const mFoot = { padding: "12px 18px", borderTop: "1px solid rgba(0,245,255,0.07)", display: "flex", gap: 8, justifyContent: "flex-end" };
+const btnSave = { flex: 1, padding: "9px 16px", borderRadius: 10, border: "none", background: "linear-gradient(135deg, rgba(0,245,255,0.7), rgba(59,130,246,0.7))", color: "#020817", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "'Tajawal', sans-serif" };
+const btnCancel = { flex: 1, padding: "9px 16px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.08)", background: "none", color: "rgba(255,255,255,0.4)", fontSize: 13, cursor: "pointer", fontFamily: "'Tajawal', sans-serif" };
+
 function Toast({ msg, type }: { msg: string; type: "success" | "error" }) {
   return (
-    <div className={`fixed top-5 left-1/2 -translate-x-1/2 z-[9999] px-6 py-3 rounded-2xl shadow-2xl text-sm font-bold flex items-center gap-2 ${type === "success" ? "bg-emerald-500 text-white" : "bg-rose-500 text-white"}`}>
-      {type === "success" ? <Check className="w-4 h-4" /> : <X className="w-4 h-4" />}
+    <div style={{ position: "fixed", top: 20, left: "50%", transform: "translateX(-50%)", zIndex: 9999, display: "flex", alignItems: "center", gap: 8, padding: "10px 20px", borderRadius: 14, fontSize: 13, fontWeight: 600, backdropFilter: "blur(12px)", background: type === "success" ? "rgba(16,185,129,0.15)" : "rgba(239,68,68,0.15)", border: `1px solid ${type === "success" ? "rgba(16,185,129,0.3)" : "rgba(239,68,68,0.3)"}`, color: type === "success" ? "#10b981" : "#f87171" }}>
+      {type === "success" ? <Check size={14} /> : <X size={14} />}
       {msg}
     </div>
   );
@@ -34,29 +44,28 @@ function DeptModal({ dept, onClose, onSave }: { dept: Partial<Department> | null
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" dir="rtl">
-      <div className="bg-card border border-border rounded-2xl w-full max-w-md shadow-2xl">
-        <div className="flex items-center justify-between p-5 border-b border-border">
-          <h2 className="font-bold text-foreground">{dept?.id ? "تعديل القسم" : "إضافة قسم جديد"}</h2>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X size={18} /></button>
+    <div style={mSt} dir="rtl">
+      <div style={mBox}>
+        <div style={mHead}>
+          <h2 style={{ color: "#fff", fontWeight: 700, fontSize: 15, margin: 0 }}>{dept?.id ? "تعديل القسم" : "إضافة قسم جديد"}</h2>
+          <button onClick={onClose} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.35)", cursor: "pointer" }}><X size={16} /></button>
         </div>
-        <form onSubmit={handleSubmit} className="p-5 space-y-4">
-          {err && <div className="bg-rose-50 border border-rose-200 text-rose-700 rounded-lg p-3 text-sm">{err}</div>}
+        <form onSubmit={handleSubmit} style={mBody}>
+          {err && <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 12px", background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.2)", borderRadius: 10, color: "#f87171", fontSize: 12 }}>{err}</div>}
           <div>
-            <label className="block text-sm font-medium text-foreground mb-1.5">اسم القسم *</label>
-            <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} required
-              className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
+            <label style={nLbl}>اسم القسم *</label>
+            <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} required style={nInp} />
           </div>
           <div>
-            <label className="block text-sm font-medium text-foreground mb-1.5">الوصف</label>
+            <label style={nLbl}>الوصف</label>
             <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-              rows={3} className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none" />
+              rows={3} style={{ ...nInp, resize: "none" }} />
           </div>
-          <div className="flex gap-3 pt-2">
-            <button type="submit" disabled={saving} className="flex-1 bg-primary text-primary-foreground py-2.5 rounded-xl font-bold text-sm hover:bg-primary/90 disabled:opacity-50">
+          <div style={{ display: "flex", gap: 8, paddingTop: 4 }}>
+            <button type="submit" disabled={saving} style={{ ...btnSave, opacity: saving ? 0.6 : 1, cursor: saving ? "not-allowed" : "pointer" }}>
               {saving ? "جاري الحفظ..." : "حفظ"}
             </button>
-            <button type="button" onClick={onClose} className="flex-1 bg-muted text-muted-foreground py-2.5 rounded-xl font-bold text-sm hover:bg-muted/80">إلغاء</button>
+            <button type="button" onClick={onClose} style={btnCancel}>إلغاء</button>
           </div>
         </form>
       </div>
@@ -89,47 +98,43 @@ function ShiftModal({ shift, onClose, onSave }: { shift: Partial<Shift> | null; 
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" dir="rtl">
-      <div className="bg-card border border-border rounded-2xl w-full max-w-md shadow-2xl">
-        <div className="flex items-center justify-between p-5 border-b border-border">
-          <h2 className="font-bold text-foreground">{shift?.id ? "تعديل الشفت" : "إضافة شفت جديد"}</h2>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X size={18} /></button>
+    <div style={mSt} dir="rtl">
+      <div style={mBox}>
+        <div style={mHead}>
+          <h2 style={{ color: "#fff", fontWeight: 700, fontSize: 15, margin: 0 }}>{shift?.id ? "تعديل الشفت" : "إضافة شفت جديد"}</h2>
+          <button onClick={onClose} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.35)", cursor: "pointer" }}><X size={16} /></button>
         </div>
-        <form onSubmit={handleSubmit} className="p-5 space-y-4">
-          {err && <div className="bg-rose-50 border border-rose-200 text-rose-700 rounded-lg p-3 text-sm">{err}</div>}
+        <form onSubmit={handleSubmit} style={mBody}>
+          {err && <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 12px", background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.2)", borderRadius: 10, color: "#f87171", fontSize: 12 }}>{err}</div>}
           <div>
-            <label className="block text-sm font-medium text-foreground mb-1.5">اسم الشفت *</label>
-            <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} required
-              className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
+            <label style={nLbl}>اسم الشفت *</label>
+            <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} required style={nInp} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5">وقت البداية</label>
-              <input type="time" value={form.startTime} onChange={e => setForm(f => ({ ...f, startTime: e.target.value }))}
-                className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
+              <label style={nLbl}>وقت البداية</label>
+              <input type="time" value={form.startTime} onChange={e => setForm(f => ({ ...f, startTime: e.target.value }))} style={nInp} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5">وقت النهاية</label>
-              <input type="time" value={form.endTime} onChange={e => setForm(f => ({ ...f, endTime: e.target.value }))}
-                className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
+              <label style={nLbl}>وقت النهاية</label>
+              <input type="time" value={form.endTime} onChange={e => setForm(f => ({ ...f, endTime: e.target.value }))} style={nInp} />
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-foreground mb-1.5">أيام العمل</label>
+            <label style={nLbl}>أيام العمل</label>
             <input value={form.workDays} onChange={e => setForm(f => ({ ...f, workDays: e.target.value }))}
-              placeholder="السبت,الأحد,الاثنين..."
-              className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
+              placeholder="السبت,الأحد,الاثنين..." style={nInp} />
           </div>
           <div>
-            <label className="block text-sm font-medium text-foreground mb-1.5">سماح التأخير (دقائق)</label>
-            <input type="number" min="0" max="60" value={form.lateGraceMinutes} onChange={e => setForm(f => ({ ...f, lateGraceMinutes: parseInt(e.target.value) || 0 }))}
-              className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
+            <label style={nLbl}>سماح التأخير (دقائق)</label>
+            <input type="number" min="0" max="60" value={form.lateGraceMinutes}
+              onChange={e => setForm(f => ({ ...f, lateGraceMinutes: parseInt(e.target.value) || 0 }))} style={nInp} />
           </div>
-          <div className="flex gap-3 pt-2">
-            <button type="submit" disabled={saving} className="flex-1 bg-primary text-primary-foreground py-2.5 rounded-xl font-bold text-sm hover:bg-primary/90 disabled:opacity-50">
+          <div style={{ display: "flex", gap: 8, paddingTop: 4 }}>
+            <button type="submit" disabled={saving} style={{ ...btnSave, opacity: saving ? 0.6 : 1, cursor: saving ? "not-allowed" : "pointer" }}>
               {saving ? "جاري الحفظ..." : "حفظ"}
             </button>
-            <button type="button" onClick={onClose} className="flex-1 bg-muted text-muted-foreground py-2.5 rounded-xl font-bold text-sm hover:bg-muted/80">إلغاء</button>
+            <button type="button" onClick={onClose} style={btnCancel}>إلغاء</button>
           </div>
         </form>
       </div>
@@ -191,79 +196,77 @@ export default function DepartmentsAndShifts() {
     return `${h12}:${String(m).padStart(2, "0")} ${ampm}`;
   };
 
+  const nCard = { background: "rgba(255,255,255,0.02)", border: "1px solid rgba(0,245,255,0.08)", borderRadius: 16, overflow: "hidden" as const };
+
   if (loading) return (
-    <div className="flex items-center justify-center py-20">
-      <Loader2 className="w-10 h-10 animate-spin text-primary" />
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "80px 0" }}>
+      <div style={{ width: 32, height: 32, borderRadius: "50%", border: "3px solid rgba(0,245,255,0.15)", borderTopColor: "#00f5ff", animation: "spin 1s linear infinite" }} />
     </div>
   );
 
   return (
-    <div className="space-y-8" dir="rtl">
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }} dir="rtl">
       {toast && <Toast msg={toast.msg} type={toast.type} />}
 
       {deptModal !== false && (
-        <DeptModal
-          dept={deptModal}
-          onClose={() => setDeptModal(false)}
+        <DeptModal dept={deptModal} onClose={() => setDeptModal(false)}
           onSave={saved => {
             setDepts(prev => deptModal?.id ? prev.map(d => d.id === saved.id ? saved : d) : [...prev, saved]);
             setDeptModal(false);
             showToast(deptModal?.id ? "تم تحديث القسم" : "تم إضافة القسم", "success");
-          }}
-        />
+          }} />
       )}
 
       {shiftModal !== false && (
-        <ShiftModal
-          shift={shiftModal}
-          onClose={() => setShiftModal(false)}
+        <ShiftModal shift={shiftModal} onClose={() => setShiftModal(false)}
           onSave={saved => {
             setShifts(prev => shiftModal?.id ? prev.map(s => s.id === saved.id ? saved : s) : [...prev, saved]);
             setShiftModal(false);
             showToast(shiftModal?.id ? "تم تحديث الشفت" : "تم إضافة الشفت", "success");
-          }}
-        />
+          }} />
       )}
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                <Building2 className="w-4 h-4 text-primary" />
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        {/* Departments */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <h2 style={{ fontSize: 15, fontWeight: 700, color: "#fff", margin: 0, display: "flex", alignItems: "center", gap: 8 }}>
+              <div style={{ width: 30, height: 30, borderRadius: 9, background: "rgba(0,245,255,0.08)", border: "1px solid rgba(0,245,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Building2 size={14} style={{ color: "#00f5ff" }} />
               </div>
               الأقسام
-              <span className="text-sm font-normal text-muted-foreground bg-muted px-2 py-0.5 rounded-lg">{depts.length}</span>
+              <span style={{ fontSize: 11, fontWeight: 600, color: "rgba(0,245,255,0.5)", background: "rgba(0,245,255,0.06)", border: "1px solid rgba(0,245,255,0.12)", padding: "1px 8px", borderRadius: 20 }}>{depts.length}</span>
             </h2>
-            <button
-              onClick={() => setDeptModal({})}
-              className="flex items-center gap-1.5 px-3 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-              إضافة
+            <button onClick={() => setDeptModal({})}
+              style={{ display: "flex", alignItems: "center", gap: 5, padding: "7px 14px", borderRadius: 10, border: "none", background: "rgba(0,245,255,0.08)", color: "#00f5ff", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "'Tajawal', sans-serif" }}>
+              <Plus size={13} /> إضافة
             </button>
           </div>
 
-          <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+          <div style={nCard}>
             {depts.length === 0 ? (
-              <div className="py-12 text-center text-muted-foreground">
-                <Users className="w-10 h-10 mx-auto mb-2 opacity-30" />
-                <p>لا توجد أقسام بعد</p>
+              <div style={{ padding: "40px 0", textAlign: "center", color: "rgba(255,255,255,0.25)" }}>
+                <Users size={36} style={{ margin: "0 auto 8px", opacity: 0.2 }} />
+                <p style={{ fontSize: 12 }}>لا توجد أقسام بعد</p>
               </div>
             ) : (
-              <ul className="divide-y divide-border">
-                {depts.map(dept => (
-                  <li key={dept.id} className="px-5 py-4 flex items-center justify-between hover:bg-muted/30 transition-colors group">
+              <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
+                {depts.map((dept, i) => (
+                  <li key={dept.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", borderBottom: i < depts.length - 1 ? "1px solid rgba(0,245,255,0.05)" : "none" }}
+                    onMouseEnter={e => (e.currentTarget.style.background = "rgba(0,245,255,0.02)")}
+                    onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
                     <div>
-                      <div className="font-semibold text-foreground">{dept.name}</div>
-                      {dept.description && <div className="text-sm text-muted-foreground mt-0.5">{dept.description}</div>}
+                      <div style={{ fontWeight: 600, color: "#fff", fontSize: 13 }}>{dept.name}</div>
+                      {dept.description && <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginTop: 2 }}>{dept.description}</div>}
                     </div>
-                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button onClick={() => setDeptModal(dept)} className="p-2 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors">
-                        <Edit2 className="w-4 h-4" />
+                    <div style={{ display: "flex", gap: 4 }}>
+                      <button onClick={() => setDeptModal(dept)}
+                        style={{ padding: 6, borderRadius: 8, background: "rgba(0,245,255,0.07)", border: "1px solid rgba(0,245,255,0.12)", color: "#00f5ff", cursor: "pointer" }}>
+                        <Edit2 size={12} />
                       </button>
-                      <button onClick={() => deleteDept(dept.id)} className="p-2 rounded-lg text-muted-foreground hover:text-rose-500 hover:bg-rose-50 transition-colors">
-                        <Trash2 className="w-4 h-4" />
+                      <button onClick={() => deleteDept(dept.id)}
+                        style={{ padding: 6, borderRadius: 8, background: "rgba(248,113,113,0.07)", border: "1px solid rgba(248,113,113,0.12)", color: "#f87171", cursor: "pointer" }}>
+                        <Trash2 size={12} />
                       </button>
                     </div>
                   </li>
@@ -273,50 +276,52 @@ export default function DepartmentsAndShifts() {
           </div>
         </div>
 
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
-                <Clock className="w-4 h-4 text-accent" />
+        {/* Shifts */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <h2 style={{ fontSize: 15, fontWeight: 700, color: "#fff", margin: 0, display: "flex", alignItems: "center", gap: 8 }}>
+              <div style={{ width: 30, height: 30, borderRadius: 9, background: "rgba(168,85,247,0.1)", border: "1px solid rgba(168,85,247,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Clock size={14} style={{ color: "#a855f7" }} />
               </div>
               شفتات العمل
-              <span className="text-sm font-normal text-muted-foreground bg-muted px-2 py-0.5 rounded-lg">{shifts.length}</span>
+              <span style={{ fontSize: 11, fontWeight: 600, color: "rgba(168,85,247,0.6)", background: "rgba(168,85,247,0.08)", border: "1px solid rgba(168,85,247,0.15)", padding: "1px 8px", borderRadius: 20 }}>{shifts.length}</span>
             </h2>
-            <button
-              onClick={() => setShiftModal({})}
-              className="flex items-center gap-1.5 px-3 py-2 bg-accent text-accent-foreground rounded-xl text-sm font-semibold hover:bg-accent/90 transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-              إضافة
+            <button onClick={() => setShiftModal({})}
+              style={{ display: "flex", alignItems: "center", gap: 5, padding: "7px 14px", borderRadius: 10, border: "none", background: "rgba(168,85,247,0.08)", color: "#a855f7", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "'Tajawal', sans-serif" }}>
+              <Plus size={13} /> إضافة
             </button>
           </div>
 
-          <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+          <div style={{ ...nCard, border: "1px solid rgba(168,85,247,0.1)" }}>
             {shifts.length === 0 ? (
-              <div className="py-12 text-center text-muted-foreground">
-                <Clock className="w-10 h-10 mx-auto mb-2 opacity-30" />
-                <p>لا توجد شفتات بعد</p>
+              <div style={{ padding: "40px 0", textAlign: "center", color: "rgba(255,255,255,0.25)" }}>
+                <Clock size={36} style={{ margin: "0 auto 8px", opacity: 0.2 }} />
+                <p style={{ fontSize: 12 }}>لا توجد شفتات بعد</p>
               </div>
             ) : (
-              <ul className="divide-y divide-border">
-                {shifts.map(shift => (
-                  <li key={shift.id} className="px-5 py-4 flex items-center justify-between hover:bg-muted/30 transition-colors group">
-                    <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-foreground mb-1">{shift.name}</div>
-                      <div className="flex items-center gap-3 text-sm flex-wrap">
-                        <span className="bg-primary/10 text-primary px-2.5 py-0.5 rounded-lg font-medium">
+              <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
+                {shifts.map((shift, i) => (
+                  <li key={shift.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", borderBottom: i < shifts.length - 1 ? "1px solid rgba(168,85,247,0.07)" : "none" }}
+                    onMouseEnter={e => (e.currentTarget.style.background = "rgba(168,85,247,0.03)")}
+                    onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 600, color: "#fff", fontSize: 13, marginBottom: 5 }}>{shift.name}</div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                        <span style={{ background: "rgba(168,85,247,0.1)", color: "#a855f7", padding: "2px 10px", borderRadius: 8, fontSize: 11, fontWeight: 600 }}>
                           {fmt12(shift.startTime)} — {fmt12(shift.endTime)}
                         </span>
-                        <span className="text-muted-foreground text-xs">سماح: {shift.lateGraceMinutes}د</span>
+                        <span style={{ fontSize: 10, color: "rgba(255,255,255,0.35)" }}>سماح: {shift.lateGraceMinutes}د</span>
                       </div>
-                      <div className="text-xs text-muted-foreground mt-1">{shift.workDays}</div>
+                      <div style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", marginTop: 4 }}>{shift.workDays}</div>
                     </div>
-                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity mr-2">
-                      <button onClick={() => setShiftModal(shift)} className="p-2 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors">
-                        <Edit2 className="w-4 h-4" />
+                    <div style={{ display: "flex", gap: 4, marginRight: 8 }}>
+                      <button onClick={() => setShiftModal(shift)}
+                        style={{ padding: 6, borderRadius: 8, background: "rgba(168,85,247,0.07)", border: "1px solid rgba(168,85,247,0.15)", color: "#a855f7", cursor: "pointer" }}>
+                        <Edit2 size={12} />
                       </button>
-                      <button onClick={() => deleteShift(shift.id)} className="p-2 rounded-lg text-muted-foreground hover:text-rose-500 hover:bg-rose-50 transition-colors">
-                        <Trash2 className="w-4 h-4" />
+                      <button onClick={() => deleteShift(shift.id)}
+                        style={{ padding: 6, borderRadius: 8, background: "rgba(248,113,113,0.07)", border: "1px solid rgba(248,113,113,0.12)", color: "#f87171", cursor: "pointer" }}>
+                        <Trash2 size={12} />
                       </button>
                     </div>
                   </li>

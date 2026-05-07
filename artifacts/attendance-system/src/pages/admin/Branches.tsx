@@ -229,104 +229,100 @@ export default function AdminBranches() {
   };
 
   if (loading) return (
-    <div className="flex items-center justify-center h-64">
-      <div className="w-8 h-8 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 200 }}>
+      <div style={{ width: 32, height: 32, borderRadius: "50%", border: "3px solid rgba(0,245,255,0.15)", borderTopColor: "#00f5ff", animation: "spin 1s linear infinite" }} />
     </div>
   );
 
   return (
-    <div className="p-4 space-y-4 max-w-2xl mx-auto" dir="rtl">
+    <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 14, maxWidth: 680, margin: "0 auto" }} dir="rtl">
       {showModal && (
-        <BranchModal
-          branch={editBranch}
+        <BranchModal branch={editBranch}
           onClose={() => { setShowModal(false); setEditBranch(null); }}
-          onSave={handleSave}
-        />
+          onSave={handleSave} />
       )}
 
-      <div className="flex items-center justify-between">
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div>
-          <h1 className="text-xl font-bold text-white">إدارة الفروع</h1>
-          <p className="text-gray-400 text-sm">{branches.length} فرع · يمكن إضافة موقع GPS لكل فرع</p>
+          <h1 style={{ fontSize: 18, fontWeight: 800, color: "#fff", margin: 0 }}>إدارة الفروع</h1>
+          <p style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", marginTop: 4 }}>{branches.length} فرع · يمكن إضافة موقع GPS لكل فرع</p>
         </div>
-        <button
-          onClick={() => { setEditBranch(null); setShowModal(true); }}
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-bold px-4 py-2 rounded-xl text-sm transition-all"
-        >
-          <Plus size={16} />إضافة فرع
+        <button onClick={() => { setEditBranch(null); setShowModal(true); }}
+          style={{ display: "flex", alignItems: "center", gap: 7, padding: "9px 16px", borderRadius: 11, border: "none", background: "linear-gradient(135deg, rgba(0,245,255,0.75), rgba(59,130,246,0.75))", color: "#020817", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "'Tajawal', sans-serif" }}>
+          <Plus size={14} /> إضافة فرع
         </button>
       </div>
 
-      <div className="space-y-3">
+      {/* Branch Cards */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         {branches.length === 0 ? (
-          <div className="text-center py-12 text-gray-400">
-            <Building2 size={40} className="mx-auto mb-3 opacity-30" />
-            <p>لا توجد فروع بعد</p>
+          <div style={{ textAlign: "center", padding: "50px 0", color: "rgba(255,255,255,0.25)", background: "rgba(255,255,255,0.02)", borderRadius: 16, border: "1px solid rgba(255,255,255,0.05)" }}>
+            <Building2 size={40} style={{ margin: "0 auto 10px", opacity: 0.2 }} />
+            <p style={{ fontSize: 13 }}>لا توجد فروع بعد</p>
           </div>
-        ) : branches.map(b => (
-          <div key={b.id} className="bg-[#1a2234] border border-white/10 rounded-2xl p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                  b.latitude != null ? "bg-emerald-600/20" : "bg-blue-600/20"
-                }`}>
-                  <Building2 size={18} className={b.latitude != null ? "text-emerald-400" : "text-blue-400"} />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <p className="text-white font-semibold">{b.name}</p>
-                    {b.latitude != null ? (
-                      <span className="text-xs bg-emerald-600/20 text-emerald-400 px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
-                        <MapPin size={9} />GPS
-                      </span>
-                    ) : (
-                      <span className="text-xs bg-gray-700 text-gray-400 px-1.5 py-0.5 rounded-full">بدون GPS</span>
-                    )}
+        ) : branches.map(b => {
+          const hasGps = b.latitude != null;
+          return (
+            <div key={b.id} style={{ background: "rgba(255,255,255,0.02)", border: `1px solid ${hasGps ? "rgba(16,185,129,0.15)" : "rgba(0,245,255,0.07)"}`, borderRadius: 16, padding: "14px 16px" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <div style={{ width: 40, height: 40, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", background: hasGps ? "rgba(16,185,129,0.1)" : "rgba(0,245,255,0.08)", border: `1px solid ${hasGps ? "rgba(16,185,129,0.2)" : "rgba(0,245,255,0.15)"}` }}>
+                    <Building2 size={18} style={{ color: hasGps ? "#10b981" : "#00f5ff" }} />
                   </div>
-                  {b.city && <p className="text-gray-400 text-xs">{b.city}</p>}
+                  <div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <p style={{ color: "#fff", fontWeight: 600, fontSize: 14, margin: 0 }}>{b.name}</p>
+                      {hasGps ? (
+                        <span style={{ fontSize: 9, fontWeight: 700, color: "#10b981", background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.2)", padding: "1px 6px", borderRadius: 20, display: "inline-flex", alignItems: "center", gap: 2 }}>
+                          <MapPin size={8} /> GPS
+                        </span>
+                      ) : (
+                        <span style={{ fontSize: 9, fontWeight: 600, color: "rgba(255,255,255,0.3)", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", padding: "1px 7px", borderRadius: 20 }}>بدون GPS</span>
+                      )}
+                      {!b.isActive && (
+                        <span style={{ fontSize: 9, fontWeight: 600, color: "#f87171", background: "rgba(248,113,113,0.1)", border: "1px solid rgba(248,113,113,0.2)", padding: "1px 7px", borderRadius: 20 }}>معطّل</span>
+                      )}
+                    </div>
+                    {b.city && <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 11, marginTop: 2 }}>{b.city}</p>}
+                  </div>
+                </div>
+                <div style={{ display: "flex", gap: 6 }}>
+                  <button onClick={() => { setEditBranch(b); setShowModal(true); }}
+                    style={{ padding: 7, borderRadius: 9, background: "rgba(0,245,255,0.07)", border: "1px solid rgba(0,245,255,0.15)", color: "#00f5ff", cursor: "pointer" }}>
+                    <Edit2 size={13} />
+                  </button>
+                  <button onClick={() => handleDelete(b.id)}
+                    style={{ padding: 7, borderRadius: 9, background: "rgba(248,113,113,0.07)", border: "1px solid rgba(248,113,113,0.15)", color: "#f87171", cursor: "pointer" }}>
+                    <Trash2 size={13} />
+                  </button>
                 </div>
               </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => { setEditBranch(b); setShowModal(true); }}
-                  className="p-2 rounded-lg bg-blue-600/20 text-blue-400 hover:bg-blue-600/40 transition-all"
-                >
-                  <Edit2 size={14} />
-                </button>
-                <button
-                  onClick={() => handleDelete(b.id)}
-                  className="p-2 rounded-lg bg-red-600/20 text-red-400 hover:bg-red-600/40 transition-all"
-                >
-                  <Trash2 size={14} />
-                </button>
-              </div>
-            </div>
 
-            <div className="mt-3 flex gap-3 flex-wrap">
-              {b.address && (
-                <div className="flex items-center gap-1 text-xs text-gray-400">
-                  <MapPin size={12} className="text-blue-400 flex-shrink-0" />{b.address}
+              {(b.address || b.phone || (b.latitude != null && b.longitude != null)) && (
+                <div style={{ marginTop: 10, display: "flex", gap: 12, flexWrap: "wrap" }}>
+                  {b.address && (
+                    <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: "rgba(255,255,255,0.35)" }}>
+                      <MapPin size={11} style={{ color: "#00f5ff" }} /> {b.address}
+                    </div>
+                  )}
+                  {b.phone && (
+                    <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: "rgba(255,255,255,0.35)" }}>
+                      <Phone size={11} style={{ color: "#00f5ff" }} /> {b.phone}
+                    </div>
+                  )}
+                  {b.latitude != null && b.longitude != null && (
+                    <a href={`https://www.google.com/maps?q=${b.latitude},${b.longitude}`} target="_blank" rel="noopener noreferrer"
+                      style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: "#10b981", textDecoration: "none" }}>
+                      <Navigation size={11} />
+                      {b.latitude.toFixed(4)}, {b.longitude.toFixed(4)} · نطاق {b.radiusMeters ?? 200}م
+                    </a>
+                  )}
                 </div>
-              )}
-              {b.phone && (
-                <div className="flex items-center gap-1 text-xs text-gray-400">
-                  <Phone size={12} className="text-blue-400 flex-shrink-0" />{b.phone}
-                </div>
-              )}
-              {b.latitude != null && b.longitude != null && (
-                <a
-                  href={`https://www.google.com/maps?q=${b.latitude},${b.longitude}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1 text-xs text-emerald-400 hover:text-emerald-300 transition-colors"
-                >
-                  <Navigation size={12} />
-                  {b.latitude.toFixed(4)}, {b.longitude.toFixed(4)} · نطاق {b.radiusMeters ?? 200}م
-                </a>
               )}
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

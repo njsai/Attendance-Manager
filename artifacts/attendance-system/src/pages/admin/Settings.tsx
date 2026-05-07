@@ -415,146 +415,120 @@ export default function AdminSettings() {
     { key: "password", label: "تغيير كلمتي المرور", icon: Key },
   ] as const;
 
+  const nCard = { background: "rgba(255,255,255,0.02)", border: "1px solid rgba(0,245,255,0.08)", borderRadius: 18, padding: 20 };
+  const inputSt = { width: "100%", padding: "11px 14px", borderRadius: 11, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(0,245,255,0.12)", color: "#fff", fontSize: 13, outline: "none", boxSizing: "border-box" as const, colorScheme: "dark" };
+  const labelSt = { display: "block", fontSize: 11, color: "rgba(255,255,255,0.4)", marginBottom: 5 };
+
+  const roleColor: Record<string, { color: string; bg: string; border: string }> = {
+    admin:    { color: "#a855f7", bg: "rgba(168,85,247,0.1)",  border: "rgba(168,85,247,0.2)" },
+    manager:  { color: "#00f5ff", bg: "rgba(0,245,255,0.08)",  border: "rgba(0,245,255,0.2)" },
+    employee: { color: "#10b981", bg: "rgba(16,185,129,0.1)", border: "rgba(16,185,129,0.2)" },
+  };
+
   return (
     <div dir="rtl">
       {toast && <Toast msg={toast.msg} type={toast.type} onClose={() => setToast(null)} />}
       {showAdd && <AddAccountModal onClose={() => setShowAdd(false)} onSaved={() => { loadAccounts(); showToast("تم إضافة الحساب"); }} />}
       {passModal && (
-        <PasswordModal
-          accountId={passModal.id}
-          accountName={passModal.name}
-          onClose={() => setPassModal(null)}
-          onSaved={() => showToast("تم تغيير كلمة المرور")}
-        />
+        <PasswordModal accountId={passModal.id} accountName={passModal.name}
+          onClose={() => setPassModal(null)} onSaved={() => showToast("تم تغيير كلمة المرور")} />
       )}
 
-      <div className="mb-6">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-            <Settings className="w-5 h-5 text-primary" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-800">الإعدادات</h1>
-            <p className="text-slate-500 text-sm">إدارة الحسابات وإعدادات النظام</p>
-          </div>
+      {/* Header */}
+      <div style={{ marginBottom: 20, display: "flex", alignItems: "center", gap: 12 }}>
+        <div style={{ width: 40, height: 40, borderRadius: 12, background: "rgba(0,245,255,0.08)", border: "1px solid rgba(0,245,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <Settings size={18} style={{ color: "#00f5ff" }} />
+        </div>
+        <div>
+          <h1 style={{ fontSize: 18, fontWeight: 800, color: "#fff", margin: 0 }}>الإعدادات</h1>
+          <p style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", marginTop: 3 }}>إدارة الحسابات وإعدادات النظام</p>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 mb-6 flex-wrap">
-        {TABS.map(t => (
-          <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
-              tab === t.key
-                ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
-                : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
-            }`}
-          >
-            <t.icon className="w-4 h-4" />
-            {t.label}
-          </button>
-        ))}
+      <div style={{ display: "flex", gap: 6, marginBottom: 18, flexWrap: "wrap" }}>
+        {TABS.map(t => {
+          const active = tab === t.key;
+          return (
+            <button key={t.key} onClick={() => setTab(t.key)}
+              style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 11, border: active ? "1px solid rgba(0,245,255,0.3)" : "1px solid rgba(255,255,255,0.07)", background: active ? "rgba(0,245,255,0.08)" : "rgba(255,255,255,0.03)", color: active ? "#00f5ff" : "rgba(255,255,255,0.4)", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "'Tajawal', sans-serif" }}>
+              <t.icon size={13} /> {t.label}
+            </button>
+          );
+        })}
       </div>
 
       {/* Accounts Tab */}
       {tab === "accounts" && (
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100">
-          <div className="flex items-center justify-between p-5 border-b border-slate-100">
+        <div style={nCard}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, paddingBottom: 14, borderBottom: "1px solid rgba(0,245,255,0.07)" }}>
             <div>
-              <h2 className="text-base font-bold text-slate-800">حسابات المستخدمين</h2>
-              <p className="text-xs text-slate-500 mt-0.5">{accounts.length} حساب مسجل في النظام</p>
+              <h2 style={{ fontSize: 14, fontWeight: 700, color: "#fff", margin: 0 }}>حسابات المستخدمين</h2>
+              <p style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", marginTop: 3 }}>{accounts.length} حساب مسجل</p>
             </div>
-            <button
-              onClick={() => setShowAdd(true)}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
-            >
-              <Plus className="w-4 h-4" /> إضافة حساب
+            <button onClick={() => setShowAdd(true)}
+              style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 11, border: "none", background: "linear-gradient(135deg, rgba(0,245,255,0.7), rgba(59,130,246,0.7))", color: "#020817", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "'Tajawal', sans-serif" }}>
+              <Plus size={13} /> إضافة حساب
             </button>
           </div>
 
           {loading ? (
-            <div className="flex items-center justify-center py-16 text-slate-400">
-              <RefreshCw className="w-8 h-8 animate-spin" />
+            <div style={{ display: "flex", justifyContent: "center", padding: "40px 0" }}>
+              <RefreshCw size={24} style={{ color: "#00f5ff", animation: "spin 1s linear infinite" }} />
             </div>
           ) : accounts.length === 0 ? (
-            <div className="text-center py-16 text-slate-400">
-              <Users className="w-12 h-12 mx-auto mb-3 opacity-30" />
-              <p>لا توجد حسابات</p>
+            <div style={{ textAlign: "center", padding: "40px 0", color: "rgba(255,255,255,0.25)" }}>
+              <Users size={36} style={{ margin: "0 auto 10px", opacity: 0.2 }} />
+              <p style={{ fontSize: 13 }}>لا توجد حسابات</p>
             </div>
           ) : (
-            <div className="divide-y divide-slate-50">
-              {accounts.map(acc => (
-                <div key={acc.id} className="flex items-center justify-between p-4 hover:bg-slate-50/50 transition-colors">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg font-bold flex-shrink-0 ${
-                      acc.role === "admin" ? "bg-purple-100 text-purple-700" :
-                      acc.role === "manager" ? "bg-blue-100 text-blue-700" :
-                      "bg-green-100 text-green-700"
-                    }`}>
-                      {acc.fullName.charAt(0)}
-                    </div>
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <p className="text-sm font-semibold text-slate-800">{acc.fullName}</p>
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${ROLE_COLOR[acc.role] || "bg-gray-100 text-gray-700"}`}>
-                          {ROLE_MAP[acc.role] || acc.role}
-                        </span>
-                        {!acc.isActive && (
-                          <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-600 border border-red-200">
-                            معطّل
-                          </span>
-                        )}
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              {accounts.map(acc => {
+                const rc = roleColor[acc.role] ?? { color: "rgba(255,255,255,0.5)", bg: "rgba(255,255,255,0.06)", border: "rgba(255,255,255,0.1)" };
+                return (
+                  <div key={acc.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", borderRadius: 12, background: "rgba(255,255,255,0.01)" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+                      <div style={{ width: 38, height: 38, borderRadius: 11, background: rc.bg, border: `1px solid ${rc.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 700, color: rc.color, flexShrink: 0 }}>
+                        {acc.fullName.charAt(0)}
                       </div>
-                      <p className="text-xs text-slate-500 mt-0.5 font-mono" dir="ltr">{acc.username}</p>
-                      {(acc.email || acc.phone) && (
-                        <p className="text-xs text-slate-400 mt-0.5">{acc.email || acc.phone}</p>
-                      )}
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                          <span style={{ fontSize: 13, fontWeight: 600, color: "#fff" }}>{acc.fullName}</span>
+                          <span style={{ fontSize: 10, fontWeight: 600, color: rc.color, background: rc.bg, border: `1px solid ${rc.border}`, padding: "1px 7px", borderRadius: 20 }}>{ROLE_MAP[acc.role] || acc.role}</span>
+                          {!acc.isActive && <span style={{ fontSize: 10, color: "#f87171", background: "rgba(248,113,113,0.1)", border: "1px solid rgba(248,113,113,0.2)", padding: "1px 7px", borderRadius: 20 }}>معطّل</span>}
+                        </div>
+                        <p style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", fontFamily: "monospace", marginTop: 2 }} dir="ltr">{acc.username}</p>
+                        {(acc.email || acc.phone) && <p style={{ fontSize: 11, color: "rgba(255,255,255,0.25)" }}>{acc.email || acc.phone}</p>}
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
+                      <button onClick={() => setPassModal({ id: acc.id, name: acc.fullName })} title="تغيير كلمة المرور"
+                        style={{ padding: 7, borderRadius: 8, background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.2)", color: "#f59e0b", cursor: "pointer" }}>
+                        <Key size={13} />
+                      </button>
+                      <button onClick={() => handleToggle(acc.id, acc.isActive)} title={acc.isActive ? "تعطيل" : "تفعيل"}
+                        style={{ padding: 7, borderRadius: 8, background: acc.isActive ? "rgba(16,185,129,0.1)" : "rgba(255,255,255,0.05)", border: `1px solid ${acc.isActive ? "rgba(16,185,129,0.2)" : "rgba(255,255,255,0.08)"}`, color: acc.isActive ? "#10b981" : "rgba(255,255,255,0.3)", cursor: "pointer" }}>
+                        {acc.isActive ? <CheckCircle size={13} /> : <XCircle size={13} />}
+                      </button>
+                      <button onClick={() => handleDelete(acc.id)} disabled={deletingId === acc.id} title="حذف"
+                        style={{ padding: 7, borderRadius: 8, background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.15)", color: "#f87171", cursor: deletingId === acc.id ? "not-allowed" : "pointer", opacity: deletingId === acc.id ? 0.5 : 1 }}>
+                        <Trash2 size={13} />
+                      </button>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    <button
-                      onClick={() => setPassModal({ id: acc.id, name: acc.fullName })}
-                      title="تغيير كلمة المرور"
-                      className="p-2 rounded-lg text-amber-500 hover:bg-amber-50 transition-colors"
-                    >
-                      <Key className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => handleToggle(acc.id, acc.isActive)}
-                      title={acc.isActive ? "تعطيل" : "تفعيل"}
-                      className={`p-2 rounded-lg transition-colors ${acc.isActive ? "text-green-500 hover:bg-green-50" : "text-slate-400 hover:bg-slate-100"}`}
-                    >
-                      {acc.isActive ? <CheckCircle className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
-                    </button>
-                    <button
-                      onClick={() => handleDelete(acc.id)}
-                      disabled={deletingId === acc.id}
-                      title="حذف"
-                      className="p-2 rounded-lg text-red-400 hover:bg-red-50 transition-colors disabled:opacity-50"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
 
           {/* Legend */}
-          <div className="p-4 border-t border-slate-100 bg-slate-50 rounded-b-2xl">
-            <p className="text-xs font-semibold text-slate-500 mb-2">بيانات الدخول للاختبار:</p>
+          <div style={{ marginTop: 16, paddingTop: 14, borderTop: "1px solid rgba(255,255,255,0.05)", background: "rgba(255,255,255,0.01)", borderRadius: 12, padding: "12px" }}>
+            <p style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.3)", marginBottom: 8 }}>بيانات الدخول للاختبار:</p>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-              {[
-                { u: "admin", p: "admin123", r: "مدير" },
-                { u: "manager1", p: "manager123", r: "مشرف" },
-                { u: "emp1", p: "emp123", r: "موظف" },
-                { u: "emp2", p: "emp123", r: "موظف" },
-              ].map(x => (
-                <div key={x.u} className="bg-white rounded-xl px-3 py-2 border border-slate-200">
-                  <p className="text-xs font-bold text-slate-700">{x.r}</p>
-                  <p className="text-xs font-mono text-slate-600" dir="ltr">{x.u} / {x.p}</p>
+              {[{ u: "admin", p: "admin123", r: "مدير" }, { u: "manager1", p: "manager123", r: "مشرف" }, { u: "emp1", p: "emp123", r: "موظف" }, { u: "emp2", p: "emp123", r: "موظف" }].map(x => (
+                <div key={x.u} style={{ background: "rgba(0,245,255,0.04)", borderRadius: 10, padding: "8px 10px", border: "1px solid rgba(0,245,255,0.08)" }}>
+                  <p style={{ fontSize: 10, fontWeight: 700, color: "rgba(0,245,255,0.6)" }}>{x.r}</p>
+                  <p style={{ fontSize: 10, fontFamily: "monospace", color: "rgba(255,255,255,0.4)" }} dir="ltr">{x.u} / {x.p}</p>
                 </div>
               ))}
             </div>
@@ -564,229 +538,141 @@ export default function AdminSettings() {
 
       {/* Location Tab */}
       {tab === "location" && (
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center">
-              <MapPin className="w-5 h-5 text-green-600" />
+        <div style={{ ...nCard, maxWidth: 600 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
+            <div style={{ width: 38, height: 38, borderRadius: 11, background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <MapPin size={16} style={{ color: "#10b981" }} />
             </div>
             <div>
-              <h2 className="text-base font-bold text-slate-800">موقع الشركة الجغرافي</h2>
-              <p className="text-xs text-slate-500">يُستخدم للتحقق من موقع الموظف عند تسجيل الحضور</p>
+              <h2 style={{ fontSize: 14, fontWeight: 700, color: "#fff", margin: 0 }}>موقع الشركة الجغرافي</h2>
+              <p style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", marginTop: 3 }}>يُستخدم للتحقق من موقع الموظف عند تسجيل الحضور</p>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <div className="col-span-full">
-              <label className="block text-sm font-medium text-slate-700 mb-1">اسم الموقع</label>
-              <input
-                value={location.name}
-                onChange={e => setLocation(l => ({ ...l, name: e.target.value }))}
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                placeholder="المقر الرئيسي"
-              />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div style={{ gridColumn: "1 / -1" }}>
+              <label style={labelSt}>اسم الموقع</label>
+              <input value={location.name} onChange={e => setLocation(l => ({ ...l, name: e.target.value }))} placeholder="المقر الرئيسي" style={inputSt} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">خط العرض (Latitude)</label>
-              <input
-                type="number"
-                step="any"
-                value={location.latitude}
-                onChange={e => setLocation(l => ({ ...l, latitude: parseFloat(e.target.value) || 0 }))}
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 font-mono"
-                dir="ltr"
-              />
+              <label style={labelSt}>خط العرض (Latitude)</label>
+              <input type="number" step="any" value={location.latitude} onChange={e => setLocation(l => ({ ...l, latitude: parseFloat(e.target.value) || 0 }))} dir="ltr" style={inputSt} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">خط الطول (Longitude)</label>
-              <input
-                type="number"
-                step="any"
-                value={location.longitude}
-                onChange={e => setLocation(l => ({ ...l, longitude: parseFloat(e.target.value) || 0 }))}
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 font-mono"
-                dir="ltr"
-              />
+              <label style={labelSt}>خط الطول (Longitude)</label>
+              <input type="number" step="any" value={location.longitude} onChange={e => setLocation(l => ({ ...l, longitude: parseFloat(e.target.value) || 0 }))} dir="ltr" style={inputSt} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">نطاق الحضور (متر)</label>
-              <input
-                type="number"
-                value={location.radiusMeters}
-                onChange={e => setLocation(l => ({ ...l, radiusMeters: parseInt(e.target.value) || 200 }))}
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 font-mono"
-                dir="ltr"
-              />
-              <p className="text-xs text-slate-400 mt-1">أقصى مسافة مسموح بها لتسجيل الحضور</p>
+              <label style={labelSt}>نطاق الحضور (متر)</label>
+              <input type="number" value={location.radiusMeters} onChange={e => setLocation(l => ({ ...l, radiusMeters: parseInt(e.target.value) || 200 }))} dir="ltr" style={inputSt} />
+              <p style={{ fontSize: 10, color: "rgba(255,255,255,0.25)", marginTop: 4 }}>أقصى مسافة مسموح بها لتسجيل الحضور</p>
             </div>
-            <div className="flex items-end">
-              <div className="p-4 bg-blue-50 rounded-xl border border-blue-100 text-sm text-blue-700 w-full">
-                <p className="font-semibold mb-1 flex items-center gap-1">
-                  <MapPin className="w-4 h-4" /> الموقع الحالي
+            <div>
+              <div style={{ padding: "12px 14px", background: "rgba(0,245,255,0.05)", borderRadius: 12, border: "1px solid rgba(0,245,255,0.12)" }}>
+                <p style={{ fontSize: 12, fontWeight: 600, color: "#00f5ff", marginBottom: 5, display: "flex", alignItems: "center", gap: 5 }}>
+                  <MapPin size={12} /> الموقع الحالي
                 </p>
-                <p dir="ltr" className="font-mono text-xs">{location.latitude}, {location.longitude}</p>
-                <a
-                  href={`https://maps.google.com/?q=${location.latitude},${location.longitude}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-500 underline text-xs mt-1 block"
-                >
+                <p style={{ fontSize: 11, fontFamily: "monospace", color: "rgba(255,255,255,0.5)" }} dir="ltr">{location.latitude}, {location.longitude}</p>
+                <a href={`https://maps.google.com/?q=${location.latitude},${location.longitude}`} target="_blank" rel="noopener noreferrer"
+                  style={{ fontSize: 10, color: "#00f5ff", textDecoration: "underline", display: "block", marginTop: 4 }}>
                   عرض على خريطة Google
                 </a>
               </div>
             </div>
           </div>
 
-          <button
-            onClick={handleSaveLocation}
-            disabled={locLoading}
-            className="mt-6 flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-bold hover:bg-primary/90 transition-colors disabled:opacity-50"
-          >
-            {locLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-            حفظ الموقع
+          <button onClick={handleSaveLocation} disabled={locLoading}
+            style={{ marginTop: 20, display: "flex", alignItems: "center", gap: 7, padding: "10px 20px", borderRadius: 12, border: "none", background: "linear-gradient(135deg, rgba(16,185,129,0.8), rgba(5,150,105,0.7))", color: "#fff", fontSize: 13, fontWeight: 700, cursor: locLoading ? "not-allowed" : "pointer", opacity: locLoading ? 0.6 : 1, fontFamily: "'Tajawal', sans-serif" }}>
+            {locLoading ? <RefreshCw size={14} className="animate-spin" /> : <Save size={14} />} حفظ الموقع
           </button>
         </div>
       )}
 
       {/* Location Mode Tab */}
       {tab === "locationMode" && (
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 max-w-lg">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center">
-              <Navigation className="w-5 h-5 text-indigo-600" />
+        <div style={{ ...nCard, maxWidth: 500 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
+            <div style={{ width: 38, height: 38, borderRadius: 11, background: "rgba(168,85,247,0.1)", border: "1px solid rgba(168,85,247,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Navigation size={16} style={{ color: "#a855f7" }} />
             </div>
             <div>
-              <h2 className="text-base font-bold text-slate-800">وضع التحقق من الموقع الجغرافي</h2>
-              <p className="text-xs text-slate-500">تحكم في إلزامية الموقع عند تسجيل الحضور</p>
+              <h2 style={{ fontSize: 14, fontWeight: 700, color: "#fff", margin: 0 }}>وضع التحقق من الموقع الجغرافي</h2>
+              <p style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", marginTop: 3 }}>تحكم في إلزامية الموقع عند تسجيل الحضور</p>
             </div>
           </div>
 
-          {/* Toggle */}
-          <div className="space-y-4">
-            <button
-              onClick={() => setLocationMode(m => m === "enabled" ? "disabled" : "enabled")}
-              className={`w-full flex items-center justify-between p-5 rounded-2xl border-2 transition-all ${
-                locationMode === "enabled"
-                  ? "border-indigo-500 bg-indigo-50"
-                  : "border-slate-200 bg-slate-50 hover:border-slate-300"
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                {locationMode === "enabled"
-                  ? <ToggleRight className="w-8 h-8 text-indigo-600" />
-                  : <ToggleLeft className="w-8 h-8 text-slate-400" />
-                }
-                <div className="text-right">
-                  <p className={`font-bold text-sm ${locationMode === "enabled" ? "text-indigo-700" : "text-slate-600"}`}>
-                    {locationMode === "enabled" ? "مُفعَّل ✓" : "معطَّل"}
-                  </p>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    {locationMode === "enabled"
-                      ? "يجب أن يكون الموظف داخل نطاق GPS فرعه عند التسجيل"
-                      : "لا يُطلب التحقق من الموقع عند تسجيل الحضور"
-                    }
-                  </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <button onClick={() => setLocationMode(m => m === "enabled" ? "disabled" : "enabled")}
+              style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px", borderRadius: 14, border: `2px solid ${locationMode === "enabled" ? "rgba(168,85,247,0.4)" : "rgba(255,255,255,0.08)"}`, background: locationMode === "enabled" ? "rgba(168,85,247,0.07)" : "rgba(255,255,255,0.02)", cursor: "pointer", textAlign: "right" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                {locationMode === "enabled" ? <ToggleRight size={28} style={{ color: "#a855f7" }} /> : <ToggleLeft size={28} style={{ color: "rgba(255,255,255,0.3)" }} />}
+                <div>
+                  <p style={{ fontWeight: 700, fontSize: 13, color: locationMode === "enabled" ? "#a855f7" : "rgba(255,255,255,0.5)", margin: 0 }}>{locationMode === "enabled" ? "مُفعَّل ✓" : "معطَّل"}</p>
+                  <p style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginTop: 3 }}>{locationMode === "enabled" ? "يجب أن يكون الموظف داخل نطاق GPS فرعه عند التسجيل" : "لا يُطلب التحقق من الموقع عند تسجيل الحضور"}</p>
                 </div>
               </div>
-              <div className={`w-12 h-6 rounded-full transition-colors relative ${
-                locationMode === "enabled" ? "bg-indigo-600" : "bg-slate-300"
-              }`}>
-                <div className={`w-5 h-5 bg-white rounded-full absolute top-0.5 transition-all shadow ${
-                  locationMode === "enabled" ? "right-0.5" : "left-0.5"
-                }`} />
+              <div style={{ width: 44, height: 24, borderRadius: 12, background: locationMode === "enabled" ? "#a855f7" : "rgba(255,255,255,0.15)", position: "relative", flexShrink: 0, transition: "background 0.2s" }}>
+                <div style={{ width: 18, height: 18, background: "#fff", borderRadius: "50%", position: "absolute", top: 3, transition: "all 0.2s", right: locationMode === "enabled" ? 3 : undefined, left: locationMode === "enabled" ? undefined : 3 }} />
               </div>
             </button>
 
-            {/* Info Card */}
-            <div className={`p-4 rounded-xl border text-sm ${
-              locationMode === "enabled"
-                ? "bg-amber-50 border-amber-200 text-amber-800"
-                : "bg-slate-50 border-slate-200 text-slate-600"
-            }`}>
+            <div style={{ padding: "12px 14px", borderRadius: 12, border: `1px solid ${locationMode === "enabled" ? "rgba(245,158,11,0.2)" : "rgba(255,255,255,0.07)"}`, background: locationMode === "enabled" ? "rgba(245,158,11,0.05)" : "rgba(255,255,255,0.02)", fontSize: 12, color: locationMode === "enabled" ? "#f59e0b" : "rgba(255,255,255,0.35)" }}>
               {locationMode === "enabled" ? (
-                <div className="space-y-1.5">
-                  <p className="font-semibold">عند التفعيل:</p>
-                  <ul className="list-disc list-inside text-xs space-y-1 text-amber-700">
-                    <li>يُطلب من الموظف السماح بالموقع في المتصفح</li>
-                    <li>يُتحقق من أنه داخل نطاق GPS الفرع المحدد</li>
-                    <li>إن لم يكن لفرعه GPS محدد، يُسمح بالتسجيل بدون تقييد</li>
-                    <li>يُمكن ضبط GPS لكل فرع من صفحة الفروع</li>
-                  </ul>
+                <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                  <p style={{ fontWeight: 600, margin: 0 }}>عند التفعيل:</p>
+                  {["يُطلب من الموظف السماح بالموقع في المتصفح", "يُتحقق من أنه داخل نطاق GPS الفرع المحدد", "إن لم يكن لفرعه GPS محدد، يُسمح بالتسجيل بدون تقييد", "يُمكن ضبط GPS لكل فرع من صفحة الفروع"].map(t => (
+                    <p key={t} style={{ margin: 0, fontSize: 11 }}>• {t}</p>
+                  ))}
                 </div>
               ) : (
-                <p>الموظفون يستطيعون تسجيل الحضور من أي مكان دون تقييد موقعي.</p>
+                <p style={{ margin: 0 }}>الموظفون يستطيعون تسجيل الحضور من أي مكان دون تقييد موقعي.</p>
               )}
             </div>
           </div>
 
-          <button
-            onClick={handleSaveLocationMode}
-            disabled={locModeLoading}
-            className="mt-6 flex items-center gap-2 px-6 py-3 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 transition-colors disabled:opacity-50"
-          >
-            {locModeLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-            حفظ الإعداد
+          <button onClick={handleSaveLocationMode} disabled={locModeLoading}
+            style={{ marginTop: 18, display: "flex", alignItems: "center", gap: 7, padding: "10px 20px", borderRadius: 12, border: "none", background: "linear-gradient(135deg, rgba(168,85,247,0.8), rgba(124,58,237,0.7))", color: "#fff", fontSize: 13, fontWeight: 700, cursor: locModeLoading ? "not-allowed" : "pointer", opacity: locModeLoading ? 0.6 : 1, fontFamily: "'Tajawal', sans-serif" }}>
+            {locModeLoading ? <RefreshCw size={14} className="animate-spin" /> : <Save size={14} />} حفظ الإعداد
           </button>
         </div>
       )}
 
       {/* Change Own Password Tab */}
       {tab === "password" && (
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 max-w-md">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center">
-              <Shield className="w-5 h-5 text-amber-600" />
+        <div style={{ ...nCard, maxWidth: 420 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
+            <div style={{ width: 38, height: 38, borderRadius: 11, background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Shield size={16} style={{ color: "#f59e0b" }} />
             </div>
             <div>
-              <h2 className="text-base font-bold text-slate-800">تغيير كلمة المرور الخاصة بك</h2>
-              <p className="text-xs text-slate-500">يُنصح بتغييرها دورياً للحفاظ على الأمان</p>
+              <h2 style={{ fontSize: 14, fontWeight: 700, color: "#fff", margin: 0 }}>تغيير كلمة المرور الخاصة بك</h2>
+              <p style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", marginTop: 3 }}>يُنصح بتغييرها دورياً للحفاظ على الأمان</p>
             </div>
           </div>
 
-          <div className="space-y-4">
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">كلمة المرور الحالية</label>
-              <div className="relative">
-                <input
-                  type={showSelf ? "text" : "password"}
-                  value={selfPass.old}
-                  onChange={e => setSelfPass(p => ({ ...p, old: e.target.value }))}
-                  placeholder="••••••••"
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                />
-                <button type="button" onClick={() => setShowSelf(!showSelf)} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-                  {showSelf ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              <label style={labelSt}>كلمة المرور الحالية</label>
+              <div style={{ position: "relative" }}>
+                <input type={showSelf ? "text" : "password"} value={selfPass.old} onChange={e => setSelfPass(p => ({ ...p, old: e.target.value }))} placeholder="••••••••" style={inputSt} />
+                <button type="button" onClick={() => setShowSelf(!showSelf)} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "rgba(255,255,255,0.35)", cursor: "pointer" }}>
+                  {showSelf ? <EyeOff size={14} /> : <Eye size={14} />}
                 </button>
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">كلمة المرور الجديدة</label>
-              <input
-                type={showSelf ? "text" : "password"}
-                value={selfPass.newP}
-                onChange={e => setSelfPass(p => ({ ...p, newP: e.target.value }))}
-                placeholder="6 أحرف على الأقل"
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-              />
+              <label style={labelSt}>كلمة المرور الجديدة</label>
+              <input type={showSelf ? "text" : "password"} value={selfPass.newP} onChange={e => setSelfPass(p => ({ ...p, newP: e.target.value }))} placeholder="6 أحرف على الأقل" style={inputSt} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">تأكيد كلمة المرور</label>
-              <input
-                type={showSelf ? "text" : "password"}
-                value={selfPass.confirm}
-                onChange={e => setSelfPass(p => ({ ...p, confirm: e.target.value }))}
-                placeholder="أعد كتابة كلمة المرور الجديدة"
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-              />
+              <label style={labelSt}>تأكيد كلمة المرور</label>
+              <input type={showSelf ? "text" : "password"} value={selfPass.confirm} onChange={e => setSelfPass(p => ({ ...p, confirm: e.target.value }))} placeholder="أعد كتابة كلمة المرور الجديدة" style={inputSt} />
             </div>
           </div>
 
-          <button
-            onClick={handleSelfPassword}
-            disabled={selfLoading}
-            className="mt-6 w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-amber-500 text-white font-bold hover:bg-amber-600 transition-colors disabled:opacity-50"
-          >
-            {selfLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Key className="w-4 h-4" />}
-            تغيير كلمة المرور
+          <button onClick={handleSelfPassword} disabled={selfLoading}
+            style={{ marginTop: 20, width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 7, padding: "11px", borderRadius: 12, border: "none", background: "linear-gradient(135deg, rgba(245,158,11,0.85), rgba(234,88,12,0.8))", color: "#fff", fontSize: 13, fontWeight: 700, cursor: selfLoading ? "not-allowed" : "pointer", opacity: selfLoading ? 0.6 : 1, fontFamily: "'Tajawal', sans-serif" }}>
+            {selfLoading ? <RefreshCw size={14} className="animate-spin" /> : <Key size={14} />} تغيير كلمة المرور
           </button>
         </div>
       )}

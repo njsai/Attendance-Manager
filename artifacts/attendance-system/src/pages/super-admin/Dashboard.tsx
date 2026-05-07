@@ -124,51 +124,58 @@ export default function SuperAdminDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-950 via-slate-900 to-slate-900" dir="rtl">
+    <div dir="rtl" style={{
+      minHeight: "100vh",
+      background: "linear-gradient(135deg, #020817 0%, #050d1f 50%, #080318 100%)",
+      fontFamily: "'Tajawal', sans-serif",
+      position: "relative",
+    }}>
+      {/* Ambient glow */}
+      <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0, background: "radial-gradient(ellipse 55% 45% at 8% 12%, rgba(168,85,247,0.06) 0%, transparent 70%), radial-gradient(ellipse 45% 55% at 92% 88%, rgba(0,245,255,0.05) 0%, transparent 70%)" }} />
+
       {/* Header */}
-      <div className="bg-white/5 border-b border-white/10 backdrop-blur sticky top-0 z-10">
+      <div style={{ background: "rgba(2,8,23,0.85)", borderBottom: "1px solid rgba(168,85,247,0.15)", backdropFilter: "blur(20px)", position: "sticky", top: 0, zIndex: 10 }}>
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-indigo-600/30 border border-indigo-500/30 flex items-center justify-center">
-              <Shield className="w-5 h-5 text-indigo-400" />
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={{ width: 42, height: 42, borderRadius: 13, background: "rgba(168,85,247,0.12)", border: "1px solid rgba(168,85,247,0.3)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 0 20px rgba(168,85,247,0.2)" }}>
+              <Shield size={20} style={{ color: "#a855f7", filter: "drop-shadow(0 0 6px rgba(168,85,247,0.6))" }} />
             </div>
             <div>
-              <h1 className="text-white font-bold text-lg">لوحة التحكم الرئيسية</h1>
-              <p className="text-slate-400 text-xs">إدارة جميع الشركات</p>
+              <h1 style={{ fontSize: 16, fontWeight: 800, color: "#fff", margin: 0 }}>لوحة التحكم الرئيسية</h1>
+              <p style={{ fontSize: 11, color: "rgba(168,85,247,0.5)", margin: 0 }}>إدارة جميع الشركات</p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <button onClick={loadCompanies} className="text-slate-400 hover:text-white p-2 rounded-lg hover:bg-white/5 transition-colors">
-              <RefreshCw className="w-5 h-5" />
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <button onClick={loadCompanies} style={{ padding: 8, borderRadius: 9, border: "1px solid rgba(255,255,255,0.06)", background: "rgba(255,255,255,0.03)", color: "rgba(255,255,255,0.4)", cursor: "pointer" }}>
+              <RefreshCw size={16} />
             </button>
-            <button onClick={() => setLocation("/super-admin/security")}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-green-500/10 hover:bg-green-500/20 text-green-400 text-sm font-medium transition-all">
-              <ShieldAlert className="w-4 h-4" /> مركز الأمان
+            <button onClick={() => setLocation("/super-admin/security")} style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 14px", borderRadius: 10, border: "1px solid rgba(16,185,129,0.2)", background: "rgba(16,185,129,0.06)", color: "#10b981", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+              <ShieldAlert size={14} /> مركز الأمان
             </button>
-            <button onClick={logout} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 text-sm font-medium transition-all">
-              <LogOut className="w-4 h-4" /> خروج
+            <button onClick={logout} style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 14px", borderRadius: 10, border: "1px solid rgba(248,113,113,0.2)", background: "rgba(248,113,113,0.06)", color: "#f87171", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+              <LogOut size={14} /> خروج
             </button>
           </div>
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 py-8 space-y-6">
+      <div className="max-w-6xl mx-auto px-4 py-8 space-y-6" style={{ position: "relative", zIndex: 1 }}>
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
-            { label: "إجمالي الشركات", value: companies.length, icon: Building2, color: "indigo" },
-            { label: "شركات نشطة", value: companies.filter(c => c.isActive).length, icon: CheckCircle, color: "green" },
-            { label: "شركات موقوفة", value: companies.filter(c => !c.isActive).length, icon: XCircle, color: "red" },
-            { label: "إجمالي الموظفين", value: companies.reduce((s, c) => s + c.employeeCount, 0), icon: Users, color: "blue" },
+            { label: "إجمالي الشركات",   value: companies.length,                                    icon: Building2,   color: "#a855f7", bg: "rgba(168,85,247,0.1)",  border: "rgba(168,85,247,0.25)" },
+            { label: "شركات نشطة",       value: companies.filter(c => c.isActive).length,            icon: CheckCircle, color: "#10b981", bg: "rgba(16,185,129,0.1)", border: "rgba(16,185,129,0.25)" },
+            { label: "شركات موقوفة",     value: companies.filter(c => !c.isActive).length,           icon: XCircle,     color: "#f43f5e", bg: "rgba(244,63,94,0.1)",  border: "rgba(244,63,94,0.25)" },
+            { label: "إجمالي الموظفين",  value: companies.reduce((s, c) => s + c.employeeCount, 0), icon: Users,       color: "#00f5ff", bg: "rgba(0,245,255,0.08)", border: "rgba(0,245,255,0.2)" },
           ].map(s => (
-            <div key={s.label} className="bg-white/5 border border-white/10 rounded-2xl p-4">
-              <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-xl bg-${s.color}-500/20 flex items-center justify-center`}>
-                  <s.icon className={`w-5 h-5 text-${s.color}-400`} />
+            <div key={s.label} style={{ background: s.bg, border: `1px solid ${s.border}`, borderRadius: 16, padding: 16, boxShadow: `0 0 20px ${s.bg}` }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={{ width: 40, height: 40, borderRadius: 11, background: `${s.bg}`, border: `1px solid ${s.border}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <s.icon size={18} style={{ color: s.color }} />
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-white">{s.value}</div>
-                  <div className="text-xs text-slate-400">{s.label}</div>
+                  <div style={{ fontSize: 26, fontWeight: 800, color: s.color, lineHeight: 1, textShadow: `0 0 20px ${s.color}60` }}>{s.value}</div>
+                  <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", marginTop: 2 }}>{s.label}</div>
                 </div>
               </div>
             </div>
@@ -176,7 +183,7 @@ export default function SuperAdminDashboard() {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-2">
+        <div style={{ display: "flex", gap: 8 }}>
           {[
             { key: "companies" as const, label: "الشركات", icon: Building2 },
             { key: "backups" as const, label: "النسخ الاحتياطية", icon: HardDrive },
@@ -184,13 +191,16 @@ export default function SuperAdminDashboard() {
             <button
               key={t.key}
               onClick={() => { setActiveTab(t.key); if (t.key === "backups") loadBackups(); }}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                activeTab === t.key
-                  ? "bg-indigo-600 text-white shadow-lg"
-                  : "bg-white/5 text-slate-400 hover:text-white hover:bg-white/10"
-              }`}
+              style={{
+                display: "flex", alignItems: "center", gap: 6, padding: "9px 18px", borderRadius: 11,
+                fontSize: 13, fontWeight: 600, cursor: "pointer", transition: "all 0.15s", border: "none",
+                background: activeTab === t.key ? "rgba(168,85,247,0.18)" : "rgba(255,255,255,0.04)",
+                color: activeTab === t.key ? "#a855f7" : "rgba(255,255,255,0.4)",
+                outline: activeTab === t.key ? "1px solid rgba(168,85,247,0.35)" : "1px solid transparent",
+                boxShadow: activeTab === t.key ? "0 0 16px rgba(168,85,247,0.12)" : "none",
+              }}
             >
-              <t.icon className="w-4 h-4" />
+              <t.icon size={15} />
               {t.label}
             </button>
           ))}
@@ -200,31 +210,31 @@ export default function SuperAdminDashboard() {
         {activeTab === "backups" && (
           <div className="space-y-4">
             {/* Create Backup */}
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
-              <h3 className="text-white font-bold mb-4 flex items-center gap-2">
-                <Archive className="w-5 h-5 text-indigo-400" />
+            <div style={{ background: "rgba(168,85,247,0.05)", border: "1px solid rgba(168,85,247,0.15)", borderRadius: 16, padding: 20 }}>
+              <h3 style={{ color: "#fff", fontWeight: 700, marginBottom: 16, display: "flex", alignItems: "center", gap: 8, fontSize: 14 }}>
+                <Archive size={16} style={{ color: "#a855f7" }} />
                 إنشاء نسخة احتياطية جديدة
               </h3>
               <div className="flex gap-3 flex-wrap items-end">
                 <div className="flex-1 min-w-48">
-                  <label className="text-slate-400 text-xs mb-1 block">نطاق النسخة</label>
+                  <label style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, display: "block", marginBottom: 6 }}>نطاق النسخة</label>
                   <select
                     value={backupCompanyId}
                     onChange={e => setBackupCompanyId(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none"
+                    style={{ width: "100%", padding: "9px 12px", borderRadius: 10, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", color: "#fff", fontSize: 13, outline: "none" }}
                   >
-                    <option value="0">جميع الشركات</option>
+                    <option value="0" style={{ background: "#050d1f" }}>جميع الشركات</option>
                     {companies.map(c => (
-                      <option key={c.id} value={String(c.id)}>{c.name}</option>
+                      <option key={c.id} value={String(c.id)} style={{ background: "#050d1f" }}>{c.name}</option>
                     ))}
                   </select>
                 </div>
                 <button
                   onClick={createBackup}
                   disabled={creatingBackup}
-                  className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold rounded-xl transition-all disabled:opacity-50"
+                  style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 20px", borderRadius: 10, border: "none", background: "linear-gradient(135deg, rgba(168,85,247,0.8), rgba(139,92,246,0.8))", color: "#fff", fontSize: 13, fontWeight: 700, cursor: creatingBackup ? "not-allowed" : "pointer", opacity: creatingBackup ? 0.6 : 1, boxShadow: "0 4px 16px rgba(168,85,247,0.3)" }}
                 >
-                  {creatingBackup ? <Loader2 className="w-4 h-4 animate-spin" /> : <HardDrive className="w-4 h-4" />}
+                  {creatingBackup ? <Loader2 size={14} className="animate-spin" /> : <HardDrive size={14} />}
                   {creatingBackup ? "جاري الإنشاء..." : "إنشاء نسخة"}
                 </button>
               </div>
@@ -232,42 +242,36 @@ export default function SuperAdminDashboard() {
 
             {/* Backups List */}
             {backupsLoading ? (
-              <div className="flex justify-center py-10"><Loader2 className="w-8 h-8 text-indigo-400 animate-spin" /></div>
+              <div className="flex justify-center py-10"><Loader2 size={28} style={{ color: "#a855f7" }} className="animate-spin" /></div>
             ) : backups.length === 0 ? (
-              <div className="text-center py-12 text-slate-400">
-                <HardDrive className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                <p>لا توجد نسخ احتياطية</p>
-                <p className="text-xs mt-1">أنشئ نسخة احتياطية للحماية من فقدان البيانات</p>
+              <div style={{ textAlign: "center", padding: "40px 0", color: "rgba(255,255,255,0.3)" }}>
+                <HardDrive size={48} style={{ margin: "0 auto 12px", opacity: 0.2 }} />
+                <p style={{ fontSize: 14 }}>لا توجد نسخ احتياطية</p>
+                <p style={{ fontSize: 11, marginTop: 4 }}>أنشئ نسخة احتياطية للحماية من فقدان البيانات</p>
               </div>
             ) : (
               <div className="space-y-2">
                 {backups.map(bk => (
-                  <div key={bk.id} className="bg-white/5 border border-white/10 rounded-xl p-4 flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-10 h-10 rounded-lg bg-indigo-500/20 flex items-center justify-center flex-shrink-0">
-                        <Archive className="w-5 h-5 text-indigo-400" />
+                  <div key={bk.id} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 12, padding: "12px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+                      <div style={{ width: 38, height: 38, borderRadius: 10, background: "rgba(168,85,247,0.12)", border: "1px solid rgba(168,85,247,0.2)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        <Archive size={16} style={{ color: "#a855f7" }} />
                       </div>
-                      <div className="min-w-0">
-                        <p className="text-white text-sm font-medium truncate">
+                      <div style={{ minWidth: 0 }}>
+                        <p style={{ color: "#fff", fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                           {bk.companyId === 0 ? "جميع الشركات" : companies.find(c => c.id === bk.companyId)?.name || `شركة #${bk.companyId}`}
                         </p>
-                        <p className="text-slate-400 text-xs mt-0.5">
+                        <p style={{ color: "rgba(255,255,255,0.3)", fontSize: 11, marginTop: 2 }}>
                           {new Date(bk.createdAt).toLocaleString("ar-IQ")} · {formatSize(bk.sizeBytes)}
                         </p>
                       </div>
                     </div>
-                    <div className="flex gap-2 flex-shrink-0">
-                      <button
-                        onClick={() => downloadBackup(bk.filename)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600/20 hover:bg-green-600/40 text-green-400 rounded-lg text-xs transition-all"
-                      >
-                        <Download className="w-3.5 h-3.5" /> تنزيل
+                    <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                      <button onClick={() => downloadBackup(bk.filename)} style={{ display: "flex", alignItems: "center", gap: 4, padding: "6px 12px", borderRadius: 8, border: "1px solid rgba(16,185,129,0.2)", background: "rgba(16,185,129,0.06)", color: "#10b981", fontSize: 11, cursor: "pointer" }}>
+                        <Download size={12} /> تنزيل
                       </button>
-                      <button
-                        onClick={() => deleteBackup(bk.filename)}
-                        className="p-1.5 bg-red-600/20 hover:bg-red-600/40 text-red-400 rounded-lg transition-all"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
+                      <button onClick={() => deleteBackup(bk.filename)} style={{ padding: "6px 8px", borderRadius: 8, border: "1px solid rgba(248,113,113,0.2)", background: "rgba(248,113,113,0.06)", color: "#f87171", cursor: "pointer" }}>
+                        <Trash2 size={12} />
                       </button>
                     </div>
                   </div>
@@ -280,11 +284,10 @@ export default function SuperAdminDashboard() {
         {/* Companies Tab Content */}
         {activeTab === "companies" && (
           <>
-            <div className="flex items-center justify-between">
-              <h2 className="text-white font-bold text-xl">الشركات</h2>
-              <button onClick={() => setShowCreateModal(true)}
-                className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold rounded-xl transition-all shadow-lg shadow-indigo-900/40">
-                <Plus className="w-4 h-4" /> إضافة شركة جديدة
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <h2 style={{ color: "#fff", fontWeight: 800, fontSize: 18, margin: 0 }}>الشركات</h2>
+              <button onClick={() => setShowCreateModal(true)} style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 18px", borderRadius: 11, border: "none", background: "linear-gradient(135deg, rgba(0,245,255,0.8), rgba(59,130,246,0.8))", color: "#020817", fontSize: 13, fontWeight: 700, cursor: "pointer", boxShadow: "0 4px 16px rgba(0,245,255,0.25)" }}>
+                <Plus size={15} /> إضافة شركة جديدة
               </button>
             </div>
 
@@ -292,8 +295,8 @@ export default function SuperAdminDashboard() {
             <AnimatePresence>
               {feedback && (
                 <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                  className={`flex items-center gap-3 p-4 rounded-xl text-sm font-medium ${feedback.ok ? "bg-green-500/10 border border-green-500/20 text-green-400" : "bg-red-500/10 border border-red-500/20 text-red-400"}`}>
-                  {feedback.ok ? <CheckCircle className="w-5 h-5" /> : <XCircle className="w-5 h-5" />}
+                  style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", borderRadius: 12, fontSize: 13, fontWeight: 600, background: feedback.ok ? "rgba(16,185,129,0.08)" : "rgba(248,113,113,0.08)", border: `1px solid ${feedback.ok ? "rgba(16,185,129,0.2)" : "rgba(248,113,113,0.2)"}`, color: feedback.ok ? "#10b981" : "#f87171" }}>
+                  {feedback.ok ? <CheckCircle size={16} /> : <XCircle size={16} />}
                   {feedback.msg}
                 </motion.div>
               )}
@@ -301,48 +304,47 @@ export default function SuperAdminDashboard() {
 
             {/* Companies list */}
             {loading ? (
-              <div className="flex items-center justify-center py-16">
-                <Loader2 className="w-10 h-10 text-indigo-400 animate-spin" />
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "60px 0" }}>
+                <Loader2 size={36} style={{ color: "#a855f7" }} className="animate-spin" />
               </div>
             ) : companies.length === 0 ? (
-              <div className="text-center py-16 text-slate-400">
-                <Building2 className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                <p>لا توجد شركات — أضف شركة جديدة</p>
+              <div style={{ textAlign: "center", padding: "60px 0", color: "rgba(255,255,255,0.3)" }}>
+                <Building2 size={48} style={{ margin: "0 auto 12px", opacity: 0.2 }} />
+                <p style={{ fontSize: 14 }}>لا توجد شركات — أضف شركة جديدة</p>
               </div>
             ) : (
               <div className="space-y-3">
                 {companies.map(company => (
-                  <div key={company.id} className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
-                    <div className="p-4 flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center flex-shrink-0">
-                        <Building2 className="w-6 h-6 text-indigo-400" />
+                  <div key={company.id} style={{ background: company.isActive ? "rgba(0,245,255,0.02)" : "rgba(255,255,255,0.02)", border: `1px solid ${company.isActive ? "rgba(0,245,255,0.1)" : "rgba(255,255,255,0.06)"}`, borderRadius: 16, overflow: "hidden" }}>
+                    <div style={{ padding: "14px 16px", display: "flex", alignItems: "center", gap: 14 }}>
+                      <div style={{ width: 46, height: 46, borderRadius: 13, background: "rgba(0,245,255,0.08)", border: "1px solid rgba(0,245,255,0.18)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        <Building2 size={20} style={{ color: "#00f5ff" }} />
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <h3 className="text-white font-bold truncate">{company.name}</h3>
-                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${company.isActive ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"}`}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <h3 style={{ color: "#fff", fontWeight: 700, fontSize: 14, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{company.name}</h3>
+                          <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 20, fontWeight: 600, background: company.isActive ? "rgba(16,185,129,0.12)" : "rgba(248,113,113,0.12)", color: company.isActive ? "#10b981" : "#f87171", border: `1px solid ${company.isActive ? "rgba(16,185,129,0.25)" : "rgba(248,113,113,0.25)"}`, flexShrink: 0 }}>
                             {company.isActive ? "نشط" : "موقوف"}
                           </span>
                         </div>
-                        <div className="flex items-center gap-4 text-xs text-slate-400 mt-1">
-                          {company.phone && <span>📞 {company.phone}</span>}
-                          {company.email && <span>✉️ {company.email}</span>}
-                          <span className="flex items-center gap-1"><Users className="w-3 h-3" /> {company.employeeCount} موظف</span>
+                        <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 4 }}>
+                          {company.phone && <span style={{ fontSize: 11, color: "rgba(255,255,255,0.3)" }}>📞 {company.phone}</span>}
+                          {company.email && <span style={{ fontSize: 11, color: "rgba(255,255,255,0.3)" }}>✉️ {company.email}</span>}
+                          <span style={{ fontSize: 11, color: "rgba(0,245,255,0.4)", display: "flex", alignItems: "center", gap: 3 }}><Users size={10} /> {company.employeeCount} موظف</span>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <button onClick={() => toggleCompany(company)} title="تفعيل/إيقاف"
-                          className={`p-2 rounded-lg transition-colors ${company.isActive ? "text-yellow-400 hover:bg-yellow-500/10" : "text-green-400 hover:bg-green-500/10"}`}>
-                          {company.isActive ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                        </button>
-                        <button onClick={() => setShowEditModal(company)} className="p-2 rounded-lg text-blue-400 hover:bg-blue-500/10 transition-colors">
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button onClick={() => setShowDeleteConfirm(company)} className="p-2 rounded-lg text-red-400 hover:bg-red-500/10 transition-colors">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                        <button onClick={() => toggleExpand(company.id)} className="p-2 rounded-lg text-slate-400 hover:bg-white/5 transition-colors">
-                          {expandedId === company.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                      <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                        {[
+                          { icon: company.isActive ? EyeOff : Eye, color: company.isActive ? "#f59e0b" : "#10b981", action: () => toggleCompany(company), title: "تفعيل/إيقاف" },
+                          { icon: Edit, color: "#3b82f6", action: () => setShowEditModal(company), title: "تعديل" },
+                          { icon: Trash2, color: "#f87171", action: () => setShowDeleteConfirm(company), title: "حذف" },
+                        ].map(({ icon: Icon, color, action, title }) => (
+                          <button key={title} onClick={action} title={title} style={{ padding: 7, borderRadius: 8, border: "none", background: "transparent", color, cursor: "pointer" }}>
+                            <Icon size={15} />
+                          </button>
+                        ))}
+                        <button onClick={() => toggleExpand(company.id)} style={{ padding: 7, borderRadius: 8, border: "none", background: "rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.4)", cursor: "pointer" }}>
+                          {expandedId === company.id ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
                         </button>
                       </div>
                     </div>
@@ -350,28 +352,27 @@ export default function SuperAdminDashboard() {
                     <AnimatePresence>
                       {expandedId === company.id && (
                         <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }}>
-                          <div className="border-t border-white/10 p-4">
-                            <h4 className="text-slate-300 text-sm font-semibold mb-3 flex items-center gap-2">
-                              <Users className="w-4 h-4" /> الموظفون ({companyEmployees[company.id]?.length ?? "..."})
+                          <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", padding: "14px 16px" }}>
+                            <h4 style={{ color: "rgba(255,255,255,0.6)", fontSize: 12, fontWeight: 600, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
+                              <Users size={13} /> الموظفون ({companyEmployees[company.id]?.length ?? "..."})
                             </h4>
                             {companyEmployees[company.id] ? (
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                                 {companyEmployees[company.id].map(emp => (
-                                  <div key={emp.id} className="flex items-center justify-between p-3 bg-white/5 rounded-xl">
+                                  <div key={emp.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", background: "rgba(255,255,255,0.03)", borderRadius: 10, border: "1px solid rgba(255,255,255,0.06)" }}>
                                     <div>
-                                      <div className="text-white text-sm font-medium">{emp.fullName}</div>
-                                      <div className="text-slate-400 text-xs">@{emp.username} · {emp.role === "admin" ? "مدير" : emp.role === "manager" ? "مشرف" : "موظف"}</div>
+                                      <div style={{ color: "#fff", fontSize: 13, fontWeight: 600 }}>{emp.fullName}</div>
+                                      <div style={{ color: "rgba(255,255,255,0.35)", fontSize: 11 }}>@{emp.username} · {emp.role === "admin" ? "مدير" : emp.role === "manager" ? "مشرف" : "موظف"}</div>
                                     </div>
-                                    <button onClick={() => setShowPasswordModal({ companyId: company.id, empId: emp.id, name: emp.fullName })}
-                                      className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-white/5 hover:bg-white/10 text-slate-300 rounded-lg transition-all">
-                                      <Key className="w-3.5 h-3.5" /> كلمة المرور
+                                    <button onClick={() => setShowPasswordModal({ companyId: company.id, empId: emp.id, name: emp.fullName })} style={{ display: "flex", alignItems: "center", gap: 4, padding: "5px 10px", borderRadius: 8, border: "1px solid rgba(0,245,255,0.15)", background: "rgba(0,245,255,0.05)", color: "rgba(0,245,255,0.6)", fontSize: 11, cursor: "pointer" }}>
+                                      <Key size={11} /> كلمة المرور
                                     </button>
                                   </div>
                                 ))}
                               </div>
                             ) : (
-                              <div className="flex items-center justify-center py-4">
-                                <Loader2 className="w-6 h-6 text-indigo-400 animate-spin" />
+                              <div style={{ display: "flex", justifyContent: "center", padding: "16px 0" }}>
+                                <Loader2 size={20} style={{ color: "#a855f7" }} className="animate-spin" />
                               </div>
                             )}
                           </div>
@@ -388,9 +389,9 @@ export default function SuperAdminDashboard() {
         {/* Chat Section */}
         {activeTab === "companies" && !loading && companies.length > 0 && (
           <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <MessageCircle className="w-5 h-5 text-indigo-400" />
-              <h2 className="text-white font-bold text-xl">مركز الدعم</h2>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <MessageCircle size={18} style={{ color: "#a855f7" }} />
+              <h2 style={{ color: "#fff", fontWeight: 800, fontSize: 18, margin: 0 }}>مركز الدعم</h2>
             </div>
             <SuperAdminChat companies={companies.map(c => ({ id: c.id, name: c.name, isActive: c.isActive }))} />
           </div>
@@ -405,16 +406,19 @@ export default function SuperAdminDashboard() {
 
       {/* Delete Confirm */}
       {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className="bg-slate-900 border border-red-500/20 rounded-2xl p-6 w-full max-w-sm text-center">
-            <Trash2 className="w-12 h-12 text-red-400 mx-auto mb-4" />
-            <h3 className="text-white font-bold text-lg mb-2">حذف الشركة</h3>
-            <p className="text-slate-400 text-sm mb-6">هل أنت متأكد من حذف "<strong className="text-white">{showDeleteConfirm.name}</strong>"؟ سيتم حذف جميع البيانات المرتبطة بها.</p>
-            <div className="flex gap-3">
-              <button onClick={() => setShowDeleteConfirm(null)} className="flex-1 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 text-sm font-medium transition-all">إلغاء</button>
-              <button onClick={() => deleteCompany(showDeleteConfirm)} className="flex-1 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-sm font-bold transition-all">حذف</button>
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50, padding: 16 }} dir="rtl">
+          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
+            style={{ background: "rgba(5,13,31,0.95)", border: "1px solid rgba(248,113,113,0.2)", borderRadius: 20, padding: 28, width: "100%", maxWidth: 380, textAlign: "center", backdropFilter: "blur(20px)" }}>
+            <div style={{ width: 56, height: 56, borderRadius: 16, background: "rgba(248,113,113,0.1)", border: "1px solid rgba(248,113,113,0.25)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+              <Trash2 size={24} style={{ color: "#f87171" }} />
             </div>
-          </div>
+            <h3 style={{ color: "#fff", fontWeight: 700, fontSize: 16, marginBottom: 8 }}>حذف الشركة</h3>
+            <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, marginBottom: 24, lineHeight: 1.6 }}>هل أنت متأكد من حذف "<strong style={{ color: "#fff" }}>{showDeleteConfirm.name}</strong>"؟ سيتم حذف جميع البيانات المرتبطة بها.</p>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button onClick={() => setShowDeleteConfirm(null)} style={{ flex: 1, padding: "10px", borderRadius: 12, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.6)", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>إلغاء</button>
+              <button onClick={() => deleteCompany(showDeleteConfirm)} style={{ flex: 1, padding: "10px", borderRadius: 12, border: "none", background: "linear-gradient(135deg, rgba(239,68,68,0.9), rgba(220,38,38,0.9))", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", boxShadow: "0 4px 16px rgba(239,68,68,0.3)" }}>حذف</button>
+            </div>
+          </motion.div>
         </div>
       )}
 
@@ -440,29 +444,36 @@ function CreateCompanyModal({ onClose, onCreated }: { onClose: () => void; onCre
     finally { setLoading(false); }
   };
 
+  const inputStyle = { width: "100%", padding: "10px 12px", borderRadius: 10, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(0,245,255,0.12)", color: "#fff", fontSize: 13, outline: "none", boxSizing: "border-box" as const };
+  const labelStyle = { fontSize: 11, color: "rgba(255,255,255,0.4)", display: "block", marginBottom: 6 };
+
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4 overflow-y-auto" dir="rtl">
-      <div className="bg-slate-900 border border-white/10 rounded-3xl w-full max-w-lg my-4">
-        <div className="p-6 border-b border-white/10 flex items-center justify-between">
-          <h2 className="text-white font-bold text-lg flex items-center gap-2"><Building2 className="w-5 h-5 text-indigo-400" /> إضافة شركة جديدة</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-white"><XCircle className="w-6 h-6" /></button>
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50, padding: 16, overflowY: "auto" }} dir="rtl">
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+        style={{ background: "rgba(5,13,31,0.97)", border: "1px solid rgba(0,245,255,0.15)", borderRadius: 22, width: "100%", maxWidth: 520, backdropFilter: "blur(24px)", boxShadow: "0 0 60px rgba(0,245,255,0.08)", overflow: "hidden" }}>
+        {/* Top neon line */}
+        <div style={{ height: 2, background: "linear-gradient(90deg, transparent, #00f5ff, #a855f7, transparent)" }} />
+        <div style={{ padding: "20px 24px", borderBottom: "1px solid rgba(0,245,255,0.08)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <h2 style={{ color: "#fff", fontWeight: 700, fontSize: 15, display: "flex", alignItems: "center", gap: 8, margin: 0 }}>
+            <Building2 size={16} style={{ color: "#00f5ff" }} /> إضافة شركة جديدة
+          </h2>
+          <button onClick={onClose} style={{ padding: 6, borderRadius: 8, border: "none", background: "transparent", color: "rgba(255,255,255,0.4)", cursor: "pointer" }}><XCircle size={18} /></button>
         </div>
-        <form onSubmit={submit} className="p-6 space-y-4">
-          {error && <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-400 text-sm rounded-xl">{error}</div>}
+        <form onSubmit={submit} style={{ padding: 24, display: "flex", flexDirection: "column", gap: 14 }}>
+          {error && <div style={{ padding: "10px 14px", borderRadius: 10, background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.2)", color: "#f87171", fontSize: 12 }}>{error}</div>}
           <div className="grid grid-cols-2 gap-4">
             {[
               { k: "name", l: "اسم الشركة *", t: "text" }, { k: "address", l: "العنوان", t: "text" },
               { k: "phone", l: "الهاتف", t: "text" }, { k: "email", l: "البريد الإلكتروني", t: "email" },
             ].map(f => (
               <div key={f.k} className={f.k === "name" || f.k === "address" ? "col-span-2" : ""}>
-                <label className="text-xs text-slate-400 mb-1 block">{f.l}</label>
-                <input type={f.t} value={(form as any)[f.k]} onChange={set(f.k)} required={f.l.includes("*")}
-                  className="w-full px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50" />
+                <label style={labelStyle}>{f.l}</label>
+                <input type={f.t} value={(form as any)[f.k]} onChange={set(f.k)} required={f.l.includes("*")} style={inputStyle} />
               </div>
             ))}
           </div>
-          <div className="border-t border-white/10 pt-4">
-            <p className="text-xs text-indigo-400 font-semibold mb-3">بيانات مدير الشركة</p>
+          <div style={{ borderTop: "1px solid rgba(0,245,255,0.08)", paddingTop: 14 }}>
+            <p style={{ fontSize: 11, color: "rgba(0,245,255,0.5)", fontWeight: 600, marginBottom: 12 }}>بيانات مدير الشركة</p>
             <div className="grid grid-cols-2 gap-4">
               {[
                 { k: "adminFullName", l: "الاسم الكامل *", t: "text" },
@@ -470,21 +481,20 @@ function CreateCompanyModal({ onClose, onCreated }: { onClose: () => void; onCre
                 { k: "adminPassword", l: "كلمة المرور *", t: "password" },
               ].map(f => (
                 <div key={f.k} className={f.k === "adminFullName" ? "col-span-2" : ""}>
-                  <label className="text-xs text-slate-400 mb-1 block">{f.l}</label>
-                  <input type={f.t} value={(form as any)[f.k]} onChange={set(f.k)} required
-                    className="w-full px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50" />
+                  <label style={labelStyle}>{f.l}</label>
+                  <input type={f.t} value={(form as any)[f.k]} onChange={set(f.k)} required style={inputStyle} />
                 </div>
               ))}
             </div>
           </div>
-          <div className="flex gap-3 pt-2">
-            <button type="button" onClick={onClose} className="flex-1 py-3 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 text-sm font-medium transition-all">إلغاء</button>
-            <button type="submit" disabled={loading} className="flex-1 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold transition-all flex items-center justify-center gap-2 disabled:opacity-60">
-              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />} إنشاء الشركة
+          <div style={{ display: "flex", gap: 10, paddingTop: 4 }}>
+            <button type="button" onClick={onClose} style={{ flex: 1, padding: "11px", borderRadius: 12, border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.03)", color: "rgba(255,255,255,0.55)", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>إلغاء</button>
+            <button type="submit" disabled={loading} style={{ flex: 1, padding: "11px", borderRadius: 12, border: "none", background: "linear-gradient(135deg, rgba(0,245,255,0.85), rgba(59,130,246,0.85))", color: "#020817", fontSize: 13, fontWeight: 700, cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.6 : 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, boxShadow: "0 4px 16px rgba(0,245,255,0.2)" }}>
+              {loading ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />} إنشاء الشركة
             </button>
           </div>
         </form>
-      </div>
+      </motion.div>
     </div>
   );
 }
@@ -502,30 +512,34 @@ function EditCompanyModal({ company, onClose, onUpdated }: { company: Company; o
     finally { setLoading(false); }
   };
 
+  const inputStyle = { width: "100%", padding: "10px 12px", borderRadius: 10, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(0,245,255,0.12)", color: "#fff", fontSize: 13, outline: "none", boxSizing: "border-box" as const };
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" dir="rtl">
-      <div className="bg-slate-900 border border-white/10 rounded-3xl w-full max-w-md">
-        <div className="p-5 border-b border-white/10 flex items-center justify-between">
-          <h2 className="text-white font-bold flex items-center gap-2"><Edit className="w-5 h-5 text-blue-400" /> تعديل {company.name}</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-white"><XCircle className="w-5 h-5" /></button>
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50, padding: 16 }} dir="rtl">
+      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+        style={{ background: "rgba(5,13,31,0.97)", border: "1px solid rgba(0,245,255,0.15)", borderRadius: 20, width: "100%", maxWidth: 440, backdropFilter: "blur(24px)", overflow: "hidden" }}>
+        <div style={{ height: 2, background: "linear-gradient(90deg, transparent, #00f5ff, transparent)" }} />
+        <div style={{ padding: "18px 22px", borderBottom: "1px solid rgba(0,245,255,0.08)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <h2 style={{ color: "#fff", fontWeight: 700, fontSize: 14, display: "flex", alignItems: "center", gap: 8, margin: 0 }}>
+            <Edit size={15} style={{ color: "#00f5ff" }} /> تعديل {company.name}
+          </h2>
+          <button onClick={onClose} style={{ padding: 5, borderRadius: 7, border: "none", background: "transparent", color: "rgba(255,255,255,0.4)", cursor: "pointer" }}><XCircle size={17} /></button>
         </div>
-        <form onSubmit={submit} className="p-5 space-y-4">
-          {error && <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-400 text-sm rounded-xl">{error}</div>}
+        <form onSubmit={submit} style={{ padding: 22, display: "flex", flexDirection: "column", gap: 12 }}>
+          {error && <div style={{ padding: "9px 12px", borderRadius: 10, background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.2)", color: "#f87171", fontSize: 12 }}>{error}</div>}
           {[{ k: "name", l: "اسم الشركة *" }, { k: "address", l: "العنوان" }, { k: "phone", l: "الهاتف" }, { k: "email", l: "البريد" }].map(f => (
             <div key={f.k}>
-              <label className="text-xs text-slate-400 mb-1 block">{f.l}</label>
-              <input type="text" value={(form as any)[f.k]} onChange={set(f.k)} required={f.l.includes("*")}
-                className="w-full px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50" />
+              <label style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", display: "block", marginBottom: 5 }}>{f.l}</label>
+              <input type="text" value={(form as any)[f.k]} onChange={set(f.k)} required={f.l.includes("*")} style={inputStyle} />
             </div>
           ))}
-          <div className="flex gap-3 pt-2">
-            <button type="button" onClick={onClose} className="flex-1 py-3 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 text-sm font-medium transition-all">إلغاء</button>
-            <button type="submit" disabled={loading} className="flex-1 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold transition-all flex items-center justify-center gap-2 disabled:opacity-60">
-              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null} حفظ
+          <div style={{ display: "flex", gap: 10, paddingTop: 4 }}>
+            <button type="button" onClick={onClose} style={{ flex: 1, padding: "10px", borderRadius: 11, border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.03)", color: "rgba(255,255,255,0.55)", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>إلغاء</button>
+            <button type="submit" disabled={loading} style={{ flex: 1, padding: "10px", borderRadius: 11, border: "none", background: "linear-gradient(135deg, rgba(0,245,255,0.85), rgba(59,130,246,0.85))", color: "#020817", fontSize: 13, fontWeight: 700, cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.6 : 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+              {loading && <Loader2 size={13} className="animate-spin" />} حفظ
             </button>
           </div>
         </form>
-      </div>
+      </motion.div>
     </div>
   );
 }
@@ -545,21 +559,24 @@ function ChangePasswordModal({ companyId, empId, name, onClose, onChanged }: { c
   };
 
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" dir="rtl">
-      <div className="bg-slate-900 border border-white/10 rounded-2xl w-full max-w-sm p-6">
-        <h3 className="text-white font-bold mb-4 flex items-center gap-2"><Key className="w-5 h-5 text-yellow-400" /> تغيير كلمة مرور {name}</h3>
-        {error && <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-400 text-sm rounded-xl mb-4">{error}</div>}
-        <form onSubmit={submit} className="space-y-4">
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50, padding: 16 }} dir="rtl">
+      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+        style={{ background: "rgba(5,13,31,0.97)", border: "1px solid rgba(249,115,22,0.2)", borderRadius: 18, width: "100%", maxWidth: 360, backdropFilter: "blur(24px)", padding: 24, boxShadow: "0 0 40px rgba(249,115,22,0.08)" }}>
+        <h3 style={{ color: "#fff", fontWeight: 700, fontSize: 14, marginBottom: 16, display: "flex", alignItems: "center", gap: 8 }}>
+          <Key size={15} style={{ color: "#f97316" }} /> تغيير كلمة مرور {name}
+        </h3>
+        {error && <div style={{ padding: "9px 12px", borderRadius: 10, background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.2)", color: "#f87171", fontSize: 12, marginBottom: 12 }}>{error}</div>}
+        <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <input type="password" value={newPass} onChange={e => setNewPass(e.target.value)} placeholder="كلمة المرور الجديدة" required minLength={6}
-            className="w-full px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500/50" />
-          <div className="flex gap-3">
-            <button type="button" onClick={onClose} className="flex-1 py-2.5 rounded-xl bg-white/5 text-slate-300 text-sm font-medium">إلغاء</button>
-            <button type="submit" disabled={loading} className="flex-1 py-2.5 rounded-xl bg-yellow-600 hover:bg-yellow-500 text-white text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-60">
-              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null} حفظ
+            style={{ width: "100%", padding: "10px 12px", borderRadius: 10, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(249,115,22,0.2)", color: "#fff", fontSize: 13, outline: "none", boxSizing: "border-box" }} />
+          <div style={{ display: "flex", gap: 10 }}>
+            <button type="button" onClick={onClose} style={{ flex: 1, padding: "10px", borderRadius: 11, border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.03)", color: "rgba(255,255,255,0.55)", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>إلغاء</button>
+            <button type="submit" disabled={loading} style={{ flex: 1, padding: "10px", borderRadius: 11, border: "none", background: "linear-gradient(135deg, rgba(249,115,22,0.85), rgba(234,88,12,0.85))", color: "#fff", fontSize: 13, fontWeight: 700, cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.6 : 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+              {loading && <Loader2 size={13} className="animate-spin" />} حفظ
             </button>
           </div>
         </form>
-      </div>
+      </motion.div>
     </div>
   );
 }

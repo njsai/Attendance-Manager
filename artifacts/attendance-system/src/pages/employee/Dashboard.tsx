@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/lib/auth";
-import { Clock, MapPin, LogIn, LogOut, AlertTriangle, Calendar, CheckCircle, XCircle, Timer, Camera, ScanFace } from "lucide-react";
+import { Clock, MapPin, LogIn, LogOut, AlertTriangle, Calendar, CheckCircle, XCircle, Timer, ScanFace } from "lucide-react";
 import FaceCapture from "@/components/FaceCapture";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface AttendanceRecord {
   id: number;
@@ -52,11 +53,11 @@ function fmtDate(dateStr: string): string {
 }
 
 function statusLabel(s: string) {
-  if (s === "present") return { text: "حاضر", color: "text-green-400" };
-  if (s === "late") return { text: "متأخر", color: "text-yellow-400" };
-  if (s === "absent") return { text: "غائب", color: "text-red-400" };
-  if (s === "leave") return { text: "إجازة", color: "text-blue-400" };
-  return { text: s, color: "text-gray-400" };
+  if (s === "present") return { text: "حاضر", color: "#10b981", bg: "rgba(16,185,129,0.1)", border: "rgba(16,185,129,0.2)" };
+  if (s === "late") return { text: "متأخر", color: "#f59e0b", bg: "rgba(245,158,11,0.1)", border: "rgba(245,158,11,0.2)" };
+  if (s === "absent") return { text: "غائب", color: "#f87171", bg: "rgba(248,113,113,0.1)", border: "rgba(248,113,113,0.2)" };
+  if (s === "leave") return { text: "إجازة", color: "#3b82f6", bg: "rgba(59,130,246,0.1)", border: "rgba(59,130,246,0.2)" };
+  return { text: s, color: "rgba(255,255,255,0.4)", bg: "rgba(255,255,255,0.04)", border: "rgba(255,255,255,0.1)" };
 }
 
 function WorkTimer({ checkInTime }: { checkInTime: string }) {
@@ -73,9 +74,15 @@ function WorkTimer({ checkInTime }: { checkInTime: string }) {
   const s = elapsed % 60;
   const pad = (n: number) => String(n).padStart(2, "0");
   return (
-    <div className="text-center">
-      <p className="text-xs text-gray-400 mb-1">مدة الدوام</p>
-      <div className="text-4xl font-mono font-bold text-green-400 tracking-widest">{pad(h)}:{pad(m)}:{pad(s)}</div>
+    <div style={{ textAlign: "center" }}>
+      <p style={{ fontSize: 11, color: "rgba(16,185,129,0.6)", marginBottom: 8 }}>مدة الدوام</p>
+      <motion.div
+        animate={{ textShadow: ["0 0 10px rgba(0,245,255,0.3)", "0 0 20px rgba(0,245,255,0.6)", "0 0 10px rgba(0,245,255,0.3)"] }}
+        transition={{ duration: 2, repeat: Infinity }}
+        style={{ fontSize: 40, fontFamily: "monospace", fontWeight: 800, color: "#00f5ff", letterSpacing: 4 }}
+      >
+        {pad(h)}:{pad(m)}:{pad(s)}
+      </motion.div>
     </div>
   );
 }
@@ -88,7 +95,6 @@ export default function EmployeeDashboard() {
     totalWorkingHours: 0, totalLateMinutes: 0,
     recentRecords: [], month: "",
   });
-  const [statsLoaded, setStatsLoaded] = useState(false);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState("");
@@ -115,7 +121,7 @@ export default function EmployeeDashboard() {
         totalLateMinutes: statsData.totalLateMinutes ?? 0,
         recentRecords: Array.isArray(statsData.recentRecords) ? statsData.recentRecords : [],
         month: statsData.month ?? "",
-      } : null);
+      } : { presentDays: 0, absentDays: 0, lateDays: 0, totalWorkingHours: 0, totalLateMinutes: 0, recentRecords: [], month: "" });
     } catch { setError("فشل تحميل البيانات"); }
     finally { setLoading(false); }
   }, [BASE]);
@@ -151,28 +157,17 @@ export default function EmployeeDashboard() {
 
   const openFace = async (mode: "check-in" | "check-out") => {
     setFaceMode(mode);
-    // Load face descriptors for matching
     try {
       const res = await fetch(`${BASE}api/employees/face-descriptors/all`, { credentials: "include" });
-      if (res.ok) {
-        const data = await res.json();
-        setKnownDescriptors(data);
-      }
+      if (res.ok) setKnownDescriptors(await res.json());
     } catch { }
     setShowFace(true);
   };
 
   const handleFaceVerified = async (result: { matched: boolean; employeeId?: number; employeeName?: string }) => {
     setShowFace(false);
-    if (!result.matched || !result.employeeId) {
-      setError("لم يتم التعرف على الوجه — حاول مجدداً أو استخدم الدخول اليدوي");
-      return;
-    }
-    // Check if the verified employee matches the logged in user
-    if (result.employeeId !== user?.id) {
-      setError(`تم التعرف على: ${result.employeeName}، لكنها ليست بياناتك`);
-      return;
-    }
+    if (!result.matched || !result.employeeId) { setError("لم يتم التعرف على الوجه — حاول مجدداً أو استخدم الدخول اليدوي"); return; }
+    if (result.employeeId !== user?.id) { setError(`تم التعرف على: ${result.employeeName}، لكنها ليست بياناتك`); return; }
     await doAction(faceMode);
   };
 
@@ -181,13 +176,24 @@ export default function EmployeeDashboard() {
   const hasFaceDescriptor = !!(user as any)?.faceDescriptor;
 
   if (loading) return (
-    <div className="flex items-center justify-center h-64">
-      <div className="w-8 h-8 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 280 }}>
+      <motion.div
+        animate={{ rotate: 360 }}
+        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+        style={{ width: 36, height: 36, borderRadius: "50%", border: "3px solid rgba(0,245,255,0.2)", borderTopColor: "#00f5ff" }}
+      />
     </div>
   );
 
+  const cardStyle = {
+    background: "rgba(255,255,255,0.02)",
+    border: "1px solid rgba(0,245,255,0.08)",
+    borderRadius: 18,
+    padding: 20,
+  };
+
   return (
-    <div className="p-4 space-y-4 max-w-2xl mx-auto" dir="rtl">
+    <div style={{ padding: "16px", display: "flex", flexDirection: "column", gap: 16, maxWidth: 640, margin: "0 auto" }} dir="rtl">
       {showFace && (
         <FaceCapture
           mode="verify"
@@ -197,133 +203,203 @@ export default function EmployeeDashboard() {
         />
       )}
 
-      <div className="text-center mb-2">
-        <h1 className="text-xl font-bold text-white">مرحباً، {user?.fullName}</h1>
-        <p className="text-sm text-gray-400">{new Date().toLocaleDateString("ar-IQ", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</p>
+      {/* Header */}
+      <div style={{ textAlign: "center", paddingBottom: 4 }}>
+        <h1 style={{ fontSize: 20, fontWeight: 800, color: "#fff", margin: 0 }}>
+          مرحباً، <span style={{ color: "#00f5ff", textShadow: "0 0 20px rgba(0,245,255,0.4)" }}>{user?.fullName}</span>
+        </h1>
+        <p style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", marginTop: 6 }}>
+          {new Date().toLocaleDateString("ar-IQ", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
+        </p>
       </div>
 
-      {error && <div className="bg-red-900/50 border border-red-500/50 rounded-xl p-3 flex items-center gap-2"><AlertTriangle size={16} className="text-red-400 shrink-0" /><p className="text-red-300 text-sm">{error}</p></div>}
-      {success && <div className="bg-green-900/50 border border-green-500/50 rounded-xl p-3 flex items-center gap-2"><CheckCircle size={16} className="text-green-400 shrink-0" /><p className="text-green-300 text-sm">{success}</p></div>}
+      {/* Alerts */}
+      <AnimatePresence>
+        {error && (
+          <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+            style={{ display: "flex", alignItems: "center", gap: 10, padding: "11px 14px", borderRadius: 12, background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.2)", color: "#f87171", fontSize: 13 }}>
+            <AlertTriangle size={15} /> {error}
+          </motion.div>
+        )}
+        {success && (
+          <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+            style={{ display: "flex", alignItems: "center", gap: 10, padding: "11px 14px", borderRadius: 12, background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.2)", color: "#10b981", fontSize: 13 }}>
+            <CheckCircle size={15} /> {success}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Today Card */}
-      <div className="bg-[#1a2234] border border-white/10 rounded-2xl p-5 space-y-4">
-        <div className="flex items-center gap-2">
-          <Clock size={18} className="text-blue-400" />
-          <h2 className="text-white font-semibold">حضور اليوم</h2>
+      <div style={{ ...cardStyle, display: "flex", flexDirection: "column", gap: 16 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ width: 34, height: 34, borderRadius: 10, background: "rgba(0,245,255,0.08)", border: "1px solid rgba(0,245,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Clock size={16} style={{ color: "#00f5ff" }} />
+          </div>
+          <h2 style={{ color: "#fff", fontWeight: 700, fontSize: 14, margin: 0 }}>حضور اليوم</h2>
         </div>
 
+        {/* Active timer */}
         {isCheckedIn && today?.checkInTime && (
-          <div className="bg-green-900/20 border border-green-500/30 rounded-xl p-5">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+            style={{ padding: 20, borderRadius: 14, background: "rgba(0,245,255,0.04)", border: "1px solid rgba(0,245,255,0.12)", display: "flex", flexDirection: "column", gap: 8 }}>
             <WorkTimer checkInTime={today.checkInTime} />
-            <p className="text-center text-xs text-green-300 mt-2">وقت الدخول: {fmt12(today.checkInTime)}</p>
+            <p style={{ textAlign: "center", fontSize: 12, color: "rgba(0,245,255,0.5)" }}>وقت الدخول: {fmt12(today.checkInTime)}</p>
             {(today.lateMinutes ?? 0) > 0 && (
-              <div className="flex items-center justify-center gap-1 mt-2">
-                <AlertTriangle size={14} className="text-yellow-400" />
-                <p className="text-yellow-400 text-sm font-bold">تأخير {today.lateMinutes} دقيقة</p>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                <AlertTriangle size={13} style={{ color: "#f59e0b" }} />
+                <p style={{ fontSize: 13, fontWeight: 700, color: "#f59e0b" }}>تأخير {today.lateMinutes} دقيقة</p>
               </div>
             )}
-          </div>
+          </motion.div>
         )}
 
+        {/* Checked out summary */}
         {isCheckedOut && (
-          <div className="bg-gray-800/50 border border-white/10 rounded-xl p-4 grid grid-cols-2 gap-3 text-center">
-            <div><p className="text-xs text-gray-400 mb-1">وقت الدخول</p><p className="text-green-400 font-bold">{fmt12(today?.checkInTime)}</p></div>
-            <div><p className="text-xs text-gray-400 mb-1">وقت الخروج</p><p className="text-red-400 font-bold">{fmt12(today?.checkOutTime)}</p></div>
-            <div className="col-span-2"><p className="text-xs text-gray-400 mb-1">ساعات العمل</p><p className="text-blue-400 font-bold text-xl">{today?.workingHours?.toFixed(1) ?? "—"} ساعة</p></div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+            {[
+              { label: "وقت الدخول", val: fmt12(today?.checkInTime), color: "#10b981" },
+              { label: "وقت الخروج", val: fmt12(today?.checkOutTime), color: "#f87171" },
+            ].map(({ label, val, color }) => (
+              <div key={label} style={{ padding: "12px", borderRadius: 12, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", textAlign: "center" }}>
+                <p style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", marginBottom: 4 }}>{label}</p>
+                <p style={{ fontSize: 16, fontWeight: 700, color }}>{val}</p>
+              </div>
+            ))}
+            <div style={{ gridColumn: "1/-1", padding: "12px", borderRadius: 12, background: "rgba(0,245,255,0.04)", border: "1px solid rgba(0,245,255,0.1)", textAlign: "center" }}>
+              <p style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", marginBottom: 4 }}>ساعات العمل</p>
+              <p style={{ fontSize: 22, fontWeight: 800, color: "#00f5ff" }}>{today?.workingHours?.toFixed(1) ?? "—"} <span style={{ fontSize: 13, opacity: 0.6 }}>ساعة</span></p>
+            </div>
             {(today?.lateMinutes ?? 0) > 0 && (
-              <div className="col-span-2 flex items-center justify-center gap-1">
-                <AlertTriangle size={14} className="text-yellow-400" />
-                <p className="text-yellow-400 text-sm">تأخير {today?.lateMinutes} دقيقة</p>
+              <div style={{ gridColumn: "1/-1", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                <AlertTriangle size={13} style={{ color: "#f59e0b" }} />
+                <p style={{ fontSize: 12, color: "#f59e0b" }}>تأخير {today?.lateMinutes} دقيقة</p>
               </div>
             )}
           </div>
         )}
 
         {!today && (
-          <div className="text-center py-4"><XCircle size={32} className="text-gray-500 mx-auto mb-2" /><p className="text-gray-400 text-sm">لم تسجل حضورك اليوم بعد</p></div>
+          <div style={{ textAlign: "center", padding: "24px 0" }}>
+            <XCircle size={36} style={{ color: "rgba(255,255,255,0.15)", margin: "0 auto 10px" }} />
+            <p style={{ fontSize: 13, color: "rgba(255,255,255,0.3)" }}>لم تسجل حضورك اليوم بعد</p>
+          </div>
         )}
 
         {today?.checkInLat && today?.checkInLng && (
-          <div className="flex items-center gap-2 text-xs text-gray-400 bg-gray-800/50 rounded-lg p-2">
-            <MapPin size={12} className="text-blue-400" />
-            <span>الموقع: {today.checkInLat.toFixed(5)}, {today.checkInLng.toFixed(5)}</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", borderRadius: 10, background: "rgba(0,245,255,0.03)", border: "1px solid rgba(0,245,255,0.08)" }}>
+            <MapPin size={12} style={{ color: "#00f5ff" }} />
+            <span style={{ fontSize: 11, color: "rgba(255,255,255,0.3)" }}>الموقع: {today.checkInLat.toFixed(5)}, {today.checkInLng.toFixed(5)}</span>
           </div>
         )}
 
         {/* Manual buttons */}
-        <div className="grid grid-cols-2 gap-3 pt-2">
-          <button onClick={() => doAction("check-in")} disabled={actionLoading || isCheckedIn || isCheckedOut}
-            className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-500 disabled:bg-gray-700 disabled:text-gray-500 text-white font-bold py-3 rounded-xl transition-all">
-            <LogIn size={18} /><span>تسجيل الحضور</span>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+          <button
+            onClick={() => doAction("check-in")}
+            disabled={actionLoading || isCheckedIn || isCheckedOut}
+            style={{
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+              padding: "12px", borderRadius: 13, border: "none", fontWeight: 700, fontSize: 13,
+              background: actionLoading || isCheckedIn || isCheckedOut
+                ? "rgba(255,255,255,0.05)" : "linear-gradient(135deg, rgba(16,185,129,0.85), rgba(5,150,105,0.85))",
+              color: actionLoading || isCheckedIn || isCheckedOut ? "rgba(255,255,255,0.2)" : "#fff",
+              cursor: actionLoading || isCheckedIn || isCheckedOut ? "not-allowed" : "pointer",
+              boxShadow: actionLoading || isCheckedIn || isCheckedOut ? "none" : "0 4px 16px rgba(16,185,129,0.25)",
+              transition: "all 0.2s", fontFamily: "'Tajawal', sans-serif",
+            }}
+          >
+            <LogIn size={16} /> تسجيل الحضور
           </button>
-          <button onClick={() => doAction("check-out")} disabled={actionLoading || !isCheckedIn || isCheckedOut}
-            className="flex items-center justify-center gap-2 bg-red-600 hover:bg-red-500 disabled:bg-gray-700 disabled:text-gray-500 text-white font-bold py-3 rounded-xl transition-all">
-            <LogOut size={18} /><span>تسجيل الانصراف</span>
+          <button
+            onClick={() => doAction("check-out")}
+            disabled={actionLoading || !isCheckedIn || isCheckedOut}
+            style={{
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+              padding: "12px", borderRadius: 13, border: "none", fontWeight: 700, fontSize: 13,
+              background: actionLoading || !isCheckedIn || isCheckedOut
+                ? "rgba(255,255,255,0.05)" : "linear-gradient(135deg, rgba(248,113,113,0.85), rgba(220,38,38,0.85))",
+              color: actionLoading || !isCheckedIn || isCheckedOut ? "rgba(255,255,255,0.2)" : "#fff",
+              cursor: actionLoading || !isCheckedIn || isCheckedOut ? "not-allowed" : "pointer",
+              boxShadow: actionLoading || !isCheckedIn || isCheckedOut ? "none" : "0 4px 16px rgba(248,113,113,0.25)",
+              transition: "all 0.2s", fontFamily: "'Tajawal', sans-serif",
+            }}
+          >
+            <LogOut size={16} /> تسجيل الانصراف
           </button>
         </div>
 
-        {/* Face recognition */}
-        <div className="grid grid-cols-2 gap-3">
+        {/* Face recognition buttons */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
           <button
             onClick={() => openFace("check-in")}
             disabled={actionLoading || isCheckedIn || isCheckedOut}
-            className="flex items-center justify-center gap-2 border border-blue-500/30 hover:border-blue-400/60 bg-blue-500/10 hover:bg-blue-500/20 disabled:opacity-40 disabled:cursor-not-allowed text-blue-300 py-2.5 rounded-xl text-sm transition-all"
+            style={{
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+              padding: "10px", borderRadius: 11, cursor: actionLoading || isCheckedIn || isCheckedOut ? "not-allowed" : "pointer",
+              opacity: actionLoading || isCheckedIn || isCheckedOut ? 0.35 : 1,
+              border: "1px solid rgba(0,245,255,0.2)", background: "rgba(0,245,255,0.05)",
+              color: "#00f5ff", fontSize: 12, fontFamily: "'Tajawal', sans-serif",
+            }}
           >
-            <ScanFace size={16} />
-            <span>حضور بالوجه</span>
+            <ScanFace size={15} /> حضور بالوجه
           </button>
           <button
             onClick={() => openFace("check-out")}
             disabled={actionLoading || !isCheckedIn || isCheckedOut}
-            className="flex items-center justify-center gap-2 border border-orange-500/30 hover:border-orange-400/60 bg-orange-500/10 hover:bg-orange-500/20 disabled:opacity-40 disabled:cursor-not-allowed text-orange-300 py-2.5 rounded-xl text-sm transition-all"
+            style={{
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+              padding: "10px", borderRadius: 11, cursor: actionLoading || !isCheckedIn || isCheckedOut ? "not-allowed" : "pointer",
+              opacity: actionLoading || !isCheckedIn || isCheckedOut ? 0.35 : 1,
+              border: "1px solid rgba(249,115,22,0.2)", background: "rgba(249,115,22,0.05)",
+              color: "#f97316", fontSize: 12, fontFamily: "'Tajawal', sans-serif",
+            }}
           >
-            <ScanFace size={16} />
-            <span>انصراف بالوجه</span>
+            <ScanFace size={15} /> انصراف بالوجه
           </button>
         </div>
 
         {!hasFaceDescriptor && (
-          <p className="text-xs text-center text-yellow-500/70">
+          <p style={{ fontSize: 11, textAlign: "center", color: "rgba(245,158,11,0.5)" }}>
             ⚠️ لم يتم تسجيل بصمة وجهك بعد — تواصل مع المدير لتسجيلها
           </p>
         )}
       </div>
 
       {/* Monthly Stats */}
-      <div className="grid grid-cols-2 gap-3">
-          {[
-            { icon: <CheckCircle size={20} className="text-green-400 mx-auto mb-1" />, val: stats.presentDays, label: "أيام الحضور" },
-            { icon: <XCircle size={20} className="text-red-400 mx-auto mb-1" />, val: stats.absentDays, label: "أيام الغياب" },
-            { icon: <AlertTriangle size={20} className="text-yellow-400 mx-auto mb-1" />, val: stats.lateDays, label: "أيام التأخير" },
-            { icon: <Timer size={20} className="text-blue-400 mx-auto mb-1" />, val: (stats.totalWorkingHours ?? 0).toFixed(1), label: "ساعات العمل" },
-          ].map((item, i) => (
-            <div key={i} className="bg-[#1a2234] border border-white/10 rounded-2xl p-4 text-center">
-              {item.icon}
-              <p className="text-2xl font-bold text-white">{item.val}</p>
-              <p className="text-xs text-gray-400">{item.label}</p>
-            </div>
-          ))}
-        </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+        {[
+          { icon: CheckCircle, val: stats.presentDays, label: "أيام الحضور", color: "#10b981", glow: "rgba(16,185,129,0.15)" },
+          { icon: XCircle, val: stats.absentDays, label: "أيام الغياب", color: "#f87171", glow: "rgba(248,113,113,0.15)" },
+          { icon: AlertTriangle, val: stats.lateDays, label: "أيام التأخير", color: "#f59e0b", glow: "rgba(245,158,11,0.15)" },
+          { icon: Timer, val: (stats.totalWorkingHours ?? 0).toFixed(1), label: "ساعات العمل", color: "#00f5ff", glow: "rgba(0,245,255,0.15)" },
+        ].map(({ icon: Icon, val, label, color, glow }) => (
+          <div key={label} style={{ background: "rgba(255,255,255,0.02)", border: `1px solid ${glow}`, borderRadius: 16, padding: "16px 12px", textAlign: "center" }}>
+            <Icon size={20} style={{ color, margin: "0 auto 8px", display: "block", filter: `drop-shadow(0 0 6px ${color})` }} />
+            <p style={{ fontSize: 24, fontWeight: 800, color: "#fff", margin: 0 }}>{val}</p>
+            <p style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginTop: 4 }}>{label}</p>
+          </div>
+        ))}
+      </div>
 
       {/* Recent Records */}
       {stats.recentRecords.length > 0 && (
-        <div className="bg-[#1a2234] border border-white/10 rounded-2xl p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <Calendar size={16} className="text-purple-400" />
-            <h3 className="text-white font-semibold text-sm">السجل الأخير</h3>
+        <div style={{ ...cardStyle }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+            <Calendar size={15} style={{ color: "#a855f7" }} />
+            <h3 style={{ color: "#fff", fontWeight: 700, fontSize: 13, margin: 0 }}>السجل الأخير</h3>
           </div>
-          <div className="space-y-2">
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             {stats.recentRecords.map((r) => {
               const st = statusLabel(r.status);
               return (
-                <div key={r.id} className="flex items-center justify-between bg-gray-800/50 rounded-lg px-3 py-2 text-xs">
-                  <div className="flex items-center gap-2">
-                    <span className={`font-medium ${st.color}`}>{st.text}</span>
-                    <span className="text-gray-400">{fmtDate(r.date)}</span>
+                <div key={r.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "9px 12px", borderRadius: 10, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 20, fontWeight: 600, background: st.bg, border: `1px solid ${st.border}`, color: st.color }}>{st.text}</span>
+                    <span style={{ fontSize: 11, color: "rgba(255,255,255,0.3)" }}>{fmtDate(r.date)}</span>
                   </div>
-                  <div className="flex gap-3 text-gray-400">
-                    <span>{fmt12(r.checkInTime)}</span>
-                    <span>{fmt12(r.checkOutTime)}</span>
+                  <div style={{ display: "flex", gap: 10 }}>
+                    <span style={{ fontSize: 11, color: "rgba(255,255,255,0.3)" }}>{fmt12(r.checkInTime)}</span>
+                    <span style={{ fontSize: 11, color: "rgba(255,255,255,0.2)" }}>{fmt12(r.checkOutTime)}</span>
                   </div>
                 </div>
               );

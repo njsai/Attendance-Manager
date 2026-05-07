@@ -31,7 +31,6 @@ router.get("/", requireAuth, async (req, res) => {
     } else if (req.query.employeeId) {
       conditions.push(eq(leavesTable.employeeId, parseInt(req.query.employeeId as string)));
     }
-
     if (req.query.status) {
       conditions.push(eq(leavesTable.status, req.query.status as string));
     }
@@ -48,13 +47,11 @@ router.post("/", requireAuth, async (req, res) => {
   try {
     const { leaveType, startDate, endDate, reason, totalDays } = req.body;
     if (!startDate || !endDate) { res.status(400).json({ message: "تواريخ الإجازة مطلوبة" }); return; }
-
     const [leave] = await db.insert(leavesTable).values({
       employeeId: req.session.userId!,
       leaveType: leaveType || "annual",
       startDate, endDate, reason, totalDays: totalDays || 1, status: "pending",
     }).returning();
-
     const [full] = await db.select(leaveSelect).from(leavesTable)
       .leftJoin(employeesTable, eq(leavesTable.employeeId, employeesTable.id))
       .leftJoin(departmentsTable, eq(employeesTable.departmentId, departmentsTable.id))
@@ -65,7 +62,7 @@ router.post("/", requireAuth, async (req, res) => {
 
 router.put("/:id/approve", requireAdmin, async (req, res) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseInt(String(req.params.id));
     await db.update(leavesTable).set({ status: "approved" }).where(eq(leavesTable.id, id));
     const [full] = await db.select(leaveSelect).from(leavesTable)
       .leftJoin(employeesTable, eq(leavesTable.employeeId, employeesTable.id))
@@ -77,7 +74,7 @@ router.put("/:id/approve", requireAdmin, async (req, res) => {
 
 router.put("/:id/reject", requireAdmin, async (req, res) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseInt(String(req.params.id));
     const { reason } = req.body;
     await db.update(leavesTable).set({ status: "rejected", rejectionReason: reason }).where(eq(leavesTable.id, id));
     const [full] = await db.select(leaveSelect).from(leavesTable)
@@ -90,12 +87,12 @@ router.put("/:id/reject", requireAdmin, async (req, res) => {
 
 router.delete("/:id", requireAuth, async (req, res) => {
   try {
-    const id = parseInt(req.params.id);
-    const [leave] = await db.select({ employeeId: leavesTable.employeeId, status: leavesTable.status }).from(leavesTable).where(eq(leavesTable.id, id));
+    const id = parseInt(String(req.params.id));
+    const [leave] = await db.select({ employeeId: leavesTable.employeeId, status: leavesTable.status })
+      .from(leavesTable).where(eq(leavesTable.id, id));
     if (!leave) { res.status(404).json({ message: "Not found" }); return; }
     if (req.session.role === "employee" && (leave.employeeId !== req.session.userId || leave.status !== "pending")) {
-      res.status(403).json({ message: "لا يمكنك حذف هذه الإجازة" });
-      return;
+      res.status(403).json({ message: "لا يمكنك حذف هذه الإجازة" }); return;
     }
     await db.delete(leavesTable).where(eq(leavesTable.id, id));
     res.json({ message: "Deleted" });

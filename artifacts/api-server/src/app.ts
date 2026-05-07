@@ -61,7 +61,7 @@ app.use(
     store: new PgSession({
       conString: process.env.DATABASE_URL,
       tableName: "session",
-      createTableIfMissing: false,
+      createTableIfMissing: true,
       pruneSessionInterval: 60 * 15,
     }),
     secret: SESSION_SECRET || "attend-sec-key-must-change-in-prod-2024!",

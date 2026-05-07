@@ -19,10 +19,10 @@ interface Leave {
 const LEAVE_TYPE_MAP: Record<string, string> = {
   annual: "سنوية", sick: "مرضية", emergency: "اضطرارية", unpaid: "بدون راتب",
 };
-const STATUS_MAP: Record<string, { label: string; cls: string }> = {
-  pending:  { label: "قيد الانتظار", cls: "bg-amber-100 text-amber-700 border border-amber-200" },
-  approved: { label: "مقبولة",       cls: "bg-emerald-100 text-emerald-700 border border-emerald-200" },
-  rejected: { label: "مرفوضة",      cls: "bg-rose-100 text-rose-700 border border-rose-200" },
+const STATUS_MAP: Record<string, { label: string; cls: string; color: string; bg: string; border: string }> = {
+  pending:  { label: "قيد الانتظار", cls: "", color: "#f59e0b", bg: "rgba(245,158,11,0.1)", border: "rgba(245,158,11,0.2)" },
+  approved: { label: "مقبولة",       cls: "", color: "#10b981", bg: "rgba(16,185,129,0.1)", border: "rgba(16,185,129,0.2)" },
+  rejected: { label: "مرفوضة",      cls: "", color: "#f87171", bg: "rgba(248,113,113,0.1)", border: "rgba(248,113,113,0.2)" },
 };
 
 function fmtDate(d: string) {
@@ -110,110 +110,97 @@ export default function AdminLeaves() {
   };
 
   return (
-    <div className="space-y-6" dir="rtl">
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }} dir="rtl">
       {toast && (
-        <div className={`fixed top-5 left-1/2 -translate-x-1/2 z-[9999] px-6 py-3 rounded-2xl shadow-2xl text-sm font-bold flex items-center gap-2 ${toast.type === "success" ? "bg-emerald-500 text-white" : "bg-rose-500 text-white"}`}>
-          {toast.type === "success" ? <Check className="w-4 h-4" /> : <X className="w-4 h-4" />}
+        <div style={{ position: "fixed", top: 20, left: "50%", transform: "translateX(-50%)", zIndex: 9999, padding: "10px 20px", borderRadius: 14, fontSize: 13, fontWeight: 700, display: "flex", alignItems: "center", gap: 8, background: toast.type === "success" ? "rgba(16,185,129,0.9)" : "rgba(239,68,68,0.9)", color: "#fff", backdropFilter: "blur(12px)", boxShadow: "0 8px 32px rgba(0,0,0,0.4)" }}>
+          {toast.type === "success" ? <Check size={14} /> : <X size={14} />}
           {toast.msg}
         </div>
       )}
 
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
         <div>
-          <h2 className="text-2xl font-bold text-foreground">طلبات الإجازة</h2>
-          <p className="text-sm text-muted-foreground mt-0.5">مراجعة واعتماد إجازات الموظفين</p>
+          <h2 style={{ fontSize: 18, fontWeight: 800, color: "#fff", margin: 0 }}>طلبات الإجازة</h2>
+          <p style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", marginTop: 4 }}>مراجعة واعتماد إجازات الموظفين</p>
         </div>
-        <div className="relative">
-          <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <input
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="بحث باسم الموظف..."
-            className="pr-9 pl-4 py-2 bg-background border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 w-52"
-          />
+        <div style={{ position: "relative" }}>
+          <Search size={14} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", color: "rgba(0,245,255,0.4)" }} />
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="بحث باسم الموظف..."
+            style={{ paddingRight: 34, paddingLeft: 14, paddingTop: 9, paddingBottom: 9, borderRadius: 11, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(0,245,255,0.1)", color: "#fff", fontSize: 13, outline: "none", width: 200, boxSizing: "border-box" }} />
         </div>
       </div>
 
-      <div className="flex gap-2 flex-wrap">
-        {(["pending", "all", "approved", "rejected"] as const).map(s => (
-          <button
-            key={s}
-            onClick={() => setStatusFilter(s)}
-            className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${statusFilter === s ? "bg-primary text-primary-foreground shadow-md" : "bg-card border border-border text-muted-foreground hover:text-foreground"}`}
-          >
-            {s === "all" ? "الكل" : STATUS_MAP[s]?.label}
-            <span className={`mr-2 px-2 py-0.5 rounded-full text-xs ${statusFilter === s ? "bg-white/20" : "bg-muted"}`}>
-              {counts[s]}
-            </span>
-          </button>
-        ))}
+      {/* Filter Tabs */}
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+        {(["pending", "all", "approved", "rejected"] as const).map(s => {
+          const active = statusFilter === s;
+          const sm = STATUS_MAP[s];
+          return (
+            <button key={s} onClick={() => setStatusFilter(s)}
+              style={{ padding: "7px 14px", borderRadius: 10, border: active ? `1px solid ${sm?.border ?? "rgba(0,245,255,0.3)"}` : "1px solid rgba(255,255,255,0.07)", background: active ? (sm?.bg ?? "rgba(0,245,255,0.08)") : "rgba(255,255,255,0.03)", color: active ? (sm?.color ?? "#00f5ff") : "rgba(255,255,255,0.4)", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "'Tajawal', sans-serif" }}>
+              {s === "all" ? "الكل" : sm?.label}
+              <span style={{ marginRight: 6, padding: "1px 6px", borderRadius: 20, fontSize: 10, background: "rgba(255,255,255,0.1)" }}>{counts[s]}</span>
+            </button>
+          );
+        })}
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="w-10 h-10 animate-spin text-primary" />
+        <div style={{ display: "flex", justifyContent: "center", padding: "60px 0" }}>
+          <div style={{ width: 32, height: 32, borderRadius: "50%", border: "3px solid rgba(0,245,255,0.15)", borderTopColor: "#00f5ff", animation: "spin 1s linear infinite" }} />
         </div>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-16 bg-card rounded-2xl border border-border">
-          <Calendar className="w-12 h-12 mx-auto text-muted-foreground/30 mb-3" />
-          <p className="text-muted-foreground font-medium">لا توجد طلبات إجازة</p>
+        <div style={{ textAlign: "center", padding: "50px 0", background: "rgba(255,255,255,0.02)", borderRadius: 16, border: "1px solid rgba(255,255,255,0.06)" }}>
+          <Calendar size={40} style={{ margin: "0 auto 12px", color: "rgba(255,255,255,0.15)" }} />
+          <p style={{ fontSize: 13, color: "rgba(255,255,255,0.3)" }}>لا توجد طلبات إجازة</p>
         </div>
       ) : (
-        <div className="grid gap-4">
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {filtered.map(leave => {
-            const status = STATUS_MAP[leave.status] || { label: leave.status, cls: "bg-gray-100 text-gray-700" };
+            const status = STATUS_MAP[leave.status] || { label: leave.status, color: "rgba(255,255,255,0.4)", bg: "rgba(255,255,255,0.06)", border: "rgba(255,255,255,0.1)" };
             return (
-              <div key={leave.id} className="bg-card rounded-2xl border border-border p-5 shadow-sm hover:shadow-md transition-shadow">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-3 mb-2 flex-wrap">
-                      <h3 className="text-base font-bold text-foreground">{leave.employeeName}</h3>
+              <div key={leave.id} style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(0,245,255,0.07)", borderRadius: 16, padding: "16px 18px" }}>
+                <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
+                      <h3 style={{ fontSize: 14, fontWeight: 700, color: "#fff", margin: 0 }}>{leave.employeeName}</h3>
                       {leave.departmentName && (
-                        <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-lg">{leave.departmentName}</span>
+                        <span style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", background: "rgba(255,255,255,0.05)", padding: "2px 8px", borderRadius: 8 }}>{leave.departmentName}</span>
                       )}
-                      <span className="text-xs font-bold bg-primary/10 text-primary px-2.5 py-0.5 rounded-lg">
+                      <span style={{ fontSize: 10, fontWeight: 700, color: "#00f5ff", background: "rgba(0,245,255,0.08)", border: "1px solid rgba(0,245,255,0.15)", padding: "2px 8px", borderRadius: 20 }}>
                         {LEAVE_TYPE_MAP[leave.leaveType] || leave.leaveType}
                       </span>
-                      <span className={`text-xs font-bold px-2.5 py-0.5 rounded-lg ${status.cls}`}>{status.label}</span>
+                      <span style={{ fontSize: 10, fontWeight: 700, color: status.color, background: status.bg, border: `1px solid ${status.border}`, padding: "2px 8px", borderRadius: 20 }}>{status.label}</span>
                     </div>
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
-                      <div className="flex items-center gap-1.5">
-                        <Calendar className="w-4 h-4" />
-                        <span>{fmtDate(leave.startDate)} — {fmtDate(leave.endDate)}</span>
+                    <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "rgba(255,255,255,0.35)" }}>
+                        <Calendar size={12} /> {fmtDate(leave.startDate)} — {fmtDate(leave.endDate)}
                       </div>
-                      <div className="flex items-center gap-1.5">
-                        <Clock className="w-4 h-4" />
-                        <span className="font-semibold text-foreground">{leave.totalDays} أيام</span>
+                      <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "rgba(0,245,255,0.5)" }}>
+                        <Clock size={12} /> <span style={{ fontWeight: 700 }}>{leave.totalDays} أيام</span>
                       </div>
                     </div>
                     {leave.reason && (
-                      <p className="mt-2 text-sm text-muted-foreground bg-muted/50 rounded-lg px-3 py-2 border border-border">
+                      <p style={{ marginTop: 8, fontSize: 12, color: "rgba(255,255,255,0.35)", background: "rgba(255,255,255,0.03)", borderRadius: 9, padding: "8px 12px", border: "1px solid rgba(255,255,255,0.06)" }}>
                         {leave.reason}
                       </p>
                     )}
                     {leave.status === "rejected" && leave.rejectionReason && (
-                      <p className="mt-2 text-sm text-rose-600 bg-rose-50 rounded-lg px-3 py-2 border border-rose-200">
+                      <p style={{ marginTop: 8, fontSize: 12, color: "#f87171", background: "rgba(248,113,113,0.07)", borderRadius: 9, padding: "8px 12px", border: "1px solid rgba(248,113,113,0.2)" }}>
                         سبب الرفض: {leave.rejectionReason}
                       </p>
                     )}
                   </div>
                   {leave.status === "pending" && (
-                    <div className="flex gap-2 shrink-0">
-                      <button
-                        onClick={() => handleApprove(leave.id)}
-                        disabled={actionId === leave.id}
-                        className="flex items-center gap-1.5 px-4 py-2.5 bg-emerald-500 text-white rounded-xl text-sm font-bold hover:bg-emerald-600 transition-colors disabled:opacity-50"
-                      >
-                        {actionId === leave.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-                        قبول
+                    <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+                      <button onClick={() => handleApprove(leave.id)} disabled={actionId === leave.id}
+                        style={{ display: "flex", alignItems: "center", gap: 5, padding: "8px 16px", borderRadius: 10, border: "none", background: "linear-gradient(135deg, rgba(16,185,129,0.85), rgba(5,150,105,0.85))", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", opacity: actionId === leave.id ? 0.6 : 1, fontFamily: "'Tajawal', sans-serif" }}>
+                        {actionId === leave.id ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />} قبول
                       </button>
-                      <button
-                        onClick={() => handleReject(leave.id)}
-                        disabled={actionId === leave.id}
-                        className="flex items-center gap-1.5 px-4 py-2.5 bg-rose-100 text-rose-700 rounded-xl text-sm font-bold hover:bg-rose-200 transition-colors disabled:opacity-50"
-                      >
-                        <X className="w-4 h-4" />
-                        رفض
+                      <button onClick={() => handleReject(leave.id)} disabled={actionId === leave.id}
+                        style={{ display: "flex", alignItems: "center", gap: 5, padding: "8px 14px", borderRadius: 10, border: "1px solid rgba(248,113,113,0.2)", background: "rgba(248,113,113,0.08)", color: "#f87171", fontSize: 12, fontWeight: 700, cursor: "pointer", opacity: actionId === leave.id ? 0.6 : 1, fontFamily: "'Tajawal', sans-serif" }}>
+                        <X size={13} /> رفض
                       </button>
                     </div>
                   )}

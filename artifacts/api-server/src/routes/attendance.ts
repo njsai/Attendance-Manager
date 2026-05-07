@@ -342,7 +342,7 @@ router.post("/", requireAdmin, async (req, res) => {
 router.put("/:id", requireAdmin, async (req, res) => {
   try {
     const companyId = req.session.companyId!;
-    const id = parseInt(req.params.id);
+    const id = parseInt(String(req.params.id));
 
     if (isNaN(id) || id <= 0) {
       res.status(400).json({ message: "معرّف السجل غير صالح" });
@@ -490,7 +490,7 @@ router.put("/:id", requireAdmin, async (req, res) => {
 router.delete("/:id", requireAdmin, async (req, res) => {
   try {
     const companyId = req.session.companyId!;
-    const id = parseInt(req.params.id);
+    const id = parseInt(String(req.params.id));
 
     if (isNaN(id) || id <= 0) {
       res.status(400).json({ message: "معرّف السجل غير صالح" });
@@ -904,7 +904,7 @@ router.get("/all-today", requireAdmin, async (req, res) => {
 router.get("/:id", requireAuth, async (req, res) => {
   try {
     const companyId = req.session.companyId!;
-    const id = parseInt(req.params.id);
+    const id = parseInt(String(req.params.id));
 
     if (isNaN(id) || id <= 0) {
       res.status(400).json({ message: "معرّف السجل غير صالح" });

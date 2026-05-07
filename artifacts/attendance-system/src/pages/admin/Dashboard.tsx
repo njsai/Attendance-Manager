@@ -231,7 +231,10 @@ export default function AdminDashboard() {
   if (loading) {
     return (
       <div className="flex h-64 items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-400" />
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+          <Loader2 className="w-8 h-8 animate-spin" style={{ color: "#00f5ff", filter: "drop-shadow(0 0 8px rgba(0,245,255,0.6))" }} />
+          <span style={{ fontSize: 13, color: "rgba(0,245,255,0.5)" }}>جاري تحميل البيانات...</span>
+        </div>
       </div>
     );
   }
@@ -243,8 +246,8 @@ export default function AdminDashboard() {
       {/* ── Header ── */}
       <div className="flex items-start justify-between flex-wrap gap-2">
         <div>
-          <h2 className="text-2xl font-bold text-foreground">لوحة التحكم</h2>
-          <p className="mt-0.5 text-sm text-muted-foreground">
+          <h2 className="text-2xl font-bold" style={{ color: "#fff", textShadow: "0 0 30px rgba(0,245,255,0.15)" }}>لوحة التحكم</h2>
+          <p className="mt-0.5 text-sm" style={{ color: "rgba(0,245,255,0.45)" }}>
             {new Date().toLocaleDateString("ar-IQ", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
           </p>
         </div>
@@ -257,7 +260,12 @@ export default function AdminDashboard() {
           <button
             onClick={() => fetchAll(true)}
             disabled={refreshing}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#1a2234] border border-white/10 text-gray-400 hover:text-white text-xs transition-colors"
+            style={{
+              display: "flex", alignItems: "center", gap: 6,
+              padding: "6px 14px", borderRadius: 10, border: "1px solid rgba(0,245,255,0.15)",
+              background: "rgba(0,245,255,0.05)", color: "rgba(0,245,255,0.6)",
+              fontSize: 12, cursor: "pointer", transition: "all 0.15s",
+            }}
           >
             <RefreshCw size={13} className={refreshing ? "animate-spin" : ""} />
             تحديث
@@ -269,6 +277,15 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         {cards.map((card, idx) => {
           const isActive = activeFilter === card.key;
+          const NEON_COLORS: Record<string, { border: string; glow: string; icon: string; bg: string }> = {
+            "bg-blue-600":    { border: "rgba(59,130,246,0.4)",  glow: "rgba(59,130,246,0.12)",  icon: "#3b82f6", bg: "rgba(59,130,246,0.12)" },
+            "bg-emerald-600": { border: "rgba(16,185,129,0.4)",  glow: "rgba(16,185,129,0.12)",  icon: "#10b981", bg: "rgba(16,185,129,0.12)" },
+            "bg-rose-600":    { border: "rgba(244,63,94,0.4)",   glow: "rgba(244,63,94,0.12)",   icon: "#f43f5e", bg: "rgba(244,63,94,0.12)" },
+            "bg-amber-600":   { border: "rgba(245,158,11,0.4)",  glow: "rgba(245,158,11,0.12)",  icon: "#f59e0b", bg: "rgba(245,158,11,0.12)" },
+            "bg-purple-600":  { border: "rgba(168,85,247,0.4)",  glow: "rgba(168,85,247,0.12)",  icon: "#a855f7", bg: "rgba(168,85,247,0.12)" },
+            "bg-cyan-600":    { border: "rgba(0,245,255,0.4)",   glow: "rgba(0,245,255,0.12)",   icon: "#00f5ff", bg: "rgba(0,245,255,0.12)" },
+          };
+          const nc = NEON_COLORS[card.bg] ?? NEON_COLORS["bg-cyan-600"];
           return (
             <motion.button
               key={card.key}
@@ -276,26 +293,40 @@ export default function AdminDashboard() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: idx * 0.06 }}
               onClick={() => setActiveFilter(isActive ? null : card.key)}
-              className={`
-                relative w-full text-right rounded-2xl p-4 border transition-all duration-200
-                ${isActive
-                  ? `ring-2 ${card.ring} border-transparent bg-[#1e2d44] shadow-lg`
-                  : "border-white/10 bg-[#1a2234] hover:bg-[#1e2d44] hover:border-white/20"}
-              `}
+              style={{
+                position: "relative", width: "100%", textAlign: "right",
+                borderRadius: 16, padding: 16, border: "none", cursor: "pointer",
+                background: isActive ? nc.glow : "rgba(255,255,255,0.02)",
+                outline: isActive ? `1.5px solid ${nc.border}` : "1px solid rgba(255,255,255,0.06)",
+                boxShadow: isActive ? `0 0 24px ${nc.glow}, inset 0 1px 0 ${nc.border}` : "none",
+                transition: "all 0.2s",
+              }}
             >
               {isActive && (
-                <span className={`absolute top-2.5 left-2.5 w-2 h-2 rounded-full ${card.bg} animate-pulse`} />
+                <span style={{
+                  position: "absolute", top: 10, left: 10,
+                  width: 7, height: 7, borderRadius: "50%",
+                  background: nc.icon, boxShadow: `0 0 8px ${nc.icon}`,
+                  animation: "pulse 1.5s infinite",
+                }} />
               )}
-              <div className="flex items-start justify-between gap-2">
+              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
                 <div>
-                  <p className="text-xs text-gray-400 font-medium mb-1">{card.title}</p>
-                  <p className="text-3xl font-extrabold text-white leading-none">{card.value}</p>
-                  <p className={`text-xs mt-2 px-2 py-0.5 rounded-full inline-block font-medium ${card.pill}`}>
-                    {isActive ? "اضغط للإغلاق" : "التفاصيل"}
-                  </p>
+                  <p style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", fontWeight: 500, marginBottom: 6 }}>{card.title}</p>
+                  <p style={{ fontSize: 28, fontWeight: 800, color: "#fff", lineHeight: 1 }}>{card.value}</p>
+                  <span style={{
+                    display: "inline-block", marginTop: 8, fontSize: 10, padding: "2px 8px",
+                    borderRadius: 20, background: nc.bg, color: nc.icon, fontWeight: 600,
+                  }}>
+                    {isActive ? "إغلاق" : "التفاصيل"}
+                  </span>
                 </div>
-                <div className={`w-10 h-10 rounded-xl ${card.bg} flex items-center justify-center text-white flex-shrink-0`}>
-                  <card.icon className="w-5 h-5" />
+                <div style={{
+                  width: 40, height: 40, borderRadius: 12, flexShrink: 0,
+                  background: nc.bg, display: "flex", alignItems: "center", justifyContent: "center",
+                  border: `1px solid ${nc.border}`,
+                }}>
+                  <card.icon size={18} style={{ color: nc.icon }} />
                 </div>
               </div>
             </motion.button>
@@ -314,8 +345,8 @@ export default function AdminDashboard() {
             transition={{ duration: 0.2 }}
             className="overflow-hidden"
           >
-            <div className="bg-[#1a2234] border border-white/10 rounded-2xl overflow-hidden">
-              <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+            <div style={{ background: "rgba(0,245,255,0.03)", border: "1px solid rgba(0,245,255,0.14)", borderRadius: 16, overflow: "hidden", backdropFilter: "blur(12px)" }}>
+              <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid rgba(0,245,255,0.08)" }}>
                 <div className="flex items-center gap-2">
                   {activeCard && (
                     <div className={`w-7 h-7 rounded-lg ${activeCard.bg} flex items-center justify-center`}>
@@ -383,13 +414,13 @@ export default function AdminDashboard() {
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.35 }}
-        className="bg-[#1a2234] border border-white/10 rounded-2xl overflow-hidden"
+        style={{ background: "rgba(2,8,23,0.6)", border: "1px solid rgba(0,245,255,0.1)", borderRadius: 18, overflow: "hidden", backdropFilter: "blur(16px)" }}
       >
         {/* Board Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 flex-wrap gap-2">
+        <div className="flex items-center justify-between px-4 py-3 flex-wrap gap-2" style={{ borderBottom: "1px solid rgba(0,245,255,0.07)" }}>
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center">
-              <Users size={14} className="text-white" />
+            <div style={{ width: 30, height: 30, borderRadius: 9, background: "rgba(0,245,255,0.1)", border: "1px solid rgba(0,245,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Users size={14} style={{ color: "#00f5ff" }} />
             </div>
             <div>
               <h3 className="text-white font-bold text-sm">سجل الحضور اليوم</h3>
@@ -400,25 +431,33 @@ export default function AdminDashboard() {
           </div>
 
           {/* Live indicator */}
-          <div className="flex items-center gap-1.5 text-xs text-emerald-400">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+          <motion.div
+            animate={{ opacity: [0.6, 1, 0.6] }}
+            transition={{ repeat: Infinity, duration: 2 }}
+            style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: "#00ff9f" }}
+          >
+            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#00ff9f", boxShadow: "0 0 6px #00ff9f", display: "inline-block" }} />
             مباشر
-          </div>
+          </motion.div>
         </div>
 
         {/* Board Filters */}
-        <div className="px-4 py-2 border-b border-white/5 flex items-center gap-2 flex-wrap">
+        <div className="px-4 py-2 flex items-center gap-2 flex-wrap" style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
           {[
-            { k: "all"           as BoardFilter, label: `الكل (${allRows.length})` },
-            { k: "present"       as BoardFilter, label: `حاضر (${computed.presentOnly})` },
-            { k: "late"          as BoardFilter, label: `متأخر (${computed.late})` },
-            { k: "absent"        as BoardFilter, label: `غائب (${computed.absent})` },
-            { k: "on_leave"      as BoardFilter, label: `إجازة (${computed.onLeave})` },
+            { k: "all"      as BoardFilter, label: `الكل (${allRows.length})` },
+            { k: "present"  as BoardFilter, label: `حاضر (${computed.presentOnly})` },
+            { k: "late"     as BoardFilter, label: `متأخر (${computed.late})` },
+            { k: "absent"   as BoardFilter, label: `غائب (${computed.absent})` },
+            { k: "on_leave" as BoardFilter, label: `إجازة (${computed.onLeave})` },
           ].map(f => (
             <button key={f.k} onClick={() => setBoardFilter(f.k)}
-              className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${
-                boardFilter === f.k ? "bg-blue-600 text-white" : "text-gray-400 hover:text-white bg-white/5"
-              }`}>
+              style={{
+                padding: "4px 12px", borderRadius: 8, fontSize: 11, fontWeight: 500,
+                border: "none", cursor: "pointer", transition: "all 0.15s",
+                background: boardFilter === f.k ? "rgba(0,245,255,0.15)" : "rgba(255,255,255,0.04)",
+                color: boardFilter === f.k ? "#00f5ff" : "rgba(255,255,255,0.4)",
+                outline: boardFilter === f.k ? "1px solid rgba(0,245,255,0.3)" : "1px solid transparent",
+              }}>
               {f.label}
             </button>
           ))}
@@ -426,7 +465,11 @@ export default function AdminDashboard() {
             value={boardSearch}
             onChange={e => setBoardSearch(e.target.value)}
             placeholder="بحث..."
-            className="mr-auto bg-[#0f1623] border border-white/10 rounded-lg px-3 py-1 text-white text-xs outline-none focus:border-blue-500 w-28"
+            className="neon-input"
+            style={{
+              marginRight: "auto", padding: "4px 12px",
+              borderRadius: 8, fontSize: 12, width: 120,
+            }}
           />
         </div>
 
@@ -434,17 +477,13 @@ export default function AdminDashboard() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-white/5">
-                <th className="text-right text-gray-500 font-medium px-4 py-2.5 text-xs">الموظف</th>
-                <th className="text-right text-gray-500 font-medium px-4 py-2.5 text-xs">الفرع / القسم</th>
-                <th className="text-right text-gray-500 font-medium px-4 py-2.5 text-xs">الحالة</th>
-                <th className="text-right text-gray-500 font-medium px-4 py-2.5 text-xs">الدخول</th>
-                <th className="text-right text-gray-500 font-medium px-4 py-2.5 text-xs">الخروج</th>
-                <th className="text-right text-gray-500 font-medium px-4 py-2.5 text-xs">مدة العمل</th>
-                <th className="text-right text-gray-500 font-medium px-4 py-2.5 text-xs">تأخير</th>
+              <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+                {["الموظف","الفرع / القسم","الحالة","الدخول","الخروج","مدة العمل","تأخير"].map(h => (
+                  <th key={h} style={{ textAlign: "right", color: "rgba(0,245,255,0.35)", fontWeight: 500, padding: "10px 16px", fontSize: 11 }}>{h}</th>
+                ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/[0.04]">
+            <tbody style={{ borderTop: "none" }}>
               {boardRows.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="text-center py-10 text-gray-500 text-sm">
@@ -544,19 +583,19 @@ export default function AdminDashboard() {
         </div>
 
         {/* Board Footer */}
-        <div className="px-4 py-2.5 border-t border-white/5 flex items-center justify-between text-xs text-gray-500">
-          <span>
+        <div className="px-4 py-2.5 flex items-center justify-between" style={{ borderTop: "1px solid rgba(255,255,255,0.04)", fontSize: 11 }}>
+          <span style={{ color: "rgba(255,255,255,0.3)" }}>
             عرض {boardRows.length} من {allRows.length} موظف
           </span>
-          <div className="flex items-center gap-3">
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             {[
-              { color: "bg-emerald-400", label: "جارٍ العمل" },
-              { color: "bg-amber-400",   label: "متأخر" },
-              { color: "bg-blue-400",    label: "انصرف" },
-              { color: "bg-gray-500",    label: "غائب" },
+              { color: "#10b981", label: "جارٍ العمل" },
+              { color: "#f59e0b", label: "متأخر" },
+              { color: "#3b82f6", label: "انصرف" },
+              { color: "#6b7280", label: "غائب" },
             ].map(b => (
-              <span key={b.label} className="flex items-center gap-1">
-                <span className={`w-2 h-2 rounded-full ${b.color}`} />
+              <span key={b.label} style={{ display: "flex", alignItems: "center", gap: 4, color: "rgba(255,255,255,0.3)" }}>
+                <span style={{ width: 6, height: 6, borderRadius: "50%", background: b.color, boxShadow: `0 0 4px ${b.color}` }} />
                 {b.label}
               </span>
             ))}
@@ -570,20 +609,20 @@ export default function AdminDashboard() {
           initial={{ opacity: 0, scale: 0.97 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.45 }}
-          className="bg-card rounded-2xl p-5 shadow-lg border border-border"
+          style={{ background: "rgba(2,8,23,0.6)", border: "1px solid rgba(0,245,255,0.1)", borderRadius: 18, padding: 20, backdropFilter: "blur(16px)" }}
         >
-          <h3 className="text-sm font-bold mb-4 text-foreground">إحصائيات الحضور</h3>
+          <h3 style={{ fontSize: 13, fontWeight: 700, color: "#fff", marginBottom: 16, opacity: 0.85 }}>إحصائيات الحضور</h3>
           <div className="h-52">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: "#9ca3af", fontSize: 12 }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: "#9ca3af", fontSize: 11 }} allowDecimals={false} />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.04)" />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 12 }} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 11 }} allowDecimals={false} />
                 <RechartsTooltip
-                  cursor={{ fill: "rgba(255,255,255,0.03)" }}
-                  contentStyle={{ borderRadius: "10px", border: "1px solid rgba(255,255,255,0.1)", background: "#1e293b", color: "#fff", fontSize: 12 }}
+                  cursor={{ fill: "rgba(0,245,255,0.03)" }}
+                  contentStyle={{ borderRadius: 12, border: "1px solid rgba(0,245,255,0.2)", background: "rgba(2,8,23,0.95)", color: "#fff", fontSize: 12, backdropFilter: "blur(12px)" }}
                 />
-                <Bar dataKey="value" radius={[5, 5, 0, 0]} maxBarSize={44}>
+                <Bar dataKey="value" radius={[6, 6, 0, 0]} maxBarSize={44}>
                   {chartData.map((e, i) => <Cell key={i} fill={e.color} />)}
                 </Bar>
               </BarChart>
@@ -595,52 +634,60 @@ export default function AdminDashboard() {
           initial={{ opacity: 0, scale: 0.97 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.5 }}
-          className="bg-gradient-to-br from-blue-700 to-blue-900 rounded-2xl p-6 shadow-xl relative overflow-hidden flex flex-col justify-between"
+          style={{
+            borderRadius: 18, padding: 24, position: "relative", overflow: "hidden",
+            display: "flex", flexDirection: "column", justifyContent: "space-between",
+            background: "linear-gradient(135deg, rgba(0,245,255,0.08) 0%, rgba(168,85,247,0.06) 100%)",
+            border: "1px solid rgba(0,245,255,0.2)",
+            boxShadow: "0 0 40px rgba(0,245,255,0.06)",
+          }}
         >
-          <div className="absolute top-0 right-0 -mt-8 -mr-8 w-32 h-32 bg-white/10 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute bottom-0 left-0 -mb-8 -ml-8 w-32 h-32 bg-cyan-400/10 rounded-full blur-3xl pointer-events-none" />
+          {/* Glow blobs */}
+          <div style={{ position: "absolute", top: -40, right: -40, width: 120, height: 120, background: "rgba(0,245,255,0.08)", borderRadius: "50%", filter: "blur(40px)", pointerEvents: "none" }} />
+          <div style={{ position: "absolute", bottom: -40, left: -40, width: 120, height: 120, background: "rgba(168,85,247,0.08)", borderRadius: "50%", filter: "blur(40px)", pointerEvents: "none" }} />
 
-          <div className="relative z-10">
-            <h3 className="text-base font-bold text-white mb-0.5">نسبة الحضور</h3>
-            <p className="text-blue-200 text-xs">الموظفون النشطون اليوم</p>
+          <div style={{ position: "relative", zIndex: 1 }}>
+            <h3 style={{ fontSize: 15, fontWeight: 700, color: "#fff", marginBottom: 2 }}>نسبة الحضور</h3>
+            <p style={{ fontSize: 12, color: "rgba(0,245,255,0.5)" }}>الموظفون النشطون اليوم</p>
           </div>
 
-          <div className="relative z-10 mt-4 space-y-4">
-            <div className="flex items-end gap-3">
-              <span className="text-5xl font-extrabold text-white leading-none">{rate}%</span>
-              <span className={`mb-0.5 px-2.5 py-0.5 rounded-lg text-xs font-bold ${
-                rate >= 80 ? "bg-emerald-400/20 text-emerald-300"
-                : rate >= 50 ? "bg-amber-400/20 text-amber-300"
-                : "bg-rose-400/20 text-rose-300"
-              }`}>
+          <div style={{ position: "relative", zIndex: 1, marginTop: 16, display: "flex", flexDirection: "column", gap: 16 }}>
+            <div style={{ display: "flex", alignItems: "flex-end", gap: 10 }}>
+              <span style={{ fontSize: 52, fontWeight: 800, color: "#00f5ff", lineHeight: 1, textShadow: "0 0 30px rgba(0,245,255,0.4)" }}>{rate}%</span>
+              <span style={{
+                marginBottom: 4, padding: "3px 10px", borderRadius: 8, fontSize: 11, fontWeight: 700,
+                background: rate >= 80 ? "rgba(16,185,129,0.15)" : rate >= 50 ? "rgba(245,158,11,0.15)" : "rgba(244,63,94,0.15)",
+                color: rate >= 80 ? "#10b981" : rate >= 50 ? "#f59e0b" : "#f43f5e",
+              }}>
                 {rate >= 80 ? "ممتاز" : rate >= 50 ? "متوسط" : "ضعيف"}
               </span>
             </div>
 
-            <div className="w-full bg-white/15 h-2.5 rounded-full overflow-hidden">
+            {/* Progress bar */}
+            <div style={{ width: "100%", height: 6, borderRadius: 99, background: "rgba(255,255,255,0.08)", overflow: "hidden" }}>
               <motion.div
-                className="bg-white h-full rounded-full"
+                style={{ height: "100%", borderRadius: 99, background: "linear-gradient(90deg, #00f5ff, #a855f7)" }}
                 initial={{ width: 0 }}
                 animate={{ width: `${rate}%` }}
-                transition={{ delay: 0.7, duration: 0.8, ease: "easeOut" }}
+                transition={{ delay: 0.7, duration: 0.9, ease: "easeOut" }}
               />
             </div>
 
-            {/* Mini stats row */}
-            <div className="grid grid-cols-3 gap-2 pt-1">
+            {/* Mini stats */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
               {[
-                { label: "يعمل الآن", val: computed.activeNow, color: "text-emerald-300" },
-                { label: "انصرف",     val: allRows.filter(r => r.computedStatus === "checked_out").length, color: "text-blue-200" },
-                { label: "غائب",      val: computed.absent, color: "text-rose-300" },
+                { label: "يعمل الآن", val: computed.activeNow,  color: "#10b981" },
+                { label: "انصرف",     val: allRows.filter(r => r.computedStatus === "checked_out").length, color: "#00f5ff" },
+                { label: "غائب",      val: computed.absent,      color: "#f43f5e" },
               ].map(s => (
-                <div key={s.label} className="text-center bg-white/10 rounded-lg py-1.5">
-                  <p className={`text-lg font-bold ${s.color}`}>{s.val}</p>
-                  <p className="text-blue-200 text-xs">{s.label}</p>
+                <div key={s.label} style={{ textAlign: "center", padding: "8px 4px", borderRadius: 10, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                  <p style={{ fontSize: 20, fontWeight: 800, color: s.color, textShadow: `0 0 12px ${s.color}50` }}>{s.val}</p>
+                  <p style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", marginTop: 2 }}>{s.label}</p>
                 </div>
               ))}
             </div>
 
-            <p className="text-blue-200 text-xs text-center">
+            <p style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", textAlign: "center" }}>
               {computed.present} حاضر من أصل {computed.total} موظف
             </p>
           </div>
