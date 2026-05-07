@@ -1,0 +1,95 @@
+Create an ultra futuristic premium SaaS HR dashboard UI inspired by cyberpunk neon glassmorphism interfaces.
+
+Design style:
+ • Dark futuristic UI
+ • Neon glow effects
+ • Glassmorphism cards
+ • Soft blue and cyan lighting
+ • Purple and orange accent colors
+ • Rounded modern components
+ • Floating panels
+ • Smooth shadows
+ • Elegant gradients
+ • Animated hover effects
+ • Premium modern web app look
+ • Inspired by modern music dashboards, sci-fi control panels, Stripe, Linear, Vercel and futuristic operating systems
+
+Main layout:
+ • Fixed modern sidebar with glowing icons
+ • Top navbar with blur effect
+ • Responsive dashboard grid
+ • Floating statistic cards
+ • Smooth spacing and clean typography
+ • Rounded corners everywhere
+
+Dashboard widgets:
+ • Animated analytics charts
+ • Circular progress indicators
+ • Neon sliders
+ • Modern toggle switches
+ • Live attendance cards
+ • Employee statistics
+ • Real-time notifications
+ • Payroll summary cards
+ • Activity timeline
+ • Modern tables with hover glow
+ • Search inputs with neon focus
+ • Interactive graphs
+ • Gradient buttons
+ • Floating action buttons
+
+Visual effects:
+ • Glass blur backgrounds
+ • Neon cyan glow
+ • Smooth animations using Framer Motion
+ • Gradient borders
+ • Floating UI animations
+ • Animated loading skeletons
+ • Micro interactions
+ • Soft shadows
+ • Ambient background lighting
+ • Modern transitions
+
+Theme:
+ • Main colors:
+ • Deep navy background
+ • Cyan neon
+ • Electric blue
+ • Purple glow
+ • Orange highlights
+ • Dark mode first
+ • Optional light mode
+
+Technical stack:
+ • React or Next.js
+ • TailwindCSS
+ • shadcn/ui
+ • Framer Motion
+ • Lucide Icons
+ • Recharts or Tremor charts
+ • Responsive for desktop and mobile
+
+UI details:
+ • Cards should look premium and floating
+ • Inputs have glowing focus effect
+ • Buttons scale smoothly on hover
+ • Sidebar icons animate on hover
+ • Charts should feel alive
+ • Use modern SaaS typography
+ • Use blur and transparency heavily but professionally
+ • Make the interface feel expensive and futuristic
+
+System type:
+This is a premium HR Management SaaS dashboard with:
+ • Attendance system
+ • Employee management
+ • Salaries
+ • GPS tracking
+ • Notifications
+ • Subscription management
+ • System monitoring
+ • Backup center
+ • Audit logs
+ • Analytics
+
+The final result must look like a futuristic premium enterprise dashboard with cinematic neon UI and ultra modern user experience.
