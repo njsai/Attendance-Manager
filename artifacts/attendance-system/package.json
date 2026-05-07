@@ -75,9 +75,12 @@
     "zod": "catalog:"
   },
   "dependencies": {
+    "@types/three": "^0.184.0",
     "face-api.js": "^0.22.2",
+    "gsap": "^3.15.0",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.7",
+    "three": "^0.184.0",
     "xlsx": "^0.18.5"
   }
 }
