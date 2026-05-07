@@ -28,6 +28,8 @@ export const employeesTable = pgTable("employees", {
   lastLoginAt: timestamp("last_login_at"),
   lastLoginIp: text("last_login_ip"),
   passwordChangedAt: timestamp("password_changed_at"),
+  preferredTheme: text("preferred_theme").default("dark"),
+  preferredLang: text("preferred_lang").default("ar"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

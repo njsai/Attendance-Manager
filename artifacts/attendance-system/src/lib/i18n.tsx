@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { useAuth } from "./auth";
 
 export type Lang = "ar" | "en";
 
@@ -662,16 +663,50 @@ interface I18nContextValue {
 
 const I18nContext = createContext<I18nContextValue | null>(null);
 
+const BASE = import.meta.env.BASE_URL;
+
+async function saveLangToDB(lang: Lang) {
+  try {
+    await fetch(`${BASE}api/preferences`, {
+      method: "PUT",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ lang }),
+    });
+  } catch {}
+}
+
 export function I18nProvider({ children }: { children: ReactNode }) {
+  const { user, updateUserPrefs } = useAuth();
+
   const [lang, setLangState] = useState<Lang>(() => {
     try { return (localStorage.getItem("lang") as Lang) || "ar"; } catch { return "ar"; }
   });
 
+  // Sync from DB when user loads / changes
+  useEffect(() => {
+    if (!user) return;
+    const dbLang = user.preferredLang;
+    if (dbLang === "ar" || dbLang === "en") {
+      if (dbLang !== lang) {
+        setLangState(dbLang);
+        try { localStorage.setItem("lang", dbLang); } catch {}
+        document.documentElement.setAttribute("lang", dbLang);
+        document.documentElement.setAttribute("dir", dbLang === "ar" ? "rtl" : "ltr");
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, user?.preferredLang]);
+
   const setLang = (l: Lang) => {
     setLangState(l);
-    try { localStorage.setItem("lang", l); } catch { }
+    try { localStorage.setItem("lang", l); } catch {}
     document.documentElement.setAttribute("lang", l);
     document.documentElement.setAttribute("dir", l === "ar" ? "rtl" : "ltr");
+    if (user) {
+      saveLangToDB(l);
+      updateUserPrefs({ lang: l });
+    }
   };
 
   useEffect(() => {

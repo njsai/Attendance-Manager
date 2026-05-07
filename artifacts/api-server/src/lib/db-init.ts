@@ -168,6 +168,10 @@ async function tryInitOnce(): Promise<void> {
     created_at TIMESTAMP NOT NULL DEFAULT NOW(), last_active_at TIMESTAMP NOT NULL DEFAULT NOW()
   )`);
 
+  // ─── Add preference columns to existing employees (idempotent) ───────────
+  await runSql(`ALTER TABLE employees ADD COLUMN IF NOT EXISTS preferred_theme TEXT NOT NULL DEFAULT 'dark'`);
+  await runSql(`ALTER TABLE employees ADD COLUMN IF NOT EXISTS preferred_lang  TEXT NOT NULL DEFAULT 'ar'`);
+
   console.log("[DB-Init] All tables verified ✓");
 
   // ─── Seed super admin ────────────────────────────────────────────────────

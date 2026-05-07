@@ -38,8 +38,8 @@ const queryClient = new QueryClient({
     queries: {
       refetchOnWindowFocus: false,
       retry: false,
-      staleTime: 30_000,   // consider data fresh for 30s → no duplicate fetches
-      gcTime:    120_000,  // keep unused data in cache for 2 minutes
+      staleTime: 30_000,
+      gcTime:    120_000,
     },
   },
 });
@@ -116,22 +116,30 @@ function Router() {
   );
 }
 
+// ─── Inner app — ThemeProvider + I18nProvider live INSIDE AuthProvider ─────────
+// This allows them to read user.preferredTheme / user.preferredLang from the DB.
+function InnerApp() {
+  return (
+    <ThemeProvider>
+      <I18nProvider>
+        <TooltipProvider>
+          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+            <Router />
+          </WouterRouter>
+          <Toaster />
+        </TooltipProvider>
+      </I18nProvider>
+    </ThemeProvider>
+  );
+}
+
 // ─── Root ─────────────────────────────────────────────────────────────────────
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <I18nProvider>
-          <AuthProvider>
-            <TooltipProvider>
-              <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-                <Router />
-              </WouterRouter>
-              <Toaster />
-            </TooltipProvider>
-          </AuthProvider>
-        </I18nProvider>
-      </ThemeProvider>
+      <AuthProvider>
+        <InnerApp />
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

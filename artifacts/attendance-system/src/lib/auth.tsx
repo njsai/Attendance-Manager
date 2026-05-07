@@ -8,12 +8,15 @@ export interface AppUser {
   role: "admin" | "manager" | "employee" | "super_admin";
   companyId?: number;
   faceDescriptor?: string | null;
+  preferredTheme?: "dark" | "light" | null;
+  preferredLang?: "ar" | "en" | null;
 }
 
 interface AuthContextType {
   user: AppUser | null;
   isLoading: boolean;
   logout: () => Promise<void>;
+  updateUserPrefs: (prefs: { theme?: string; lang?: string }) => void;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -90,8 +93,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     window.location.href = loginPath;
   };
 
+  const updateUserPrefs = (prefs: { theme?: string; lang?: string }) => {
+    setUser(prev => prev ? { ...prev, ...prefs.theme && { preferredTheme: prefs.theme as "dark" | "light" }, ...prefs.lang && { preferredLang: prefs.lang as "ar" | "en" } } : prev);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, isLoading, logout }}>
+    <AuthContext.Provider value={{ user, isLoading, logout, updateUserPrefs }}>
       {children}
     </AuthContext.Provider>
   );
