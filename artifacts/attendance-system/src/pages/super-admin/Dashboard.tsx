@@ -1,9 +1,12 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
-import { Shield, Building2, Plus, Trash2, Edit, Users, LogOut, ChevronDown, ChevronUp, CheckCircle, XCircle, Eye, EyeOff, Key, Loader2, RefreshCw, MessageCircle, ShieldAlert, HardDrive, Download, Archive, Activity, CreditCard, Bell } from "lucide-react";
+import { Shield, Building2, Plus, Trash2, Edit, Users, LogOut, ChevronDown, ChevronUp, CheckCircle, XCircle, Eye, EyeOff, Key, Loader2, RefreshCw, MessageCircle, ShieldAlert, HardDrive, Download, Archive, Activity, CreditCard, Bell, Globe } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import SuperAdminChat from "./Chat";
+import { useI18n } from "@/lib/i18n";
+import { useTheme } from "@/lib/theme";
+import { SA_T, getSAColors } from "@/lib/sa-utils";
 
 const BASE = import.meta.env.BASE_URL;
 
@@ -22,6 +25,11 @@ interface Company {
 export default function SuperAdminDashboard() {
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
+  const { lang, dir, setLang } = useI18n();
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
+  const C = getSAColors(isDark);
+  const T = SA_T[lang];
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<number | null>(null);
@@ -124,45 +132,51 @@ export default function SuperAdminDashboard() {
   };
 
   return (
-    <div dir="rtl" style={{
+    <div dir={dir} style={{
       minHeight: "100vh",
-      background: "linear-gradient(135deg, #020817 0%, #050d1f 50%, #080318 100%)",
+      background: C.pageBg,
       fontFamily: "'Tajawal', sans-serif",
       position: "relative",
+      color: C.textPrimary,
     }}>
       {/* Ambient glow */}
       <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0, background: "radial-gradient(ellipse 55% 45% at 8% 12%, rgba(168,85,247,0.06) 0%, transparent 70%), radial-gradient(ellipse 45% 55% at 92% 88%, rgba(0,245,255,0.05) 0%, transparent 70%)" }} />
 
       {/* Header */}
-      <div style={{ background: "rgba(2,8,23,0.85)", borderBottom: "1px solid rgba(168,85,247,0.15)", backdropFilter: "blur(20px)", position: "sticky", top: 0, zIndex: 10 }}>
+      <div style={{ background: C.headerBg, borderBottom: `1px solid ${isDark ? "rgba(168,85,247,0.15)" : C.headerBorder}`, backdropFilter: isDark ? "blur(20px)" : "none", position: "sticky", top: 0, zIndex: 10, boxShadow: isDark ? "none" : "0 1px 4px rgba(0,0,0,0.07)" }}>
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <div style={{ width: 42, height: 42, borderRadius: 13, background: "rgba(168,85,247,0.12)", border: "1px solid rgba(168,85,247,0.3)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 0 20px rgba(168,85,247,0.2)" }}>
               <Shield size={20} style={{ color: "#a855f7", filter: "drop-shadow(0 0 6px rgba(168,85,247,0.6))" }} />
             </div>
             <div>
-              <h1 style={{ fontSize: 16, fontWeight: 800, color: "#fff", margin: 0 }}>لوحة التحكم الرئيسية</h1>
-              <p style={{ fontSize: 11, color: "rgba(168,85,247,0.5)", margin: 0 }}>إدارة جميع الشركات</p>
+              <h1 style={{ fontSize: 16, fontWeight: 800, color: C.textPrimary, margin: 0 }}>{T.dashboardTitle}</h1>
+              <p style={{ fontSize: 11, color: isDark ? "rgba(168,85,247,0.5)" : "#7c3aed", margin: 0 }}>{T.manageAllCompanies}</p>
             </div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-            <button onClick={loadCompanies} style={{ padding: 8, borderRadius: 9, border: "1px solid rgba(255,255,255,0.06)", background: "rgba(255,255,255,0.03)", color: "rgba(255,255,255,0.4)", cursor: "pointer" }}>
+            <button onClick={loadCompanies} style={{ padding: 8, borderRadius: 9, border: `1px solid ${C.cardBorder}`, background: C.cardBg, color: C.textSecondary, cursor: "pointer" }}>
               <RefreshCw size={16} />
             </button>
             <button onClick={() => setLocation("/super-admin/monitoring")} style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(0,245,255,0.2)", background: "rgba(0,245,255,0.06)", color: "#00f5ff", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
-              <Activity size={14} /> المراقبة
+              <Activity size={14} /> {T.monitoring}
             </button>
             <button onClick={() => setLocation("/super-admin/subscriptions")} style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(168,85,247,0.2)", background: "rgba(168,85,247,0.06)", color: "#a855f7", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
-              <CreditCard size={14} /> الاشتراكات
+              <CreditCard size={14} /> {T.subscriptions}
             </button>
             <button onClick={() => setLocation("/super-admin/notifications")} style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(245,158,11,0.2)", background: "rgba(245,158,11,0.06)", color: "#f59e0b", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
-              <Bell size={14} /> الإشعارات
+              <Bell size={14} /> {T.notifications}
             </button>
             <button onClick={() => setLocation("/super-admin/security")} style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(16,185,129,0.2)", background: "rgba(16,185,129,0.06)", color: "#10b981", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
-              <ShieldAlert size={14} /> الأمان
+              <ShieldAlert size={14} /> {T.security}
+            </button>
+            <button onClick={() => setLang(lang === "ar" ? "en" : "ar")}
+              title={lang === "ar" ? "Switch to English" : "التبديل للعربية"}
+              style={{ display: "flex", alignItems: "center", gap: 5, padding: "7px 12px", borderRadius: 10, border: `1px solid ${isDark ? "rgba(255,255,255,0.1)" : "#e2e8f0"}`, background: isDark ? "rgba(255,255,255,0.04)" : "#f8fafc", color: C.textSecondary, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+              <Globe size={13} /> {lang === "ar" ? "EN" : "عر"}
             </button>
             <button onClick={logout} style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(248,113,113,0.2)", background: "rgba(248,113,113,0.06)", color: "#f87171", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
-              <LogOut size={14} /> خروج
+              <LogOut size={14} /> {T.signOut}
             </button>
           </div>
         </div>
@@ -172,19 +186,19 @@ export default function SuperAdminDashboard() {
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
-            { label: "إجمالي الشركات",   value: companies.length,                                    icon: Building2,   color: "#a855f7", bg: "rgba(168,85,247,0.1)",  border: "rgba(168,85,247,0.25)" },
-            { label: "شركات نشطة",       value: companies.filter(c => c.isActive).length,            icon: CheckCircle, color: "#10b981", bg: "rgba(16,185,129,0.1)", border: "rgba(16,185,129,0.25)" },
-            { label: "شركات موقوفة",     value: companies.filter(c => !c.isActive).length,           icon: XCircle,     color: "#f43f5e", bg: "rgba(244,63,94,0.1)",  border: "rgba(244,63,94,0.25)" },
-            { label: "إجمالي الموظفين",  value: companies.reduce((s, c) => s + c.employeeCount, 0), icon: Users,       color: "#00f5ff", bg: "rgba(0,245,255,0.08)", border: "rgba(0,245,255,0.2)" },
+            { label: T.totalCompanies,    value: companies.length,                                    icon: Building2,   color: "#a855f7", bg: "rgba(168,85,247,0.1)",  border: "rgba(168,85,247,0.25)" },
+            { label: T.activeCompanies,   value: companies.filter(c => c.isActive).length,            icon: CheckCircle, color: "#10b981", bg: "rgba(16,185,129,0.1)", border: "rgba(16,185,129,0.25)" },
+            { label: T.suspendedCompanies,value: companies.filter(c => !c.isActive).length,           icon: XCircle,     color: "#f43f5e", bg: "rgba(244,63,94,0.1)",  border: "rgba(244,63,94,0.25)" },
+            { label: T.totalEmployees,    value: companies.reduce((s, c) => s + c.employeeCount, 0), icon: Users,       color: "#00f5ff", bg: "rgba(0,245,255,0.08)", border: "rgba(0,245,255,0.2)" },
           ].map(s => (
-            <div key={s.label} style={{ background: s.bg, border: `1px solid ${s.border}`, borderRadius: 16, padding: 16, boxShadow: `0 0 20px ${s.bg}` }}>
+            <div key={s.label} style={{ background: isDark ? s.bg : "#fff", border: `1px solid ${isDark ? s.border : "#e2e8f0"}`, borderRadius: 16, padding: 16, boxShadow: isDark ? `0 0 20px ${s.bg}` : "0 1px 4px rgba(0,0,0,0.06)" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <div style={{ width: 40, height: 40, borderRadius: 11, background: `${s.bg}`, border: `1px solid ${s.border}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <div style={{ width: 40, height: 40, borderRadius: 11, background: s.bg, border: `1px solid ${s.border}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
                   <s.icon size={18} style={{ color: s.color }} />
                 </div>
                 <div>
-                  <div style={{ fontSize: 26, fontWeight: 800, color: s.color, lineHeight: 1, textShadow: `0 0 20px ${s.color}60` }}>{s.value}</div>
-                  <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", marginTop: 2 }}>{s.label}</div>
+                  <div style={{ fontSize: 26, fontWeight: 800, color: s.color, lineHeight: 1, textShadow: isDark ? `0 0 20px ${s.color}60` : "none" }}>{s.value}</div>
+                  <div style={{ fontSize: 11, color: C.textMuted, marginTop: 2 }}>{s.label}</div>
                 </div>
               </div>
             </div>
@@ -194,8 +208,8 @@ export default function SuperAdminDashboard() {
         {/* Tabs */}
         <div style={{ display: "flex", gap: 8 }}>
           {[
-            { key: "companies" as const, label: "الشركات", icon: Building2 },
-            { key: "backups" as const, label: "النسخ الاحتياطية", icon: HardDrive },
+            { key: "companies" as const, label: T.companiesTab, icon: Building2 },
+            { key: "backups" as const, label: T.backupsTab, icon: HardDrive },
           ].map(t => (
             <button
               key={t.key}
@@ -203,9 +217,9 @@ export default function SuperAdminDashboard() {
               style={{
                 display: "flex", alignItems: "center", gap: 6, padding: "9px 18px", borderRadius: 11,
                 fontSize: 13, fontWeight: 600, cursor: "pointer", transition: "all 0.15s", border: "none",
-                background: activeTab === t.key ? "rgba(168,85,247,0.18)" : "rgba(255,255,255,0.04)",
-                color: activeTab === t.key ? "#a855f7" : "rgba(255,255,255,0.4)",
-                outline: activeTab === t.key ? "1px solid rgba(168,85,247,0.35)" : "1px solid transparent",
+                background: activeTab === t.key ? "rgba(168,85,247,0.18)" : C.cardBg,
+                color: activeTab === t.key ? "#a855f7" : C.textMuted,
+                outline: activeTab === t.key ? "1px solid rgba(168,85,247,0.35)" : `1px solid ${C.cardBorder}`,
                 boxShadow: activeTab === t.key ? "0 0 16px rgba(168,85,247,0.12)" : "none",
               }}
             >
@@ -220,19 +234,19 @@ export default function SuperAdminDashboard() {
           <div className="space-y-4">
             {/* Create Backup */}
             <div style={{ background: "rgba(168,85,247,0.05)", border: "1px solid rgba(168,85,247,0.15)", borderRadius: 16, padding: 20 }}>
-              <h3 style={{ color: "#fff", fontWeight: 700, marginBottom: 16, display: "flex", alignItems: "center", gap: 8, fontSize: 14 }}>
+              <h3 style={{ color: C.textPrimary, fontWeight: 700, marginBottom: 16, display: "flex", alignItems: "center", gap: 8, fontSize: 14 }}>
                 <Archive size={16} style={{ color: "#a855f7" }} />
-                إنشاء نسخة احتياطية جديدة
+                {T.createBackup}
               </h3>
               <div className="flex gap-3 flex-wrap items-end">
                 <div className="flex-1 min-w-48">
-                  <label style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, display: "block", marginBottom: 6 }}>نطاق النسخة</label>
+                  <label style={{ color: C.textMuted, fontSize: 11, display: "block", marginBottom: 6 }}>{T.backupsTab}</label>
                   <select
                     value={backupCompanyId}
                     onChange={e => setBackupCompanyId(e.target.value)}
-                    style={{ width: "100%", padding: "9px 12px", borderRadius: 10, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", color: "#fff", fontSize: 13, outline: "none" }}
+                    style={{ width: "100%", padding: "9px 12px", borderRadius: 10, background: C.inputBg, border: `1px solid ${C.inputBorder}`, color: C.inputText, fontSize: 13, outline: "none" }}
                   >
-                    <option value="0" style={{ background: "#050d1f" }}>جميع الشركات</option>
+                    <option value="0" style={{ background: isDark ? "#050d1f" : "#fff" }}>{T.allCompanies}</option>
                     {companies.map(c => (
                       <option key={c.id} value={String(c.id)} style={{ background: "#050d1f" }}>{c.name}</option>
                     ))}
@@ -244,7 +258,7 @@ export default function SuperAdminDashboard() {
                   style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 20px", borderRadius: 10, border: "none", background: "linear-gradient(135deg, rgba(168,85,247,0.8), rgba(139,92,246,0.8))", color: "#fff", fontSize: 13, fontWeight: 700, cursor: creatingBackup ? "not-allowed" : "pointer", opacity: creatingBackup ? 0.6 : 1, boxShadow: "0 4px 16px rgba(168,85,247,0.3)" }}
                 >
                   {creatingBackup ? <Loader2 size={14} className="animate-spin" /> : <HardDrive size={14} />}
-                  {creatingBackup ? "جاري الإنشاء..." : "إنشاء نسخة"}
+                  {creatingBackup ? T.loading : T.createBackup}
                 </button>
               </div>
             </div>
@@ -253,10 +267,9 @@ export default function SuperAdminDashboard() {
             {backupsLoading ? (
               <div className="flex justify-center py-10"><Loader2 size={28} style={{ color: "#a855f7" }} className="animate-spin" /></div>
             ) : backups.length === 0 ? (
-              <div style={{ textAlign: "center", padding: "40px 0", color: "rgba(255,255,255,0.3)" }}>
+              <div style={{ textAlign: "center", padding: "40px 0", color: C.textMuted }}>
                 <HardDrive size={48} style={{ margin: "0 auto 12px", opacity: 0.2 }} />
-                <p style={{ fontSize: 14 }}>لا توجد نسخ احتياطية</p>
-                <p style={{ fontSize: 11, marginTop: 4 }}>أنشئ نسخة احتياطية للحماية من فقدان البيانات</p>
+                <p style={{ fontSize: 14 }}>{T.noBackups}</p>
               </div>
             ) : (
               <div className="space-y-2">
@@ -267,11 +280,11 @@ export default function SuperAdminDashboard() {
                         <Archive size={16} style={{ color: "#a855f7" }} />
                       </div>
                       <div style={{ minWidth: 0 }}>
-                        <p style={{ color: "#fff", fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                          {bk.companyId === 0 ? "جميع الشركات" : companies.find(c => c.id === bk.companyId)?.name || `شركة #${bk.companyId}`}
+                        <p style={{ color: C.textPrimary, fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {bk.companyId === 0 ? T.allCompanies : companies.find(c => c.id === bk.companyId)?.name || `#${bk.companyId}`}
                         </p>
-                        <p style={{ color: "rgba(255,255,255,0.3)", fontSize: 11, marginTop: 2 }}>
-                          {new Date(bk.createdAt).toLocaleString("ar-IQ")} · {formatSize(bk.sizeBytes)}
+                        <p style={{ color: C.textMuted, fontSize: 11, marginTop: 2 }}>
+                          {new Date(bk.createdAt).toLocaleString(lang === "ar" ? "ar-IQ" : "en-US")} · {formatSize(bk.sizeBytes)}
                         </p>
                       </div>
                     </div>
@@ -294,9 +307,9 @@ export default function SuperAdminDashboard() {
         {activeTab === "companies" && (
           <>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <h2 style={{ color: "#fff", fontWeight: 800, fontSize: 18, margin: 0 }}>الشركات</h2>
-              <button onClick={() => setShowCreateModal(true)} style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 18px", borderRadius: 11, border: "none", background: "linear-gradient(135deg, rgba(0,245,255,0.8), rgba(59,130,246,0.8))", color: "#020817", fontSize: 13, fontWeight: 700, cursor: "pointer", boxShadow: "0 4px 16px rgba(0,245,255,0.25)" }}>
-                <Plus size={15} /> إضافة شركة جديدة
+              <h2 style={{ color: C.textPrimary, fontWeight: 800, fontSize: 18, margin: 0 }}>{T.companiesTab}</h2>
+              <button onClick={() => setShowCreateModal(true)} style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 18px", borderRadius: 11, border: "none", background: "linear-gradient(135deg, rgba(0,245,255,0.8), rgba(59,130,246,0.8))", color: isDark ? "#020817" : "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", boxShadow: "0 4px 16px rgba(0,245,255,0.25)" }}>
+                <Plus size={15} /> {T.createCompany}
               </button>
             </div>
 
@@ -317,9 +330,9 @@ export default function SuperAdminDashboard() {
                 <Loader2 size={36} style={{ color: "#a855f7" }} className="animate-spin" />
               </div>
             ) : companies.length === 0 ? (
-              <div style={{ textAlign: "center", padding: "60px 0", color: "rgba(255,255,255,0.3)" }}>
+              <div style={{ textAlign: "center", padding: "60px 0", color: C.textMuted }}>
                 <Building2 size={48} style={{ margin: "0 auto 12px", opacity: 0.2 }} />
-                <p style={{ fontSize: 14 }}>لا توجد شركات — أضف شركة جديدة</p>
+                <p style={{ fontSize: 14 }}>{T.noCompanies}</p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -331,15 +344,15 @@ export default function SuperAdminDashboard() {
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                          <h3 style={{ color: "#fff", fontWeight: 700, fontSize: 14, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{company.name}</h3>
+                          <h3 style={{ color: C.textPrimary, fontWeight: 700, fontSize: 14, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{company.name}</h3>
                           <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 20, fontWeight: 600, background: company.isActive ? "rgba(16,185,129,0.12)" : "rgba(248,113,113,0.12)", color: company.isActive ? "#10b981" : "#f87171", border: `1px solid ${company.isActive ? "rgba(16,185,129,0.25)" : "rgba(248,113,113,0.25)"}`, flexShrink: 0 }}>
-                            {company.isActive ? "نشط" : "موقوف"}
+                            {company.isActive ? T.active : T.suspended}
                           </span>
                         </div>
                         <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 4 }}>
-                          {company.phone && <span style={{ fontSize: 11, color: "rgba(255,255,255,0.3)" }}>📞 {company.phone}</span>}
-                          {company.email && <span style={{ fontSize: 11, color: "rgba(255,255,255,0.3)" }}>✉️ {company.email}</span>}
-                          <span style={{ fontSize: 11, color: "rgba(0,245,255,0.4)", display: "flex", alignItems: "center", gap: 3 }}><Users size={10} /> {company.employeeCount} موظف</span>
+                          {company.phone && <span style={{ fontSize: 11, color: C.textMuted }}>📞 {company.phone}</span>}
+                          {company.email && <span style={{ fontSize: 11, color: C.textMuted }}>✉️ {company.email}</span>}
+                          <span style={{ fontSize: 11, color: "#00f5ff", display: "flex", alignItems: "center", gap: 3 }}><Users size={10} /> {company.employeeCount} {T.employees}</span>
                         </div>
                       </div>
                       <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
@@ -362,19 +375,19 @@ export default function SuperAdminDashboard() {
                       {expandedId === company.id && (
                         <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }}>
                           <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", padding: "14px 16px" }}>
-                            <h4 style={{ color: "rgba(255,255,255,0.6)", fontSize: 12, fontWeight: 600, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
-                              <Users size={13} /> الموظفون ({companyEmployees[company.id]?.length ?? "..."})
+                            <h4 style={{ color: C.textSecondary, fontSize: 12, fontWeight: 600, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
+                              <Users size={13} /> {T.employees} ({companyEmployees[company.id]?.length ?? "..."})
                             </h4>
                             {companyEmployees[company.id] ? (
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                                 {companyEmployees[company.id].map(emp => (
-                                  <div key={emp.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", background: "rgba(255,255,255,0.03)", borderRadius: 10, border: "1px solid rgba(255,255,255,0.06)" }}>
+                                  <div key={emp.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", background: isDark ? "rgba(255,255,255,0.03)" : "#f8fafc", borderRadius: 10, border: `1px solid ${C.cardBorder}` }}>
                                     <div>
-                                      <div style={{ color: "#fff", fontSize: 13, fontWeight: 600 }}>{emp.fullName}</div>
-                                      <div style={{ color: "rgba(255,255,255,0.35)", fontSize: 11 }}>@{emp.username} · {emp.role === "admin" ? "مدير" : emp.role === "manager" ? "مشرف" : "موظف"}</div>
+                                      <div style={{ color: C.textPrimary, fontSize: 13, fontWeight: 600 }}>{emp.fullName}</div>
+                                      <div style={{ color: C.textMuted, fontSize: 11 }}>@{emp.username} · {emp.role === "admin" ? T.roleAdmin : emp.role === "manager" ? T.roleManager : T.roleEmployee}</div>
                                     </div>
                                     <button onClick={() => setShowPasswordModal({ companyId: company.id, empId: emp.id, name: emp.fullName })} style={{ display: "flex", alignItems: "center", gap: 4, padding: "5px 10px", borderRadius: 8, border: "1px solid rgba(0,245,255,0.15)", background: "rgba(0,245,255,0.05)", color: "rgba(0,245,255,0.6)", fontSize: 11, cursor: "pointer" }}>
-                                      <Key size={11} /> كلمة المرور
+                                      <Key size={11} /> {T.password}
                                     </button>
                                   </div>
                                 ))}
@@ -400,7 +413,7 @@ export default function SuperAdminDashboard() {
           <div className="space-y-4">
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <MessageCircle size={18} style={{ color: "#a855f7" }} />
-              <h2 style={{ color: "#fff", fontWeight: 800, fontSize: 18, margin: 0 }}>مركز الدعم</h2>
+              <h2 style={{ color: C.textPrimary, fontWeight: 800, fontSize: 18, margin: 0 }}>{T.supportCenter}</h2>
             </div>
             <SuperAdminChat companies={companies.map(c => ({ id: c.id, name: c.name, isActive: c.isActive }))} />
           </div>
@@ -415,17 +428,17 @@ export default function SuperAdminDashboard() {
 
       {/* Delete Confirm */}
       {showDeleteConfirm && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50, padding: 16 }} dir="rtl">
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50, padding: 16 }} dir={dir}>
           <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
-            style={{ background: "rgba(5,13,31,0.95)", border: "1px solid rgba(248,113,113,0.2)", borderRadius: 20, padding: 28, width: "100%", maxWidth: 380, textAlign: "center", backdropFilter: "blur(20px)" }}>
+            style={{ background: isDark ? "rgba(5,13,31,0.95)" : "#fff", border: "1px solid rgba(248,113,113,0.2)", borderRadius: 20, padding: 28, width: "100%", maxWidth: 380, textAlign: "center", backdropFilter: "blur(20px)" }}>
             <div style={{ width: 56, height: 56, borderRadius: 16, background: "rgba(248,113,113,0.1)", border: "1px solid rgba(248,113,113,0.25)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
               <Trash2 size={24} style={{ color: "#f87171" }} />
             </div>
-            <h3 style={{ color: "#fff", fontWeight: 700, fontSize: 16, marginBottom: 8 }}>حذف الشركة</h3>
-            <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, marginBottom: 24, lineHeight: 1.6 }}>هل أنت متأكد من حذف "<strong style={{ color: "#fff" }}>{showDeleteConfirm.name}</strong>"؟ سيتم حذف جميع البيانات المرتبطة بها.</p>
+            <h3 style={{ color: C.textPrimary, fontWeight: 700, fontSize: 16, marginBottom: 8 }}>{T.deleteCompany}</h3>
+            <p style={{ color: C.textSecondary, fontSize: 13, marginBottom: 24, lineHeight: 1.6 }}>{T.confirmDeleteMsg} "<strong style={{ color: C.textPrimary }}>{showDeleteConfirm.name}</strong>"؟ {T.confirmDeleteData}</p>
             <div style={{ display: "flex", gap: 10 }}>
-              <button onClick={() => setShowDeleteConfirm(null)} style={{ flex: 1, padding: "10px", borderRadius: 12, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.6)", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>إلغاء</button>
-              <button onClick={() => deleteCompany(showDeleteConfirm)} style={{ flex: 1, padding: "10px", borderRadius: 12, border: "none", background: "linear-gradient(135deg, rgba(239,68,68,0.9), rgba(220,38,38,0.9))", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", boxShadow: "0 4px 16px rgba(239,68,68,0.3)" }}>حذف</button>
+              <button onClick={() => setShowDeleteConfirm(null)} style={{ flex: 1, padding: "10px", borderRadius: 12, border: `1px solid ${C.cardBorder}`, background: C.cardBg, color: C.textSecondary, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>{T.cancel}</button>
+              <button onClick={() => deleteCompany(showDeleteConfirm)} style={{ flex: 1, padding: "10px", borderRadius: 12, border: "none", background: "linear-gradient(135deg, rgba(239,68,68,0.9), rgba(220,38,38,0.9))", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", boxShadow: "0 4px 16px rgba(239,68,68,0.3)" }}>{T.deleteBtn}</button>
             </div>
           </motion.div>
         </div>
