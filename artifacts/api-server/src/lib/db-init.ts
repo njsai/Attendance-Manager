@@ -1,6 +1,6 @@
 /**
  * Database auto-initialization — runs on server startup with retry.
- * Creates all tables (IF NOT EXISTS) and seeds initial data.
+ * Creates all tables (IF NOT EXISTS) and seeds initial data only when DB is empty.
  * Safe to run multiple times (idempotent).
  */
 import { pool } from "@workspace/db";
@@ -20,6 +20,7 @@ async function tryInitOnce(): Promise<void> {
   await runSql(`CREATE TABLE IF NOT EXISTS companies (
     id SERIAL PRIMARY KEY, name TEXT NOT NULL, logo TEXT, address TEXT,
     phone TEXT, email TEXT, is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    company_code TEXT,
     attendance_location_mode TEXT NOT NULL DEFAULT 'disabled',
     currency TEXT NOT NULL DEFAULT 'IQD',
     overtime_rate REAL NOT NULL DEFAULT 1.5,
@@ -126,8 +127,22 @@ async function tryInitOnce(): Promise<void> {
     absent_days INTEGER NOT NULL DEFAULT 0, late_minutes INTEGER NOT NULL DEFAULT 0,
     overtime_minutes INTEGER NOT NULL DEFAULT 0, leave_days INTEGER NOT NULL DEFAULT 0,
     notes TEXT, created_by INTEGER REFERENCES employees(id) ON DELETE SET NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT NOW(), updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(), updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    CONSTRAINT payroll_unique_period UNIQUE (company_id, employee_id, month, year)
   )`);
+
+  // Add unique constraint to existing payroll table if it doesn't have one (idempotent)
+  await runSql(`
+    DO $$ BEGIN
+      IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'payroll_unique_period'
+      ) THEN
+        ALTER TABLE payroll ADD CONSTRAINT payroll_unique_period
+          UNIQUE (company_id, employee_id, month, year);
+      END IF;
+    END $$
+  `);
 
   await runSql(`CREATE TABLE IF NOT EXISTS payroll_logs (
     id SERIAL PRIMARY KEY,
@@ -138,7 +153,7 @@ async function tryInitOnce(): Promise<void> {
     changed_at TIMESTAMP NOT NULL DEFAULT NOW()
   )`);
 
-  // ─── Security tables (outside drizzle schema) ────────────────────────────
+  // ─── Security tables ─────────────────────────────────────────────────────
   await runSql(`CREATE TABLE IF NOT EXISTS audit_logs (
     id BIGSERIAL PRIMARY KEY, company_id INTEGER, user_id INTEGER,
     user_role TEXT, user_name TEXT, action TEXT NOT NULL, resource TEXT NOT NULL,
@@ -237,13 +252,11 @@ async function tryInitOnce(): Promise<void> {
   await runSql(`CREATE INDEX IF NOT EXISTS idx_company_subscriptions_company ON company_subscriptions(company_id)`);
   await runSql(`CREATE INDEX IF NOT EXISTS idx_payment_records_company ON payment_records(company_id)`);
 
-  // Unique constraint on plan type (idempotent)
   await runSql(`ALTER TABLE subscription_plans ADD COLUMN IF NOT EXISTS _dummy INT`);
   await runSql(`ALTER TABLE subscription_plans DROP COLUMN IF EXISTS _dummy`);
   await runSql(`
     CREATE UNIQUE INDEX IF NOT EXISTS idx_subscription_plans_type ON subscription_plans(type)
   `);
-  // Seed default subscription plans (idempotent via unique type index)
   await runSql(`INSERT INTO subscription_plans (name, type, price, currency, max_employees, max_branches, storage_gb, features)
     VALUES
       ('الشهري',     'monthly',      99,   'USD', 20,  3,  5,  '["حضور وانصراف","تقارير أساسية","دعم البريد"]'),
@@ -259,28 +272,37 @@ async function tryInitOnce(): Promise<void> {
       features = EXCLUDED.features
   `);
 
-  // ─── Add preference columns to existing employees (idempotent) ───────────
+  // ─── Add preference columns if missing (idempotent) ─────────────────────
   await runSql(`ALTER TABLE employees ADD COLUMN IF NOT EXISTS preferred_theme TEXT NOT NULL DEFAULT 'dark'`);
   await runSql(`ALTER TABLE employees ADD COLUMN IF NOT EXISTS preferred_lang  TEXT NOT NULL DEFAULT 'ar'`);
 
+  // ─── Add company_code column if missing (idempotent) ─────────────────────
+  await runSql(`ALTER TABLE companies ADD COLUMN IF NOT EXISTS company_code TEXT`);
+
   console.log("[DB-Init] All tables verified ✓");
 
-  // ─── Seed super admin ────────────────────────────────────────────────────
-  const saHash = hashPasswordSync("superadmin123");
-  await runSql(`
-    INSERT INTO super_admins (username, password_hash, full_name, email)
-    VALUES ('superadmin', '${saHash}', 'مدير النظام الرئيسي', 'superadmin@system.iq')
-    ON CONFLICT (username) DO NOTHING
-  `);
-
-  // ─── Seed default company + test accounts ───────────────────────────────
+  // ─── Seed super admin ONLY if none exist ─────────────────────────────────
+  // Uses "ANY super admin" check so renamed accounts are not overwritten.
   const client = await pool.connect();
   try {
+    const { rows: existingSAs } = await client.query(`SELECT id FROM super_admins LIMIT 1`);
+    if (existingSAs.length === 0) {
+      const saHash = hashPasswordSync("superadmin123");
+      await client.query(`
+        INSERT INTO super_admins (username, password_hash, full_name, email)
+        VALUES ('superadmin', '${saHash}', 'مدير النظام الرئيسي', 'superadmin@system.iq')
+      `);
+      console.log("[DB-Init] ✓ Super admin seeded: superadmin / superadmin123");
+    } else {
+      console.log("[DB-Init] ✓ Super admin account exists (preserved)");
+    }
+
+    // ─── Seed default company + test accounts ONLY if no companies exist ────
     const { rows: existing } = await client.query(`SELECT id FROM companies LIMIT 1`);
     if (existing.length === 0) {
-      const adminHash = hashPasswordSync("admin123");
+      const adminHash   = hashPasswordSync("admin123");
       const managerHash = hashPasswordSync("manager123");
-      const empHash = hashPasswordSync("emp123");
+      const empHash     = hashPasswordSync("emp123");
 
       const { rows: [{ id: cId }] } = await client.query(`
         INSERT INTO companies (name, address, phone, email, is_active, currency)
@@ -309,17 +331,18 @@ async function tryInitOnce(): Promise<void> {
           ($1,'emp1','${empHash}','موظف تجريبي','emp1@co.iq','employee',$2,$3,800000,TRUE)
       `, [cId, dId, sId]);
 
-      console.log(`[DB-Init] Default company (id=${cId}) + 3 test accounts created ✓`);
+      console.log(`[DB-Init] ✓ Default company (id=${cId}) + test accounts created`);
+    } else {
+      console.log("[DB-Init] ✓ Companies exist (preserved)");
     }
   } finally {
     client.release();
   }
 
-  console.log("[DB-Init] ✓ superadmin/superadmin123  ✓ admin/admin123  ✓ manager1/manager123  ✓ emp1/emp123");
   console.log("[DB-Init] Database initialization complete ✓");
 }
 
-// ── Retry wrapper: try immediately, then every 30s until success ─────────────
+// ── Retry wrapper ─────────────────────────────────────────────────────────────
 export async function initializeDatabase(): Promise<void> {
   console.log("[DB-Init] Initializing database schema...");
   let attempt = 0;

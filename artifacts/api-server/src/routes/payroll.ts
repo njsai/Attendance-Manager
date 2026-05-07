@@ -63,8 +63,20 @@ async function buildAttendanceStats(employeeId: number, month: number, year: num
   return { workDays, absentDays, lateMinutes, overtimeMinutes, leaveDays };
 }
 
+// ─── GET /my - employee views their own payroll (must be before /:id routes) ──
+router.get("/my", requireCompanyAuth, async (req, res) => {
+  try {
+    const companyId = req.session.companyId!;
+    const userId = req.session.userId!;
+    const rows = await db.select().from(payrollTable)
+      .where(and(eq(payrollTable.companyId, companyId), eq(payrollTable.employeeId, userId)))
+      .orderBy(desc(payrollTable.year), desc(payrollTable.month));
+    res.json(rows);
+  } catch (err) { console.error(err); res.status(500).json({ message: "خطأ في الخادم" }); }
+});
+
 // ─── GET / - list payroll ─────────────────────────────────────────────────────
-router.get("/", requireAuth, async (req, res) => {
+router.get("/", requireCompanyAuth, async (req, res) => {
   try {
     const companyId = req.session.companyId!;
     const userId = req.session.userId!;
@@ -362,18 +374,6 @@ router.delete("/:id", requireAdmin, async (req, res) => {
     const id = parseInt(String(req.params.id));
     await db.delete(payrollTable).where(and(eq(payrollTable.id, id), eq(payrollTable.companyId, companyId)));
     res.json({ message: "تم حذف سجل الراتب" });
-  } catch (err) { console.error(err); res.status(500).json({ message: "خطأ في الخادم" }); }
-});
-
-// ─── GET /my - employee view their own payroll ────────────────────────────────
-router.get("/my", requireCompanyAuth, async (req, res) => {
-  try {
-    const companyId = req.session.companyId!;
-    const userId = req.session.userId!;
-    const rows = await db.select().from(payrollTable)
-      .where(and(eq(payrollTable.companyId, companyId), eq(payrollTable.employeeId, userId)))
-      .orderBy(desc(payrollTable.year), desc(payrollTable.month));
-    res.json(rows);
   } catch (err) { console.error(err); res.status(500).json({ message: "خطأ في الخادم" }); }
 });
 
