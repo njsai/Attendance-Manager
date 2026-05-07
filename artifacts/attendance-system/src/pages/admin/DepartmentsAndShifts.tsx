@@ -1,20 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
 import { Building2, Clock, Plus, Edit2, Trash2, X, Loader2, Check, Users } from "lucide-react";
+import { useTheme } from "@/lib/theme";
 
 interface Department { id: number; name: string; description: string | null; managerId: number | null; }
 interface Shift { id: number; name: string; startTime: string; endTime: string; workDays: string; lateGraceMinutes: number; }
 
 const BASE = import.meta.env.BASE_URL;
-
-const nInp = { width: "100%", padding: "9px 12px", borderRadius: 10, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(0,245,255,0.1)", color: "#fff", fontSize: 13, outline: "none", boxSizing: "border-box" as const, colorScheme: "dark" as const, fontFamily: "'Tajawal', sans-serif" };
-const nLbl = { display: "block", fontSize: 11, color: "rgba(255,255,255,0.4)", marginBottom: 5 };
-const mSt = { position: "fixed" as const, inset: 0, background: "rgba(0,0,0,0.8)", backdropFilter: "blur(8px)", zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 };
-const mBox = { background: "rgba(5,13,31,0.97)", border: "1px solid rgba(0,245,255,0.12)", borderRadius: 20, width: "100%", maxWidth: 440 };
-const mHead = { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", borderBottom: "1px solid rgba(0,245,255,0.07)" };
-const mBody = { padding: "16px 18px", display: "flex", flexDirection: "column" as const, gap: 12 };
-const mFoot = { padding: "12px 18px", borderTop: "1px solid rgba(0,245,255,0.07)", display: "flex", gap: 8, justifyContent: "flex-end" };
-const btnSave = { flex: 1, padding: "9px 16px", borderRadius: 10, border: "none", background: "linear-gradient(135deg, rgba(0,245,255,0.7), rgba(59,130,246,0.7))", color: "#020817", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "'Tajawal', sans-serif" };
-const btnCancel = { flex: 1, padding: "9px 16px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.08)", background: "none", color: "rgba(255,255,255,0.4)", fontSize: 13, cursor: "pointer", fontFamily: "'Tajawal', sans-serif" };
 
 function Toast({ msg, type }: { msg: string; type: "success" | "error" }) {
   return (
@@ -26,9 +17,30 @@ function Toast({ msg, type }: { msg: string; type: "success" | "error" }) {
 }
 
 function DeptModal({ dept, onClose, onSave }: { dept: Partial<Department> | null; onClose: () => void; onSave: (d: Department) => void }) {
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
   const [form, setForm] = useState({ name: dept?.name || "", description: dept?.description || "" });
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
+
+  const modalBg    = isDark ? "rgba(5,13,31,0.97)" : "#fff";
+  const modalBorder= isDark ? "rgba(0,245,255,0.12)" : "#e2e8f0";
+  const divider    = isDark ? "rgba(0,245,255,0.07)" : "#f1f5f9";
+  const titleColor = isDark ? "#fff" : "#0f172a";
+  const labelColor = isDark ? "rgba(255,255,255,0.4)" : "#64748b";
+  const inputBg    = isDark ? "rgba(255,255,255,0.04)" : "#f8fafc";
+  const inputBorder= isDark ? "rgba(0,245,255,0.1)" : "#cbd5e1";
+  const inputColor = isDark ? "#fff" : "#0f172a";
+  const closeBtnColor = isDark ? "rgba(255,255,255,0.35)" : "#94a3b8";
+  const cancelColor= isDark ? "rgba(255,255,255,0.4)" : "#475569";
+
+  const nInp: React.CSSProperties = {
+    width: "100%", padding: "9px 12px", borderRadius: 10,
+    background: inputBg, border: `1px solid ${inputBorder}`,
+    color: inputColor, fontSize: 13, outline: "none",
+    boxSizing: "border-box", colorScheme: isDark ? "dark" : "light",
+    fontFamily: "'Tajawal', sans-serif",
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); setSaving(true); setErr("");
@@ -44,28 +56,32 @@ function DeptModal({ dept, onClose, onSave }: { dept: Partial<Department> | null
   };
 
   return (
-    <div style={mSt} dir="rtl">
-      <div style={mBox}>
-        <div style={mHead}>
-          <h2 style={{ color: "#fff", fontWeight: 700, fontSize: 15, margin: 0 }}>{dept?.id ? "تعديل القسم" : "إضافة قسم جديد"}</h2>
-          <button onClick={onClose} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.35)", cursor: "pointer" }}><X size={16} /></button>
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", backdropFilter: "blur(8px)", zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }} dir="rtl">
+      <div style={{ background: modalBg, border: `1px solid ${modalBorder}`, borderRadius: 20, width: "100%", maxWidth: 440 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", borderBottom: `1px solid ${divider}` }}>
+          <h2 style={{ color: titleColor, fontWeight: 700, fontSize: 15, margin: 0 }}>{dept?.id ? "تعديل القسم" : "إضافة قسم جديد"}</h2>
+          <button onClick={onClose} style={{ background: "none", border: "none", color: closeBtnColor, cursor: "pointer" }}><X size={16} /></button>
         </div>
-        <form onSubmit={handleSubmit} style={mBody}>
+        <form onSubmit={handleSubmit} style={{ padding: "16px 18px", display: "flex", flexDirection: "column", gap: 12 }}>
           {err && <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 12px", background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.2)", borderRadius: 10, color: "#f87171", fontSize: 12 }}>{err}</div>}
           <div>
-            <label style={nLbl}>اسم القسم *</label>
+            <label style={{ display: "block", fontSize: 11, color: labelColor, marginBottom: 5 }}>اسم القسم *</label>
             <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} required style={nInp} />
           </div>
           <div>
-            <label style={nLbl}>الوصف</label>
+            <label style={{ display: "block", fontSize: 11, color: labelColor, marginBottom: 5 }}>الوصف</label>
             <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
               rows={3} style={{ ...nInp, resize: "none" }} />
           </div>
           <div style={{ display: "flex", gap: 8, paddingTop: 4 }}>
-            <button type="submit" disabled={saving} style={{ ...btnSave, opacity: saving ? 0.6 : 1, cursor: saving ? "not-allowed" : "pointer" }}>
+            <button type="submit" disabled={saving}
+              style={{ flex: 1, padding: "9px 16px", borderRadius: 10, border: "none", background: "linear-gradient(135deg, rgba(0,180,200,0.85), rgba(59,130,246,0.85))", color: "#fff", fontSize: 13, fontWeight: 700, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.6 : 1, fontFamily: "'Tajawal', sans-serif" }}>
               {saving ? "جاري الحفظ..." : "حفظ"}
             </button>
-            <button type="button" onClick={onClose} style={btnCancel}>إلغاء</button>
+            <button type="button" onClick={onClose}
+              style={{ flex: 1, padding: "9px 16px", borderRadius: 10, border: `1px solid ${inputBorder}`, background: inputBg, color: cancelColor, fontSize: 13, cursor: "pointer", fontFamily: "'Tajawal', sans-serif" }}>
+              إلغاء
+            </button>
           </div>
         </form>
       </div>
@@ -74,6 +90,8 @@ function DeptModal({ dept, onClose, onSave }: { dept: Partial<Department> | null
 }
 
 function ShiftModal({ shift, onClose, onSave }: { shift: Partial<Shift> | null; onClose: () => void; onSave: (s: Shift) => void }) {
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
   const [form, setForm] = useState({
     name: shift?.name || "",
     startTime: shift?.startTime || "08:00",
@@ -83,6 +101,25 @@ function ShiftModal({ shift, onClose, onSave }: { shift: Partial<Shift> | null; 
   });
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
+
+  const modalBg    = isDark ? "rgba(5,13,31,0.97)" : "#fff";
+  const modalBorder= isDark ? "rgba(0,245,255,0.12)" : "#e2e8f0";
+  const divider    = isDark ? "rgba(0,245,255,0.07)" : "#f1f5f9";
+  const titleColor = isDark ? "#fff" : "#0f172a";
+  const labelColor = isDark ? "rgba(255,255,255,0.4)" : "#64748b";
+  const inputBg    = isDark ? "rgba(255,255,255,0.04)" : "#f8fafc";
+  const inputBorder= isDark ? "rgba(0,245,255,0.1)" : "#cbd5e1";
+  const inputColor = isDark ? "#fff" : "#0f172a";
+  const closeBtnColor = isDark ? "rgba(255,255,255,0.35)" : "#94a3b8";
+  const cancelColor= isDark ? "rgba(255,255,255,0.4)" : "#475569";
+
+  const nInp: React.CSSProperties = {
+    width: "100%", padding: "9px 12px", borderRadius: 10,
+    background: inputBg, border: `1px solid ${inputBorder}`,
+    color: inputColor, fontSize: 13, outline: "none",
+    boxSizing: "border-box", colorScheme: isDark ? "dark" : "light",
+    fontFamily: "'Tajawal', sans-serif",
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); setSaving(true); setErr("");
@@ -98,43 +135,47 @@ function ShiftModal({ shift, onClose, onSave }: { shift: Partial<Shift> | null; 
   };
 
   return (
-    <div style={mSt} dir="rtl">
-      <div style={mBox}>
-        <div style={mHead}>
-          <h2 style={{ color: "#fff", fontWeight: 700, fontSize: 15, margin: 0 }}>{shift?.id ? "تعديل الشفت" : "إضافة شفت جديد"}</h2>
-          <button onClick={onClose} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.35)", cursor: "pointer" }}><X size={16} /></button>
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", backdropFilter: "blur(8px)", zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }} dir="rtl">
+      <div style={{ background: modalBg, border: `1px solid ${modalBorder}`, borderRadius: 20, width: "100%", maxWidth: 440 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", borderBottom: `1px solid ${divider}` }}>
+          <h2 style={{ color: titleColor, fontWeight: 700, fontSize: 15, margin: 0 }}>{shift?.id ? "تعديل الشفت" : "إضافة شفت جديد"}</h2>
+          <button onClick={onClose} style={{ background: "none", border: "none", color: closeBtnColor, cursor: "pointer" }}><X size={16} /></button>
         </div>
-        <form onSubmit={handleSubmit} style={mBody}>
+        <form onSubmit={handleSubmit} style={{ padding: "16px 18px", display: "flex", flexDirection: "column", gap: 12 }}>
           {err && <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 12px", background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.2)", borderRadius: 10, color: "#f87171", fontSize: 12 }}>{err}</div>}
           <div>
-            <label style={nLbl}>اسم الشفت *</label>
+            <label style={{ display: "block", fontSize: 11, color: labelColor, marginBottom: 5 }}>اسم الشفت *</label>
             <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} required style={nInp} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label style={nLbl}>وقت البداية</label>
+              <label style={{ display: "block", fontSize: 11, color: labelColor, marginBottom: 5 }}>وقت البداية</label>
               <input type="time" value={form.startTime} onChange={e => setForm(f => ({ ...f, startTime: e.target.value }))} style={nInp} />
             </div>
             <div>
-              <label style={nLbl}>وقت النهاية</label>
+              <label style={{ display: "block", fontSize: 11, color: labelColor, marginBottom: 5 }}>وقت النهاية</label>
               <input type="time" value={form.endTime} onChange={e => setForm(f => ({ ...f, endTime: e.target.value }))} style={nInp} />
             </div>
           </div>
           <div>
-            <label style={nLbl}>أيام العمل</label>
+            <label style={{ display: "block", fontSize: 11, color: labelColor, marginBottom: 5 }}>أيام العمل</label>
             <input value={form.workDays} onChange={e => setForm(f => ({ ...f, workDays: e.target.value }))}
               placeholder="السبت,الأحد,الاثنين..." style={nInp} />
           </div>
           <div>
-            <label style={nLbl}>سماح التأخير (دقائق)</label>
+            <label style={{ display: "block", fontSize: 11, color: labelColor, marginBottom: 5 }}>سماح التأخير (دقائق)</label>
             <input type="number" min="0" max="60" value={form.lateGraceMinutes}
               onChange={e => setForm(f => ({ ...f, lateGraceMinutes: parseInt(e.target.value) || 0 }))} style={nInp} />
           </div>
           <div style={{ display: "flex", gap: 8, paddingTop: 4 }}>
-            <button type="submit" disabled={saving} style={{ ...btnSave, opacity: saving ? 0.6 : 1, cursor: saving ? "not-allowed" : "pointer" }}>
+            <button type="submit" disabled={saving}
+              style={{ flex: 1, padding: "9px 16px", borderRadius: 10, border: "none", background: "linear-gradient(135deg, rgba(0,180,200,0.85), rgba(59,130,246,0.85))", color: "#fff", fontSize: 13, fontWeight: 700, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.6 : 1, fontFamily: "'Tajawal', sans-serif" }}>
               {saving ? "جاري الحفظ..." : "حفظ"}
             </button>
-            <button type="button" onClick={onClose} style={btnCancel}>إلغاء</button>
+            <button type="button" onClick={onClose}
+              style={{ flex: 1, padding: "9px 16px", borderRadius: 10, border: `1px solid ${inputBorder}`, background: inputBg, color: cancelColor, fontSize: 13, cursor: "pointer", fontFamily: "'Tajawal', sans-serif" }}>
+              إلغاء
+            </button>
           </div>
         </form>
       </div>
@@ -143,12 +184,35 @@ function ShiftModal({ shift, onClose, onSave }: { shift: Partial<Shift> | null; 
 }
 
 export default function DepartmentsAndShifts() {
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
   const [depts, setDepts] = useState<Department[]>([]);
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<{ msg: string; type: "success" | "error" } | null>(null);
   const [deptModal, setDeptModal] = useState<Partial<Department> | null | false>(false);
   const [shiftModal, setShiftModal] = useState<Partial<Shift> | null | false>(false);
+
+  const textPrimary  = isDark ? "#fff" : "#0f172a";
+  const textMuted    = isDark ? "rgba(255,255,255,0.35)" : "#94a3b8";
+  const textDesc     = isDark ? "rgba(255,255,255,0.35)" : "#64748b";
+  const cardBg       = isDark ? "rgba(255,255,255,0.02)" : "#fff";
+  const cardBorder   = isDark ? "rgba(0,245,255,0.08)" : "#e2e8f0";
+  const cyanColor    = isDark ? "#00f5ff" : "#0891b2";
+  const divider      = isDark ? "rgba(0,245,255,0.05)" : "#f1f5f9";
+  const purpleDivider= isDark ? "rgba(168,85,247,0.07)" : "#f3f0ff";
+  const hoverCyan    = isDark ? "rgba(0,245,255,0.02)" : "rgba(8,145,178,0.02)";
+  const hoverPurple  = isDark ? "rgba(168,85,247,0.03)" : "rgba(168,85,247,0.02)";
+  const cntBadgeBg   = isDark ? "rgba(0,245,255,0.06)" : "rgba(8,145,178,0.08)";
+  const cntBadgeBorder= isDark ? "rgba(0,245,255,0.12)" : "rgba(8,145,178,0.2)";
+  const cntBadgeColor= isDark ? "rgba(0,245,255,0.5)" : "#0891b2";
+  const iconBoxCyan  = isDark ? "rgba(0,245,255,0.08)" : "rgba(8,145,178,0.08)";
+  const iconBorderCyan= isDark ? "rgba(0,245,255,0.15)" : "rgba(8,145,178,0.2)";
+  const addBtnCyanBg = isDark ? "rgba(0,245,255,0.08)" : "rgba(8,145,178,0.08)";
+  const addBtnPurBg  = isDark ? "rgba(168,85,247,0.08)" : "rgba(168,85,247,0.08)";
+  const editBtnCyanBg= isDark ? "rgba(0,245,255,0.07)" : "rgba(8,145,178,0.07)";
+  const editBtnCyanBd= isDark ? "rgba(0,245,255,0.12)" : "rgba(8,145,178,0.2)";
+  const spinColor    = isDark ? "#00f5ff" : "#0891b2";
 
   const showToast = (msg: string, type: "success" | "error") => {
     setToast({ msg, type }); setTimeout(() => setToast(null), 3000);
@@ -196,11 +260,9 @@ export default function DepartmentsAndShifts() {
     return `${h12}:${String(m).padStart(2, "0")} ${ampm}`;
   };
 
-  const nCard = { background: "rgba(255,255,255,0.02)", border: "1px solid rgba(0,245,255,0.08)", borderRadius: 16, overflow: "hidden" as const };
-
   if (loading) return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "80px 0" }}>
-      <div style={{ width: 32, height: 32, borderRadius: "50%", border: "3px solid rgba(0,245,255,0.15)", borderTopColor: "#00f5ff", animation: "spin 1s linear infinite" }} />
+      <div style={{ width: 32, height: 32, borderRadius: "50%", border: `3px solid ${isDark ? "rgba(0,245,255,0.15)" : "#e2e8f0"}`, borderTopColor: spinColor, animation: "spin 1s linear infinite" }} />
     </div>
   );
 
@@ -230,38 +292,38 @@ export default function DepartmentsAndShifts() {
         {/* Departments */}
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <h2 style={{ fontSize: 15, fontWeight: 700, color: "#fff", margin: 0, display: "flex", alignItems: "center", gap: 8 }}>
-              <div style={{ width: 30, height: 30, borderRadius: 9, background: "rgba(0,245,255,0.08)", border: "1px solid rgba(0,245,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <Building2 size={14} style={{ color: "#00f5ff" }} />
+            <h2 style={{ fontSize: 15, fontWeight: 700, color: textPrimary, margin: 0, display: "flex", alignItems: "center", gap: 8 }}>
+              <div style={{ width: 30, height: 30, borderRadius: 9, background: iconBoxCyan, border: `1px solid ${iconBorderCyan}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Building2 size={14} style={{ color: cyanColor }} />
               </div>
               الأقسام
-              <span style={{ fontSize: 11, fontWeight: 600, color: "rgba(0,245,255,0.5)", background: "rgba(0,245,255,0.06)", border: "1px solid rgba(0,245,255,0.12)", padding: "1px 8px", borderRadius: 20 }}>{depts.length}</span>
+              <span style={{ fontSize: 11, fontWeight: 600, color: cntBadgeColor, background: cntBadgeBg, border: `1px solid ${cntBadgeBorder}`, padding: "1px 8px", borderRadius: 20 }}>{depts.length}</span>
             </h2>
             <button onClick={() => setDeptModal({})}
-              style={{ display: "flex", alignItems: "center", gap: 5, padding: "7px 14px", borderRadius: 10, border: "none", background: "rgba(0,245,255,0.08)", color: "#00f5ff", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "'Tajawal', sans-serif" }}>
+              style={{ display: "flex", alignItems: "center", gap: 5, padding: "7px 14px", borderRadius: 10, border: "none", background: addBtnCyanBg, color: cyanColor, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "'Tajawal', sans-serif" }}>
               <Plus size={13} /> إضافة
             </button>
           </div>
 
-          <div style={nCard}>
+          <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, overflow: "hidden" }}>
             {depts.length === 0 ? (
-              <div style={{ padding: "40px 0", textAlign: "center", color: "rgba(255,255,255,0.25)" }}>
+              <div style={{ padding: "40px 0", textAlign: "center", color: textMuted }}>
                 <Users size={36} style={{ margin: "0 auto 8px", opacity: 0.2 }} />
                 <p style={{ fontSize: 12 }}>لا توجد أقسام بعد</p>
               </div>
             ) : (
               <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
                 {depts.map((dept, i) => (
-                  <li key={dept.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", borderBottom: i < depts.length - 1 ? "1px solid rgba(0,245,255,0.05)" : "none" }}
-                    onMouseEnter={e => (e.currentTarget.style.background = "rgba(0,245,255,0.02)")}
+                  <li key={dept.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", borderBottom: i < depts.length - 1 ? `1px solid ${divider}` : "none" }}
+                    onMouseEnter={e => (e.currentTarget.style.background = hoverCyan)}
                     onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
                     <div>
-                      <div style={{ fontWeight: 600, color: "#fff", fontSize: 13 }}>{dept.name}</div>
-                      {dept.description && <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginTop: 2 }}>{dept.description}</div>}
+                      <div style={{ fontWeight: 600, color: textPrimary, fontSize: 13 }}>{dept.name}</div>
+                      {dept.description && <div style={{ fontSize: 11, color: textDesc, marginTop: 2 }}>{dept.description}</div>}
                     </div>
                     <div style={{ display: "flex", gap: 4 }}>
                       <button onClick={() => setDeptModal(dept)}
-                        style={{ padding: 6, borderRadius: 8, background: "rgba(0,245,255,0.07)", border: "1px solid rgba(0,245,255,0.12)", color: "#00f5ff", cursor: "pointer" }}>
+                        style={{ padding: 6, borderRadius: 8, background: editBtnCyanBg, border: `1px solid ${editBtnCyanBd}`, color: cyanColor, cursor: "pointer" }}>
                         <Edit2 size={12} />
                       </button>
                       <button onClick={() => deleteDept(dept.id)}
@@ -279,40 +341,40 @@ export default function DepartmentsAndShifts() {
         {/* Shifts */}
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <h2 style={{ fontSize: 15, fontWeight: 700, color: "#fff", margin: 0, display: "flex", alignItems: "center", gap: 8 }}>
+            <h2 style={{ fontSize: 15, fontWeight: 700, color: textPrimary, margin: 0, display: "flex", alignItems: "center", gap: 8 }}>
               <div style={{ width: 30, height: 30, borderRadius: 9, background: "rgba(168,85,247,0.1)", border: "1px solid rgba(168,85,247,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <Clock size={14} style={{ color: "#a855f7" }} />
               </div>
               شفتات العمل
-              <span style={{ fontSize: 11, fontWeight: 600, color: "rgba(168,85,247,0.6)", background: "rgba(168,85,247,0.08)", border: "1px solid rgba(168,85,247,0.15)", padding: "1px 8px", borderRadius: 20 }}>{shifts.length}</span>
+              <span style={{ fontSize: 11, fontWeight: 600, color: "rgba(168,85,247,0.7)", background: "rgba(168,85,247,0.08)", border: "1px solid rgba(168,85,247,0.15)", padding: "1px 8px", borderRadius: 20 }}>{shifts.length}</span>
             </h2>
             <button onClick={() => setShiftModal({})}
-              style={{ display: "flex", alignItems: "center", gap: 5, padding: "7px 14px", borderRadius: 10, border: "none", background: "rgba(168,85,247,0.08)", color: "#a855f7", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "'Tajawal', sans-serif" }}>
+              style={{ display: "flex", alignItems: "center", gap: 5, padding: "7px 14px", borderRadius: 10, border: "none", background: addBtnPurBg, color: "#a855f7", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "'Tajawal', sans-serif" }}>
               <Plus size={13} /> إضافة
             </button>
           </div>
 
-          <div style={{ ...nCard, border: "1px solid rgba(168,85,247,0.1)" }}>
+          <div style={{ background: cardBg, border: `1px solid ${isDark ? "rgba(168,85,247,0.1)" : "#ede9fe"}`, borderRadius: 16, overflow: "hidden" }}>
             {shifts.length === 0 ? (
-              <div style={{ padding: "40px 0", textAlign: "center", color: "rgba(255,255,255,0.25)" }}>
+              <div style={{ padding: "40px 0", textAlign: "center", color: textMuted }}>
                 <Clock size={36} style={{ margin: "0 auto 8px", opacity: 0.2 }} />
                 <p style={{ fontSize: 12 }}>لا توجد شفتات بعد</p>
               </div>
             ) : (
               <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
                 {shifts.map((shift, i) => (
-                  <li key={shift.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", borderBottom: i < shifts.length - 1 ? "1px solid rgba(168,85,247,0.07)" : "none" }}
-                    onMouseEnter={e => (e.currentTarget.style.background = "rgba(168,85,247,0.03)")}
+                  <li key={shift.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", borderBottom: i < shifts.length - 1 ? `1px solid ${purpleDivider}` : "none" }}
+                    onMouseEnter={e => (e.currentTarget.style.background = hoverPurple)}
                     onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontWeight: 600, color: "#fff", fontSize: 13, marginBottom: 5 }}>{shift.name}</div>
+                      <div style={{ fontWeight: 600, color: textPrimary, fontSize: 13, marginBottom: 5 }}>{shift.name}</div>
                       <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
                         <span style={{ background: "rgba(168,85,247,0.1)", color: "#a855f7", padding: "2px 10px", borderRadius: 8, fontSize: 11, fontWeight: 600 }}>
                           {fmt12(shift.startTime)} — {fmt12(shift.endTime)}
                         </span>
-                        <span style={{ fontSize: 10, color: "rgba(255,255,255,0.35)" }}>سماح: {shift.lateGraceMinutes}د</span>
+                        <span style={{ fontSize: 10, color: textMuted }}>سماح: {shift.lateGraceMinutes}د</span>
                       </div>
-                      <div style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", marginTop: 4 }}>{shift.workDays}</div>
+                      <div style={{ fontSize: 10, color: textMuted, marginTop: 4 }}>{shift.workDays}</div>
                     </div>
                     <div style={{ display: "flex", gap: 4, marginRight: 8 }}>
                       <button onClick={() => setShiftModal(shift)}

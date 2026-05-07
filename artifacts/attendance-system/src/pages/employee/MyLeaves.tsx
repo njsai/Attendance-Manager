@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { Plus, Loader2, X, Calendar, Clock, Check, Trash2 } from "lucide-react";
+import { useTheme } from "@/lib/theme";
 
 interface Leave {
   id: number;
@@ -17,9 +18,9 @@ const LEAVE_TYPE_MAP: Record<string, string> = {
   annual: "سنوية", sick: "مرضية", emergency: "اضطرارية", unpaid: "بدون راتب",
 };
 const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> = {
-  pending:  { label: "قيد الانتظار", color: "#f59e0b",  bg: "rgba(245,158,11,0.1)" },
-  approved: { label: "مقبولة",       color: "#10b981",  bg: "rgba(16,185,129,0.1)" },
-  rejected: { label: "مرفوضة",      color: "#f87171",  bg: "rgba(248,113,113,0.1)" },
+  pending:  { label: "قيد الانتظار", color: "#f59e0b", bg: "rgba(245,158,11,0.1)"  },
+  approved: { label: "مقبولة",       color: "#10b981", bg: "rgba(16,185,129,0.1)" },
+  rejected: { label: "مرفوضة",      color: "#f87171", bg: "rgba(248,113,113,0.1)" },
 };
 
 function fmtDate(d: string) {
@@ -28,13 +29,33 @@ function fmtDate(d: string) {
 }
 
 const BASE = import.meta.env.BASE_URL;
-const inp = { width: "100%", padding: "9px 12px", borderRadius: 10, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(0,245,255,0.1)", color: "#fff", fontSize: 13, outline: "none", boxSizing: "border-box" as const, colorScheme: "dark" as const };
-const lbl = { display: "block", fontSize: 11, color: "rgba(255,255,255,0.35)", marginBottom: 5 };
 
 function AddLeaveModal({ onClose, onAdded }: { onClose: () => void; onAdded: (l: Leave) => void }) {
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
   const [form, setForm] = useState({ leaveType: "annual", startDate: "", endDate: "", reason: "" });
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
+
+  const modalBg    = isDark ? "rgba(5,13,31,0.97)" : "#fff";
+  const modalBorder= isDark ? "rgba(0,245,255,0.12)" : "#e2e8f0";
+  const divider    = isDark ? "rgba(0,245,255,0.07)" : "#f1f5f9";
+  const titleColor = isDark ? "#fff" : "#0f172a";
+  const labelColor = isDark ? "rgba(255,255,255,0.35)" : "#64748b";
+  const inputBg    = isDark ? "rgba(255,255,255,0.04)" : "#f8fafc";
+  const inputBorder= isDark ? "rgba(0,245,255,0.1)" : "#cbd5e1";
+  const inputColor = isDark ? "#fff" : "#0f172a";
+  const cancelColor= isDark ? "rgba(255,255,255,0.5)" : "#475569";
+  const cyanColor  = isDark ? "#00f5ff" : "#0891b2";
+  const cyanBg     = isDark ? "rgba(0,245,255,0.05)" : "rgba(8,145,178,0.06)";
+  const cyanBorder = isDark ? "rgba(0,245,255,0.1)" : "rgba(8,145,178,0.2)";
+
+  const inp: React.CSSProperties = {
+    width: "100%", padding: "9px 12px", borderRadius: 10,
+    background: inputBg, border: `1px solid ${inputBorder}`,
+    color: inputColor, fontSize: 13, outline: "none",
+    boxSizing: "border-box", colorScheme: isDark ? "dark" : "light",
+  };
 
   const calcDays = () => {
     if (!form.startDate || !form.endDate) return 0;
@@ -60,51 +81,51 @@ function AddLeaveModal({ onClose, onAdded }: { onClose: () => void; onAdded: (l:
 
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", backdropFilter: "blur(8px)", zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }} dir="rtl">
-      <div style={{ background: "rgba(5,13,31,0.97)", border: "1px solid rgba(0,245,255,0.12)", borderRadius: 20, width: "100%", maxWidth: 440 }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", borderBottom: "1px solid rgba(0,245,255,0.07)" }}>
-          <h2 style={{ color: "#fff", fontWeight: 700, fontSize: 15, margin: 0 }}>طلب إجازة جديدة</h2>
-          <button onClick={onClose} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.4)", cursor: "pointer" }}><X size={18} /></button>
+      <div style={{ background: modalBg, border: `1px solid ${modalBorder}`, borderRadius: 20, width: "100%", maxWidth: 440 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", borderBottom: `1px solid ${divider}` }}>
+          <h2 style={{ color: titleColor, fontWeight: 700, fontSize: 15, margin: 0 }}>طلب إجازة جديدة</h2>
+          <button onClick={onClose} style={{ background: "none", border: "none", color: isDark ? "rgba(255,255,255,0.4)" : "#94a3b8", cursor: "pointer" }}><X size={18} /></button>
         </div>
         <form onSubmit={handleSubmit} style={{ padding: 18, display: "flex", flexDirection: "column", gap: 12 }}>
           {err && <div style={{ background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.2)", borderRadius: 10, padding: "9px 12px", color: "#f87171", fontSize: 12 }}>{err}</div>}
 
           <div>
-            <label style={lbl}>نوع الإجازة</label>
+            <label style={{ display: "block", fontSize: 11, color: labelColor, marginBottom: 5 }}>نوع الإجازة</label>
             <select value={form.leaveType} onChange={e => setForm(f => ({ ...f, leaveType: e.target.value }))} style={inp}>
-              {Object.entries(LEAVE_TYPE_MAP).map(([v, l]) => <option key={v} value={v} style={{ background: "#050d1f" }}>{l}</option>)}
+              {Object.entries(LEAVE_TYPE_MAP).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
             </select>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label style={lbl}>من تاريخ</label>
+              <label style={{ display: "block", fontSize: 11, color: labelColor, marginBottom: 5 }}>من تاريخ</label>
               <input type="date" value={form.startDate} onChange={e => setForm(f => ({ ...f, startDate: e.target.value }))} required style={inp} />
             </div>
             <div>
-              <label style={lbl}>إلى تاريخ</label>
+              <label style={{ display: "block", fontSize: 11, color: labelColor, marginBottom: 5 }}>إلى تاريخ</label>
               <input type="date" value={form.endDate} onChange={e => setForm(f => ({ ...f, endDate: e.target.value }))} required style={inp} />
             </div>
           </div>
 
           {form.startDate && form.endDate && (
-            <div style={{ textAlign: "center", background: "rgba(0,245,255,0.05)", border: "1px solid rgba(0,245,255,0.1)", borderRadius: 10, padding: "8px 12px", color: "#00f5ff", fontSize: 13, fontWeight: 700 }}>
+            <div style={{ textAlign: "center", background: cyanBg, border: `1px solid ${cyanBorder}`, borderRadius: 10, padding: "8px 12px", color: cyanColor, fontSize: 13, fontWeight: 700 }}>
               إجمالي: {calcDays()} أيام
             </div>
           )}
 
           <div>
-            <label style={lbl}>السبب (اختياري)</label>
+            <label style={{ display: "block", fontSize: 11, color: labelColor, marginBottom: 5 }}>السبب (اختياري)</label>
             <textarea value={form.reason} onChange={e => setForm(f => ({ ...f, reason: e.target.value }))}
               rows={3} style={{ ...inp, resize: "none" }} />
           </div>
 
           <div style={{ display: "flex", gap: 10, paddingTop: 4 }}>
             <button type="submit" disabled={saving}
-              style={{ flex: 1, padding: "10px", borderRadius: 11, border: "none", background: "linear-gradient(135deg, rgba(0,245,255,0.7), rgba(59,130,246,0.7))", color: "#020817", fontWeight: 700, fontSize: 13, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.6 : 1, fontFamily: "'Tajawal', sans-serif" }}>
+              style={{ flex: 1, padding: "10px", borderRadius: 11, border: "none", background: "linear-gradient(135deg, rgba(0,180,200,0.85), rgba(59,130,246,0.85))", color: "#fff", fontWeight: 700, fontSize: 13, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.6 : 1, fontFamily: "'Tajawal', sans-serif" }}>
               {saving ? <Loader2 size={14} style={{ animation: "spin 1s linear infinite", display: "inline" }} /> : "تقديم الطلب"}
             </button>
             <button type="button" onClick={onClose}
-              style={{ flex: 1, padding: "10px", borderRadius: 11, border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.03)", color: "rgba(255,255,255,0.5)", fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: "'Tajawal', sans-serif" }}>
+              style={{ flex: 1, padding: "10px", borderRadius: 11, border: `1px solid ${inputBorder}`, background: inputBg, color: cancelColor, fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: "'Tajawal', sans-serif" }}>
               إلغاء
             </button>
           </div>
@@ -115,10 +136,28 @@ function AddLeaveModal({ onClose, onAdded }: { onClose: () => void; onAdded: (l:
 }
 
 export default function MyLeaves() {
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
   const [leaves, setLeaves] = useState<Leave[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
+
+  const textPrimary   = isDark ? "#fff" : "#0f172a";
+  const textSecondary = isDark ? "rgba(255,255,255,0.45)" : "#475569";
+  const textMuted     = isDark ? "rgba(255,255,255,0.35)" : "#94a3b8";
+  const cardBg        = isDark ? "rgba(255,255,255,0.02)" : "#fff";
+  const cardBorder    = isDark ? "rgba(0,245,255,0.07)" : "#e2e8f0";
+  const tableRowDiv   = isDark ? "rgba(255,255,255,0.04)" : "#f1f5f9";
+  const theadBg       = isDark ? "rgba(0,245,255,0.03)" : "#f8fafc";
+  const theadBorder   = isDark ? "rgba(0,245,255,0.07)" : "#e2e8f0";
+  const thColor       = isDark ? "rgba(255,255,255,0.35)" : "#94a3b8";
+  const cyanColor     = isDark ? "#00f5ff" : "#0891b2";
+  const cyanBg        = isDark ? "rgba(0,245,255,0.07)" : "rgba(8,145,178,0.07)";
+  const cyanBorder    = isDark ? "rgba(0,245,255,0.3)" : "rgba(8,145,178,0.3)";
+  const statBg        = isDark ? "rgba(255,255,255,0.02)" : "#fff";
+  const emptyBg       = isDark ? "rgba(255,255,255,0.02)" : "#f8fafc";
+  const emptyBorder   = isDark ? "rgba(0,245,255,0.07)" : "#e2e8f0";
 
   const showToast = (msg: string, ok = true) => {
     setToast({ msg, ok }); setTimeout(() => setToast(null), 3000);
@@ -168,11 +207,11 @@ export default function MyLeaves() {
 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
         <div>
-          <h2 style={{ color: "#fff", fontWeight: 700, fontSize: 20, margin: 0 }}>إجازاتي</h2>
-          <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 13, marginTop: 3 }}>تابع طلبات إجازاتك وحالتها</p>
+          <h2 style={{ color: textPrimary, fontWeight: 700, fontSize: 20, margin: 0 }}>إجازاتي</h2>
+          <p style={{ color: textMuted, fontSize: 13, marginTop: 3 }}>تابع طلبات إجازاتك وحالتها</p>
         </div>
         <button onClick={() => setShowAdd(true)}
-          style={{ display: "flex", alignItems: "center", gap: 7, padding: "9px 16px", borderRadius: 12, border: "1px solid rgba(0,245,255,0.3)", background: "rgba(0,245,255,0.07)", color: "#00f5ff", fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: "'Tajawal', sans-serif" }}>
+          style={{ display: "flex", alignItems: "center", gap: 7, padding: "9px 16px", borderRadius: 12, border: `1px solid ${cyanBorder}`, background: cyanBg, color: cyanColor, fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: "'Tajawal', sans-serif" }}>
           <Plus size={15} /> طلب إجازة
         </button>
       </div>
@@ -182,50 +221,50 @@ export default function MyLeaves() {
           { icon: <Calendar size={20} />, val: approvedDays, label: "أيام مُجازة", color: "#10b981" },
           { icon: <Clock size={20} />, val: pendingCount, label: "طلبات معلقة", color: "#f59e0b" },
         ].map((s, i) => (
-          <div key={i} style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(0,245,255,0.07)", borderRadius: 16, padding: "18px 20px", textAlign: "center" }}>
+          <div key={i} style={{ background: statBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: "18px 20px", textAlign: "center" }}>
             <span style={{ color: s.color }}>{s.icon}</span>
-            <p style={{ color: "#fff", fontWeight: 800, fontSize: 26, margin: "6px 0 2px" }}>{s.val}</p>
-            <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 12 }}>{s.label}</p>
+            <p style={{ color: textPrimary, fontWeight: 800, fontSize: 26, margin: "6px 0 2px" }}>{s.val}</p>
+            <p style={{ color: textMuted, fontSize: 12 }}>{s.label}</p>
           </div>
         ))}
       </div>
 
       {loading ? (
         <div style={{ display: "flex", justifyContent: "center", padding: "48px 0" }}>
-          <Loader2 size={32} style={{ color: "#00f5ff", animation: "spin 1s linear infinite" }} />
+          <Loader2 size={32} style={{ color: cyanColor, animation: "spin 1s linear infinite" }} />
         </div>
       ) : leaves.length === 0 ? (
-        <div style={{ textAlign: "center", padding: "56px 20px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(0,245,255,0.07)", borderRadius: 18 }}>
-          <Calendar size={44} style={{ color: "rgba(255,255,255,0.1)", margin: "0 auto 12px" }} />
-          <p style={{ color: "rgba(255,255,255,0.35)", fontWeight: 600, fontSize: 14 }}>لا توجد طلبات إجازة</p>
+        <div style={{ textAlign: "center", padding: "56px 20px", background: emptyBg, border: `1px solid ${emptyBorder}`, borderRadius: 18 }}>
+          <Calendar size={44} style={{ color: textMuted, margin: "0 auto 12px", opacity: 0.4 }} />
+          <p style={{ color: textMuted, fontWeight: 600, fontSize: 14 }}>لا توجد طلبات إجازة</p>
           <button onClick={() => setShowAdd(true)}
-            style={{ marginTop: 10, background: "none", border: "none", color: "#00f5ff", fontSize: 13, fontWeight: 700, cursor: "pointer", textDecoration: "underline", fontFamily: "'Tajawal', sans-serif" }}>
+            style={{ marginTop: 10, background: "none", border: "none", color: cyanColor, fontSize: 13, fontWeight: 700, cursor: "pointer", textDecoration: "underline", fontFamily: "'Tajawal', sans-serif" }}>
             تقديم أول طلب إجازة
           </button>
         </div>
       ) : (
-        <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(0,245,255,0.07)", borderRadius: 18, overflow: "hidden" }}>
+        <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 18, overflow: "hidden" }}>
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "right" }}>
               <thead>
-                <tr style={{ background: "rgba(0,245,255,0.03)", borderBottom: "1px solid rgba(0,245,255,0.07)" }}>
+                <tr style={{ background: theadBg, borderBottom: `1px solid ${theadBorder}` }}>
                   {["النوع", "الفترة", "الأيام", "الحالة", ""].map((h, i) => (
-                    <th key={i} style={{ padding: "11px 16px", fontSize: 11, color: "rgba(255,255,255,0.35)", fontWeight: 600 }}>{h}</th>
+                    <th key={i} style={{ padding: "11px 16px", fontSize: 11, color: thColor, fontWeight: 600 }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {leaves.map((leave, idx) => {
-                  const st = STATUS_MAP[leave.status] || { label: leave.status, color: "#fff", bg: "rgba(255,255,255,0.05)" };
+                  const st = STATUS_MAP[leave.status] || { label: leave.status, color: isDark ? "#fff" : "#0f172a", bg: "rgba(255,255,255,0.05)" };
                   return (
-                    <tr key={leave.id} style={{ borderBottom: idx < leaves.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none" }}>
-                      <td style={{ padding: "12px 16px", color: "#fff", fontWeight: 600, fontSize: 13 }}>
+                    <tr key={leave.id} style={{ borderBottom: idx < leaves.length - 1 ? `1px solid ${tableRowDiv}` : "none" }}>
+                      <td style={{ padding: "12px 16px", color: textPrimary, fontWeight: 600, fontSize: 13 }}>
                         {LEAVE_TYPE_MAP[leave.leaveType] || leave.leaveType}
                       </td>
-                      <td style={{ padding: "12px 16px", color: "rgba(255,255,255,0.45)", fontSize: 12 }}>
+                      <td style={{ padding: "12px 16px", color: textSecondary, fontSize: 12 }}>
                         {fmtDate(leave.startDate)} — {fmtDate(leave.endDate)}
                       </td>
-                      <td style={{ padding: "12px 16px", color: "#fff", fontWeight: 700 }}>{leave.totalDays}</td>
+                      <td style={{ padding: "12px 16px", color: textPrimary, fontWeight: 700 }}>{leave.totalDays}</td>
                       <td style={{ padding: "12px 16px" }}>
                         <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 20, color: st.color, background: st.bg }}>{st.label}</span>
                         {leave.rejectionReason && (

@@ -507,7 +507,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                     transition={{ duration: 0.15 }}
                     style={{
                       position: "absolute", top: 40,
-                      [dir === "rtl" ? "right" : "left"]: 0,
+                      [dir === "rtl" ? "left" : "right"]: 0,
                       width: 320,
                       background: panelBg,
                       border: `1px solid ${panelBorder}`,
