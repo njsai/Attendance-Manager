@@ -10,29 +10,38 @@ import { Loader2 } from "lucide-react";
 
 import AppLayout from "@/components/layout/AppLayout";
 
-// ─── Lazy-loaded pages ────────────────────────────────────────────────────────
-const Login               = lazy(() => import("@/pages/Login"));
-const SuperAdminLogin     = lazy(() => import("@/pages/super-admin/Login"));
-const SuperAdminDashboard = lazy(() => import("@/pages/super-admin/Dashboard"));
-const SecurityDashboard   = lazy(() => import("@/pages/super-admin/Security"));
-const AdminDashboard      = lazy(() => import("@/pages/admin/Dashboard"));
-const ManagerDashboard    = lazy(() => import("@/pages/manager/Dashboard"));
-const EmployeeDashboard   = lazy(() => import("@/pages/employee/Dashboard"));
-const Employees           = lazy(() => import("@/pages/admin/Employees"));
-const AdminAttendance     = lazy(() => import("@/pages/admin/Attendance"));
-const AdminLeaves         = lazy(() => import("@/pages/admin/Leaves"));
-const AdminReports        = lazy(() => import("@/pages/admin/Reports"));
+// ─── Eagerly loaded pages (critical path — no lazy delay) ────────────────────
+import AdminDashboard    from "@/pages/admin/Dashboard";
+import EmployeeDashboard from "@/pages/employee/Dashboard";
+import ManagerDashboard  from "@/pages/manager/Dashboard";
+import Login             from "@/pages/Login";
+import SuperAdminLogin   from "@/pages/super-admin/Login";
+
+// ─── Lazy-loaded pages (less frequently visited) ──────────────────────────────
+const SuperAdminDashboard  = lazy(() => import("@/pages/super-admin/Dashboard"));
+const SecurityDashboard    = lazy(() => import("@/pages/super-admin/Security"));
+const Employees            = lazy(() => import("@/pages/admin/Employees"));
+const AdminAttendance      = lazy(() => import("@/pages/admin/Attendance"));
+const AdminLeaves          = lazy(() => import("@/pages/admin/Leaves"));
+const AdminReports         = lazy(() => import("@/pages/admin/Reports"));
 const DepartmentsAndShifts = lazy(() => import("@/pages/admin/DepartmentsAndShifts"));
-const AdminBranches       = lazy(() => import("@/pages/admin/Branches"));
-const AdminSettings       = lazy(() => import("@/pages/admin/Settings"));
-const AdminPayroll        = lazy(() => import("@/pages/admin/Payroll"));
-const MyLeaves            = lazy(() => import("@/pages/employee/MyLeaves"));
-const ChatPage            = lazy(() => import("@/pages/Chat"));
-const NotFound            = lazy(() => import("@/pages/not-found"));
+const AdminBranches        = lazy(() => import("@/pages/admin/Branches"));
+const AdminSettings        = lazy(() => import("@/pages/admin/Settings"));
+const AdminPayroll         = lazy(() => import("@/pages/admin/Payroll"));
+const MyLeaves             = lazy(() => import("@/pages/employee/MyLeaves"));
+const ChatPage             = lazy(() => import("@/pages/Chat"));
+const NotFound             = lazy(() => import("@/pages/not-found"));
 
 // ─── Query client ─────────────────────────────────────────────────────────────
 const queryClient = new QueryClient({
-  defaultOptions: { queries: { refetchOnWindowFocus: false, retry: false } }
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: false,
+      staleTime: 30_000,   // consider data fresh for 30s → no duplicate fetches
+      gcTime:    120_000,  // keep unused data in cache for 2 minutes
+    },
+  },
 });
 
 // ─── Spinner ──────────────────────────────────────────────────────────────────
@@ -64,7 +73,7 @@ function RootRedirect() {
   if (isLoading) return <Spinner />;
   if (!user) return <Redirect to="/login" />;
   if (user.role === "super_admin") return <Redirect to="/super-admin" />;
-  if (user.role === "admin") return <Guard><AdminDashboard /></Guard>;
+  if (user.role === "admin")   return <Guard><AdminDashboard /></Guard>;
   if (user.role === "manager") return <Guard><ManagerDashboard /></Guard>;
   return <Guard><EmployeeDashboard /></Guard>;
 }
