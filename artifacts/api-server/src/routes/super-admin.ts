@@ -4,14 +4,11 @@ import { companiesTable, employeesTable, superAdminsTable, branchesTable, depart
 import { eq, count, sql } from "drizzle-orm";
 import { requireSuperAdmin, hashPassword } from "../lib/auth.js";
 import { hashPasswordBcrypt } from "../lib/security.js";
-import { exec } from "child_process";
-import { promisify } from "util";
-import { mkdirSync, existsSync, statSync, readdirSync, unlinkSync, createReadStream } from "fs";
+import { existsSync, statSync, readdirSync, unlinkSync, createReadStream } from "fs";
 import { join } from "path";
+import { BACKUP_DIR, createBackupForCompany } from "../lib/backup-scheduler.js";
 
 const router = Router();
-const execAsync = promisify(exec);
-const BACKUP_DIR = "/tmp/sa_backups";
 
 // ─── Get all companies with stats ────────────────────────────────────────────
 router.get("/companies", requireSuperAdmin, async (_req, res) => {
@@ -211,38 +208,12 @@ router.get("/backups", requireSuperAdmin, async (_req, res) => {
 // Create backup for a company (or all: companyId = 0)
 router.post("/backups", requireSuperAdmin, async (req, res) => {
   try {
-    const { companyId } = req.body; // 0 = all companies
-    if (!existsSync(BACKUP_DIR)) mkdirSync(BACKUP_DIR, { recursive: true });
-
-    const dateStr = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
-    const filename = companyId
-      ? `backup_${companyId}_company_${dateStr}.json`
-      : `backup_0_all_${dateStr}.json`;
-    const filePath = join(BACKUP_DIR, filename);
-
-    // Export data via SQL
-    const tables = ["companies", "branches", "departments", "shifts", "employees", "attendance", "leaves", "company_location"];
-    const backup: Record<string, any[]> = {
-      _meta: { createdAt: new Date().toISOString(), companyId: companyId || "all", version: "1.0" },
-    } as any;
-
-    for (const table of tables) {
-      const whereClause = companyId && table !== "companies"
-        ? `WHERE company_id = ${parseInt(companyId)}`
-        : companyId && table === "companies"
-        ? `WHERE id = ${parseInt(companyId)}`
-        : "";
-      const result = await db.execute(sql.raw(`SELECT * FROM ${table} ${whereClause}`));
-      backup[table] = result.rows as any[];
-    }
-
-    const { writeFileSync } = await import("fs");
-    writeFileSync(filePath, JSON.stringify(backup, null, 2), "utf8");
-    const stat = statSync(filePath);
-
+    const rawId = req.body.companyId;
+    const companyId = rawId ? parseInt(rawId) : null;
+    const { filename, sizeBytes } = await createBackupForCompany(companyId);
     res.status(201).json({
-      id: filename, filename, companyId: companyId || 0,
-      createdAt: new Date().toISOString(), sizeBytes: stat.size,
+      id: filename, filename, companyId: companyId ?? 0,
+      createdAt: new Date().toISOString(), sizeBytes,
     });
   } catch (err) { console.error(err); res.status(500).json({ message: "فشل إنشاء النسخة الاحتياطية" }); }
 });

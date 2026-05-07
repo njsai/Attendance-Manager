@@ -1,5 +1,6 @@
 import express, { type Express } from "express";
 import cors from "cors";
+import compression from "compression";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
 import router from "./routes/index.js";
@@ -19,6 +20,9 @@ const PgSession = connectPgSimple(session);
 
 // Trust the Replit proxy
 app.set("trust proxy", 1);
+
+// ─── Response Compression (gzip/brotli) ──────────────────────────────────────
+app.use(compression({ level: 6, threshold: 1024 }));
 
 // ─── Security Headers (Helmet) ────────────────────────────────────────────────
 app.use(helmetMiddleware);

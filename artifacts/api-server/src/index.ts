@@ -1,4 +1,5 @@
 import app from "./app";
+import { startBackupScheduler } from "./lib/backup-scheduler.js";
 
 const rawPort = process.env["PORT"];
 
@@ -24,4 +25,5 @@ process.on("unhandledRejection", (reason) => {
 
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
+  startBackupScheduler();
 });
