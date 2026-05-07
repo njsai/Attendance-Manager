@@ -32,6 +32,10 @@ router.get("/", requireAuth, async (req, res) => {
       conditions.push(eq(leavesTable.employeeId, parseInt(req.query.employeeId as string)));
     }
 
+    if (req.query.status) {
+      conditions.push(eq(leavesTable.status, req.query.status as string));
+    }
+
     const leaves = await db.select(leaveSelect).from(leavesTable)
       .leftJoin(employeesTable, eq(leavesTable.employeeId, employeesTable.id))
       .leftJoin(departmentsTable, eq(employeesTable.departmentId, departmentsTable.id))

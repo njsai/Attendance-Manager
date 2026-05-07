@@ -47,15 +47,22 @@ router.get("/events", requireSuperAdmin, async (req, res) => {
     const severity = req.query.severity as string | null;
     const resolved = req.query.resolved === "true" ? true : req.query.resolved === "false" ? false : null;
 
-    const rows = await db.execute(sql`
+    const whereParts: string[] = [];
+    const params: unknown[] = [];
+    if (severity) { params.push(severity); whereParts.push(`se.severity = $${params.length}`); }
+    if (resolved !== null) { params.push(resolved); whereParts.push(`se.resolved = $${params.length}`); }
+    params.push(limit);
+    const whereClause = whereParts.length > 0 ? `WHERE ${whereParts.join(" AND ")}` : "";
+    const query = `
       SELECT se.*, c.name as company_name
       FROM security_events se
       LEFT JOIN companies c ON se.company_id = c.id
-      WHERE (${severity} IS NULL OR se.severity = ${severity})
-        AND (${resolved} IS NULL OR se.resolved = ${resolved})
+      ${whereClause}
       ORDER BY se.created_at DESC
-      LIMIT ${limit}
-    `);
+      LIMIT $${params.length}
+    `;
+    const { pool } = await import("@workspace/db");
+    const rows = await pool.query(query, params);
 
     res.json(rows.rows);
   } catch (err) {
