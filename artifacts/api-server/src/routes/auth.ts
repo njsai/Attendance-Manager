@@ -105,8 +105,10 @@ router.post("/login", loginRateLimit, async (req, res) => {
       return;
     }
 
-    // ── Build query: if companyCode provided → filter by company, else global ──
-    let employeeQuery = db
+    // ── Find all employees with matching username across all companies ──────────
+    // Multi-tenant: same username can exist in multiple companies.
+    // We verify the password against each match and log in the first valid one.
+    const candidates = await db
       .select({
         id: employeesTable.id,
         companyId: employeesTable.companyId,
@@ -138,31 +140,40 @@ router.post("/login", loginRateLimit, async (req, res) => {
       .from(employeesTable)
       .leftJoin(departmentsTable, eq(employeesTable.departmentId, departmentsTable.id))
       .leftJoin(shiftsTable, eq(employeesTable.shiftId, shiftsTable.id))
-      .leftJoin(companiesTable, eq(employeesTable.companyId, companiesTable.id));
+      .leftJoin(companiesTable, eq(employeesTable.companyId, companiesTable.id))
+      .where(eq(employeesTable.username, username.trim().toLowerCase()));
 
-    // If company code provided: filter by company — precise multi-tenant login
-    const code = companyCode ? String(companyCode).trim().toUpperCase() : null;
-    let employee: any;
+    if (candidates.length === 0) {
+      await logLoginAttempt(ip, username, null, false, ua);
+      res.status(401).json({ message: "اسم المستخدم أو كلمة المرور غير صحيحة" });
+      return;
+    }
 
-    if (code) {
-      const [result] = await employeeQuery.where(
-        and(
-          eq(employeesTable.username, username.trim().toLowerCase()),
-          eq(companiesTable.companyCode, code)
-        )
-      );
-      employee = result;
-    } else {
-      // No code: find by username (works only if username is globally unique)
-      const [result] = await employeeQuery.where(
-        eq(employeesTable.username, username.trim().toLowerCase())
-      );
-      employee = result;
+    // Find the candidate whose password matches
+    let employee: typeof candidates[0] | null = null;
+    for (const c of candidates) {
+      const match = await verifyPassword(password, c.passwordHash);
+      if (match) { employee = c; break; }
     }
 
     if (!employee) {
+      // Increment failed attempts on all candidates with this username
+      for (const c of candidates) {
+        const newAttempts = (Number(c.failedLoginAttempts) || 0) + 1;
+        const lockUntil = newAttempts >= MAX_FAILED_ATTEMPTS
+          ? new Date(Date.now() + LOCKOUT_MINUTES * 60 * 1000) : null;
+        await db.execute(sql`
+          UPDATE employees SET failed_login_attempts = ${newAttempts}, locked_until = ${lockUntil}
+          WHERE id = ${c.id}
+        `);
+      }
       await logLoginAttempt(ip, username, null, false, ua);
-      res.status(401).json({ message: "اسم المستخدم أو كلمة المرور أو كود الشركة غير صحيح" });
+      const remaining = MAX_FAILED_ATTEMPTS - ((Number(candidates[0].failedLoginAttempts) || 0) + 1);
+      if (remaining <= 0) {
+        res.status(423).json({ message: `تم قفل الحساب بعد ${MAX_FAILED_ATTEMPTS} محاولات فاشلة. حاول بعد ${LOCKOUT_MINUTES} دقيقة.`, error: "ACCOUNT_LOCKED" });
+      } else {
+        res.status(401).json({ message: `اسم المستخدم أو كلمة المرور غير صحيحة. تبقى ${remaining} محاولة قبل قفل الحساب.` });
+      }
       return;
     }
 
