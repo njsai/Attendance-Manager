@@ -41,12 +41,23 @@ export default function ManagerDashboard() {
 
   const fetchData = useCallback(async () => {
     const today = new Date().toISOString().split("T")[0];
-    const [t, s, team] = await Promise.all([
-      fetch(`${BASE}api/attendance/today`, { credentials: "include" }).then(r => r.json()),
-      fetch(`${BASE}api/attendance/my-stats`, { credentials: "include" }).then(r => r.json()),
-      fetch(`${BASE}api/attendance?date=${today}`, { credentials: "include" }).then(r => r.json()),
+    const [tRes, sRes, teamRes] = await Promise.all([
+      fetch(`${BASE}api/attendance/today`, { credentials: "include" }),
+      fetch(`${BASE}api/attendance/my-stats`, { credentials: "include" }),
+      fetch(`${BASE}api/attendance?date=${today}`, { credentials: "include" }),
     ]);
-    setToday(t); setStats(s); setTodayTeam(Array.isArray(team) ? team : []);
+    const t = await tRes.json();
+    const s = await sRes.json();
+    const team = await teamRes.json();
+    setToday(tRes.ok ? t : null);
+    setStats(sRes.ok ? {
+      presentDays: s.presentDays ?? 0,
+      absentDays: s.absentDays ?? 0,
+      lateDays: s.lateDays ?? 0,
+      totalWorkingHours: s.totalWorkingHours ?? 0,
+      recentRecords: Array.isArray(s.recentRecords) ? s.recentRecords : [],
+    } : null);
+    setTodayTeam(Array.isArray(team) ? team : []);
     setLoading(false);
   }, [BASE]);
 
@@ -139,7 +150,7 @@ export default function ManagerDashboard() {
                 { icon: <CheckCircle size={20} className="text-green-400 mx-auto mb-1" />, val: stats.presentDays, label: "أيام الحضور" },
                 { icon: <XCircle size={20} className="text-red-400 mx-auto mb-1" />, val: stats.absentDays, label: "أيام الغياب" },
                 { icon: <AlertTriangle size={20} className="text-yellow-400 mx-auto mb-1" />, val: stats.lateDays, label: "أيام التأخير" },
-                { icon: <Timer size={20} className="text-blue-400 mx-auto mb-1" />, val: stats.totalWorkingHours.toFixed(1), label: "ساعات العمل" },
+                { icon: <Timer size={20} className="text-blue-400 mx-auto mb-1" />, val: (stats.totalWorkingHours ?? 0).toFixed(1), label: "ساعات العمل" },
               ].map((item, i) => (
                 <div key={i} className="bg-[#1a2234] border border-white/10 rounded-2xl p-4 text-center">
                   {item.icon}<p className="text-2xl font-bold text-white">{item.val}</p><p className="text-xs text-gray-400">{item.label}</p>

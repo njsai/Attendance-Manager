@@ -83,7 +83,12 @@ function WorkTimer({ checkInTime }: { checkInTime: string }) {
 export default function EmployeeDashboard() {
   const { user } = useAuth();
   const [today, setToday] = useState<TodayRecord | null>(null);
-  const [stats, setStats] = useState<Stats | null>(null);
+  const [stats, setStats] = useState<Stats>({
+    presentDays: 0, absentDays: 0, lateDays: 0,
+    totalWorkingHours: 0, totalLateMinutes: 0,
+    recentRecords: [], month: "",
+  });
+  const [statsLoaded, setStatsLoaded] = useState(false);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState("");
@@ -99,8 +104,18 @@ export default function EmployeeDashboard() {
         fetch(`${BASE}api/attendance/today`, { credentials: "include" }),
         fetch(`${BASE}api/attendance/my-stats`, { credentials: "include" }),
       ]);
-      setToday(await todayRes.json());
-      setStats(await statsRes.json());
+      const todayData = await todayRes.json();
+      const statsData = await statsRes.json();
+      setToday(todayRes.ok ? todayData : null);
+      setStats(statsRes.ok ? {
+        presentDays: statsData.presentDays ?? 0,
+        absentDays: statsData.absentDays ?? 0,
+        lateDays: statsData.lateDays ?? 0,
+        totalWorkingHours: statsData.totalWorkingHours ?? 0,
+        totalLateMinutes: statsData.totalLateMinutes ?? 0,
+        recentRecords: Array.isArray(statsData.recentRecords) ? statsData.recentRecords : [],
+        month: statsData.month ?? "",
+      } : null);
     } catch { setError("فشل تحميل البيانات"); }
     finally { setLoading(false); }
   }, [BASE]);
@@ -275,13 +290,12 @@ export default function EmployeeDashboard() {
       </div>
 
       {/* Monthly Stats */}
-      {stats && (
-        <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-3">
           {[
             { icon: <CheckCircle size={20} className="text-green-400 mx-auto mb-1" />, val: stats.presentDays, label: "أيام الحضور" },
             { icon: <XCircle size={20} className="text-red-400 mx-auto mb-1" />, val: stats.absentDays, label: "أيام الغياب" },
             { icon: <AlertTriangle size={20} className="text-yellow-400 mx-auto mb-1" />, val: stats.lateDays, label: "أيام التأخير" },
-            { icon: <Timer size={20} className="text-blue-400 mx-auto mb-1" />, val: stats.totalWorkingHours.toFixed(1), label: "ساعات العمل" },
+            { icon: <Timer size={20} className="text-blue-400 mx-auto mb-1" />, val: (stats.totalWorkingHours ?? 0).toFixed(1), label: "ساعات العمل" },
           ].map((item, i) => (
             <div key={i} className="bg-[#1a2234] border border-white/10 rounded-2xl p-4 text-center">
               {item.icon}
@@ -290,10 +304,9 @@ export default function EmployeeDashboard() {
             </div>
           ))}
         </div>
-      )}
 
       {/* Recent Records */}
-      {stats && stats.recentRecords.length > 0 && (
+      {stats.recentRecords.length > 0 && (
         <div className="bg-[#1a2234] border border-white/10 rounded-2xl p-4">
           <div className="flex items-center gap-2 mb-3">
             <Calendar size={16} className="text-purple-400" />

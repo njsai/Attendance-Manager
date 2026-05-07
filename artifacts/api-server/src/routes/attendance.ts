@@ -185,48 +185,6 @@ router.get("/", requireAuth, async (req, res) => {
 });
 
 /**
- * GET /api/attendance/:id
- * Fetch a single attendance record.
- * 404 if not found or doesn't belong to the company.
- */
-router.get("/:id", requireAuth, async (req, res) => {
-  try {
-    const companyId = req.session.companyId!;
-    const id = parseInt(req.params.id);
-
-    if (isNaN(id) || id <= 0) {
-      res.status(400).json({ message: "معرّف السجل غير صالح" });
-      return;
-    }
-
-    const record = await getOwnedRecord(id, companyId);
-    if (!record) {
-      res.status(404).json({ message: "السجل غير موجود" });
-      return;
-    }
-
-    // Employees can only see their own record
-    if (req.session.role === "employee" && record.employeeId !== req.session.userId) {
-      res.status(403).json({ message: "غير مصرح لك بمشاهدة هذا السجل" });
-      return;
-    }
-
-    // Return full record with employee info
-    const [full] = await db
-      .select(recordSelect)
-      .from(attendanceTable)
-      .leftJoin(employeesTable, eq(attendanceTable.employeeId, employeesTable.id))
-      .leftJoin(departmentsTable, eq(employeesTable.departmentId, departmentsTable.id))
-      .where(eq(attendanceTable.id, id));
-
-    res.json(full);
-  } catch (err) {
-    console.error("GET /attendance/:id:", err);
-    res.status(500).json({ message: "خطأ في الخادم" });
-  }
-});
-
-/**
  * POST /api/attendance   (Admin / Manager only)
  * Create an attendance record manually.
  *
@@ -916,6 +874,47 @@ router.get("/all-today", requireAdmin, async (req, res) => {
     res.json(records);
   } catch (err) {
     console.error("GET /attendance/all-today:", err);
+    res.status(500).json({ message: "خطأ في الخادم" });
+  }
+});
+
+/**
+ * GET /api/attendance/:id
+ * Fetch a single attendance record by numeric ID.
+ * NOTE: must be registered AFTER all named routes (/today, /my-stats, /all-today)
+ * to prevent Express from matching string paths as this param.
+ */
+router.get("/:id", requireAuth, async (req, res) => {
+  try {
+    const companyId = req.session.companyId!;
+    const id = parseInt(req.params.id);
+
+    if (isNaN(id) || id <= 0) {
+      res.status(400).json({ message: "معرّف السجل غير صالح" });
+      return;
+    }
+
+    const record = await getOwnedRecord(id, companyId);
+    if (!record) {
+      res.status(404).json({ message: "السجل غير موجود" });
+      return;
+    }
+
+    if (req.session.role === "employee" && record.employeeId !== req.session.userId) {
+      res.status(403).json({ message: "غير مصرح لك بمشاهدة هذا السجل" });
+      return;
+    }
+
+    const [full] = await db
+      .select(recordSelect)
+      .from(attendanceTable)
+      .leftJoin(employeesTable, eq(attendanceTable.employeeId, employeesTable.id))
+      .leftJoin(departmentsTable, eq(employeesTable.departmentId, departmentsTable.id))
+      .where(eq(attendanceTable.id, id));
+
+    res.json(full);
+  } catch (err) {
+    console.error("GET /attendance/:id:", err);
     res.status(500).json({ message: "خطأ في الخادم" });
   }
 });
