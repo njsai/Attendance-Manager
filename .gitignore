@@ -1,18 +1,71 @@
-# See https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files for more about ignoring files.
+# ============================================================
+# .gitignore — Attendance Management System
+# ============================================================
 
-# compiled output
-dist
-tmp
-out-tsc
+# ─── Dependencies ─────────────────────────────────────────────
+node_modules/
+.pnp
+.pnp.js
+
+# ─── Build outputs ────────────────────────────────────────────
+dist/
+build/
+out/
+.output/
 *.tsbuildinfo
-.expo
-.expo-shared
+.expo/
+.expo-shared/
 
-# dependencies
-node_modules
+# ─── Environment & Secrets — NEVER COMMIT ───────────────────
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+.env.staging
+.env*.local
+*.secret
+*.pem
+*.key
+*.p12
+*.pfx
+secrets/
 
-# IDEs and editors
-/.idea
+# ─── Database Backups — NEVER COMMIT ────────────────────────
+data/backups/
+data/uploads/
+data/
+
+# ─── Logs ─────────────────────────────────────────────────────
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+/tmp/
+
+# ─── OS Files ─────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# ─── IDE / Editor ─────────────────────────────────────────────
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*~
 .project
 .classpath
 .c9/
@@ -20,35 +73,28 @@ node_modules
 .settings/
 *.sublime-workspace
 
-# IDE - VSCode
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
+# ─── Testing & Coverage ───────────────────────────────────────
+coverage/
+*.lcov
+.nyc_output/
+playwright-report/
+test-results/
 
-# misc
-/.sass-cache
-/connect.lock
-/coverage
-/libpeerconnection.log
-npm-debug.log
-yarn-error.log
-testem.log
-/typings
-
-# System Files
-.DS_Store
-Thumbs.db
-
-.cursor/rules/nx-rules.mdc
-.github/instructions/nx.instructions.md
-
-# Replit
+# ─── Replit Internal ──────────────────────────────────────────
 .cache/
 .local/
+.replit
+replit.nix
 
-# Backup files — never commit to git
-data/backups/sql/
-data/backups/json/
-data/uploads/
+# ─── Misc ─────────────────────────────────────────────────────
+*.tgz
+*.tar.gz
+.npm/
+.eslintcache
+.stylelintcache
+.parcel-cache/
+.turbo/
+.nx/cache/
+tmp/
+connect.lock
+/typings
