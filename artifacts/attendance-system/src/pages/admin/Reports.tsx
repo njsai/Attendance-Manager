@@ -3,6 +3,8 @@ import { FileSpreadsheet, FileText, Printer, Filter, Calendar, FileDown } from "
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { useTheme } from "@/lib/theme";
+import { useI18n } from "@/lib/i18n";
 
 interface AttRecord {
   id: number; employeeId: number; employeeName: string; departmentName: string | null;
@@ -27,6 +29,10 @@ function statusAr(s: string) {
 }
 
 export default function AdminReports() {
+  const { theme } = useTheme();
+  const { lang } = useI18n();
+  const isDark = theme === "dark";
+
   const [records, setRecords] = useState<AttRecord[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(false);
@@ -36,6 +42,33 @@ export default function AdminReports() {
   const [startDate, setStartDate] = useState(firstDay);
   const [endDate, setEndDate] = useState(today.toISOString().split("T")[0]);
   const BASE = import.meta.env.BASE_URL;
+
+  const textPrimary = isDark ? "#fff" : "#0f172a";
+  const textSecondary = isDark ? "rgba(255,255,255,0.4)" : "#64748b";
+  const textMuted = isDark ? "rgba(255,255,255,0.25)" : "#94a3b8";
+  const cardBg = isDark ? "rgba(255,255,255,0.02)" : "#fff";
+  const cardBorder = isDark ? "rgba(0,245,255,0.08)" : "#e2e8f0";
+  const inputBg = isDark ? "rgba(255,255,255,0.04)" : "#f8fafc";
+  const inputBorder = isDark ? "rgba(0,245,255,0.1)" : "#e2e8f0";
+  const tableBorder = isDark ? "rgba(255,255,255,0.04)" : "#f1f5f9";
+  const theadBorder = isDark ? "rgba(0,245,255,0.07)" : "#e2e8f0";
+  const theadColor = isDark ? "rgba(0,245,255,0.5)" : "#0891b2";
+  const rowHoverBg = isDark ? "rgba(0,245,255,0.03)" : "rgba(0,180,200,0.04)";
+
+  const cardStyle = {
+    background: cardBg,
+    border: `1px solid ${cardBorder}`,
+    borderRadius: 16,
+    padding: 16,
+    boxShadow: isDark ? "none" : "0 1px 4px rgba(0,0,0,0.06)",
+  };
+  const inputStyle = {
+    width: "100%", padding: "9px 12px", borderRadius: 10,
+    background: inputBg, border: `1px solid ${inputBorder}`,
+    color: textPrimary, fontSize: 13, outline: "none",
+    boxSizing: "border-box" as const,
+    colorScheme: isDark ? "dark" : "light",
+  };
 
   useEffect(() => {
     fetch(`${BASE}api/employees`, { credentials: "include" }).then(r => r.json()).then(d => setEmployees(Array.isArray(d) ? d : []));
@@ -57,16 +90,12 @@ export default function AdminReports() {
   const absentCount = records.filter(r => r.status === "absent").length;
   const lateCount = records.filter(r => r.status === "late").length;
   const totalHours = records.reduce((s, r) => s + (r.workingHours ?? 0), 0);
-  const totalLate = records.reduce((s, r) => s + (r.lateMinutes ?? 0), 0);
 
   const exportExcel = () => {
     const rows = records.map(r => ({
-      "التاريخ": fmtDate(r.date),
-      "الموظف": r.employeeName,
-      "القسم": r.departmentName || "—",
-      "الحالة": statusAr(r.status),
-      "وقت الدخول": fmt12(r.checkInTime),
-      "وقت الخروج": fmt12(r.checkOutTime),
+      "التاريخ": fmtDate(r.date), "الموظف": r.employeeName,
+      "القسم": r.departmentName || "—", "الحالة": statusAr(r.status),
+      "وقت الدخول": fmt12(r.checkInTime), "وقت الخروج": fmt12(r.checkOutTime),
       "ساعات العمل": r.workingHours ? r.workingHours.toFixed(2) : "—",
       "دقائق التأخير": r.lateMinutes ?? 0,
     }));
@@ -84,15 +113,14 @@ export default function AdminReports() {
     doc.text("Attendance Report", 14, 20);
     doc.setFontSize(10);
     doc.text(`Period: ${startDate} to ${endDate}`, 14, 28);
-    doc.text(`Total Records: ${records.length} | Present: ${presentCount} | Absent: ${absentCount} | Late: ${lateCount}`, 14, 34);
+    doc.text(`Total: ${records.length} | Present: ${presentCount} | Absent: ${absentCount} | Late: ${lateCount}`, 14, 34);
     autoTable(doc, {
       startY: 40,
-      head: [["Date", "Employee", "Department", "Status", "Check In", "Check Out", "Hours", "Late (min)"]],
+      head: [["Date", "Employee", "Department", "Status", "Check In", "Check Out", "Hours", "Late(min)"]],
       body: records.map(r => [
         r.date, r.employeeName, r.departmentName || "—", statusAr(r.status),
         fmt12(r.checkInTime), fmt12(r.checkOutTime),
-        r.workingHours ? r.workingHours.toFixed(1) : "—",
-        r.lateMinutes ?? 0,
+        r.workingHours ? r.workingHours.toFixed(1) : "—", r.lateMinutes ?? 0,
       ]),
       styles: { fontSize: 8 },
       headStyles: { fillColor: [30, 64, 175] },
@@ -104,10 +132,7 @@ export default function AdminReports() {
   const exportCSV = () => {
     const header = ["التاريخ", "الموظف", "القسم", "الحالة", "وقت الدخول", "وقت الخروج", "ساعات العمل", "دقائق التأخير"];
     const rows = records.map(r => [
-      r.date,
-      r.employeeName,
-      r.departmentName || "",
-      statusAr(r.status),
+      r.date, r.employeeName, r.departmentName || "", statusAr(r.status),
       r.checkInTime ? new Date(r.checkInTime).toLocaleTimeString("ar-IQ") : "",
       r.checkOutTime ? new Date(r.checkOutTime).toLocaleTimeString("ar-IQ") : "",
       r.workingHours != null ? r.workingHours.toFixed(2) : "",
@@ -119,46 +144,41 @@ export default function AdminReports() {
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url;
-    a.download = `تقرير-الحضور-${startDate}-${endDate}.csv`;
-    a.click();
+    a.href = url; a.download = `تقرير-الحضور-${startDate}-${endDate}.csv`; a.click();
     URL.revokeObjectURL(url);
   };
 
-  const handlePrint = () => {
-    window.print();
-  };
+  const handlePrint = () => window.print();
 
-  const cardStyle = { background: "rgba(255,255,255,0.02)", border: "1px solid rgba(0,245,255,0.08)", borderRadius: 16, padding: 16 };
-  const inputStyle = { width: "100%", padding: "9px 12px", borderRadius: 10, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(0,245,255,0.1)", color: "#fff", fontSize: 13, outline: "none", boxSizing: "border-box" as const, colorScheme: "dark" };
+  const locale = lang === "ar" ? "ar-IQ" : "en-US";
 
   return (
     <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 14, maxWidth: 960, margin: "0 auto" }} dir="rtl">
       <div>
-        <h1 style={{ fontSize: 18, fontWeight: 800, color: "#fff", margin: 0 }}>التقارير</h1>
-        <p style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", marginTop: 4 }}>تقارير الحضور والانصراف</p>
+        <h1 style={{ fontSize: 18, fontWeight: 800, color: textPrimary, margin: 0 }}>التقارير</h1>
+        <p style={{ fontSize: 12, color: textSecondary, marginTop: 4 }}>تقارير الحضور والانصراف</p>
       </div>
 
       {/* Filters */}
       <div style={cardStyle}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
           <Filter size={15} style={{ color: "#00f5ff" }} />
-          <span style={{ color: "#fff", fontWeight: 700, fontSize: 13 }}>تصفية التقارير</span>
+          <span style={{ color: textPrimary, fontWeight: 700, fontSize: 13 }}>تصفية التقارير</span>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <div>
-            <label style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, display: "block", marginBottom: 5 }}>من تاريخ</label>
+            <label style={{ color: textSecondary, fontSize: 11, display: "block", marginBottom: 5 }}>من تاريخ</label>
             <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} style={inputStyle} />
           </div>
           <div>
-            <label style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, display: "block", marginBottom: 5 }}>إلى تاريخ</label>
+            <label style={{ color: textSecondary, fontSize: 11, display: "block", marginBottom: 5 }}>إلى تاريخ</label>
             <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} style={inputStyle} />
           </div>
           <div>
-            <label style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, display: "block", marginBottom: 5 }}>الموظف</label>
+            <label style={{ color: textSecondary, fontSize: 11, display: "block", marginBottom: 5 }}>الموظف</label>
             <select value={empId} onChange={e => setEmpId(e.target.value)} style={inputStyle}>
-              <option value="" style={{ background: "#050d1f" }}>كل الموظفين</option>
-              {employees.map(e => <option key={e.id} value={e.id} style={{ background: "#050d1f" }}>{e.fullName}</option>)}
+              <option value="" style={{ background: isDark ? "#050d1f" : "#fff" }}>كل الموظفين</option>
+              {employees.map(e => <option key={e.id} value={e.id} style={{ background: isDark ? "#050d1f" : "#fff" }}>{e.fullName}</option>)}
             </select>
           </div>
           <div style={{ display: "flex", alignItems: "flex-end" }}>
@@ -175,14 +195,14 @@ export default function AdminReports() {
           {/* Summary */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {[
-              { label: "إجمالي السجلات", val: records.length, color: "#fff", glow: "rgba(255,255,255,0.06)" },
+              { label: "إجمالي السجلات", val: records.length, color: textPrimary, glow: isDark ? "rgba(255,255,255,0.06)" : "#e2e8f0" },
               { label: "أيام الحضور", val: presentCount, color: "#10b981", glow: "rgba(16,185,129,0.12)" },
               { label: "أيام الغياب", val: absentCount, color: "#f87171", glow: "rgba(248,113,113,0.12)" },
               { label: "ساعات العمل", val: totalHours.toFixed(1), color: "#00f5ff", glow: "rgba(0,245,255,0.12)" },
             ].map((item, i) => (
-              <div key={i} style={{ background: "rgba(255,255,255,0.02)", border: `1px solid ${item.glow}`, borderRadius: 14, padding: "12px 8px", textAlign: "center" }}>
+              <div key={i} style={{ background: cardBg, border: `1px solid ${isDark ? item.glow : "#e2e8f0"}`, borderRadius: 14, padding: "12px 8px", textAlign: "center", boxShadow: isDark ? "none" : "0 1px 3px rgba(0,0,0,0.05)" }}>
                 <p style={{ fontSize: 20, fontWeight: 800, color: item.color, margin: 0 }}>{item.val}</p>
-                <p style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", marginTop: 3 }}>{item.label}</p>
+                <p style={{ fontSize: 10, color: textSecondary, marginTop: 3 }}>{item.label}</p>
               </div>
             ))}
           </div>
@@ -193,23 +213,23 @@ export default function AdminReports() {
               { label: "Excel", icon: FileSpreadsheet, action: exportExcel, color: "#10b981", glow: "rgba(16,185,129,0.2)" },
               { label: "CSV", icon: FileDown, action: exportCSV, color: "#06b6d4", glow: "rgba(6,182,212,0.2)" },
               { label: "PDF", icon: FileText, action: exportPDF, color: "#f87171", glow: "rgba(248,113,113,0.2)" },
-              { label: "طباعة", icon: Printer, action: handlePrint, color: "rgba(255,255,255,0.5)", glow: "rgba(255,255,255,0.08)" },
+              { label: "طباعة", icon: Printer, action: handlePrint, color: isDark ? "rgba(255,255,255,0.5)" : "#475569", glow: isDark ? "rgba(255,255,255,0.08)" : "#e2e8f0" },
             ].map(({ label, icon: Icon, action, color, glow }) => (
               <button key={label} onClick={action}
-                style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 10, border: `1px solid ${glow}`, background: glow, color, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "'Tajawal', sans-serif" }}>
+                style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 10, border: `1px solid ${glow}`, background: isDark ? glow : "#f8fafc", color, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "'Tajawal', sans-serif" }}>
                 <Icon size={14} /> تصدير {label}
               </button>
             ))}
           </div>
 
           {/* Table */}
-          <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(0,245,255,0.07)", borderRadius: 16, overflow: "hidden" }}>
+          <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, overflow: "hidden", boxShadow: isDark ? "none" : "0 1px 4px rgba(0,0,0,0.06)" }}>
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", fontSize: 13, borderCollapse: "collapse" }}>
                 <thead>
-                  <tr style={{ borderBottom: "1px solid rgba(0,245,255,0.07)" }}>
+                  <tr style={{ borderBottom: `1px solid ${theadBorder}` }}>
                     {["التاريخ", "الموظف", "الحالة", "الدخول", "الخروج", "ساعات", "تأخير"].map(h => (
-                      <th key={h} style={{ textAlign: "right", color: "rgba(0,245,255,0.5)", fontWeight: 600, padding: "11px 14px", fontSize: 11 }}>{h}</th>
+                      <th key={h} style={{ textAlign: "right", color: theadColor, fontWeight: 600, padding: "11px 14px", fontSize: 11 }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -218,11 +238,12 @@ export default function AdminReports() {
                     const sColor = r.status === "present" ? "#10b981" : r.status === "late" ? "#f59e0b" : r.status === "absent" ? "#f87171" : "#3b82f6";
                     const sBg = r.status === "present" ? "rgba(16,185,129,0.1)" : r.status === "late" ? "rgba(245,158,11,0.1)" : r.status === "absent" ? "rgba(248,113,113,0.1)" : "rgba(59,130,246,0.1)";
                     return (
-                      <tr key={r.id} style={{ borderBottom: i < records.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none", transition: "background 0.15s" }}
-                        onMouseEnter={e => (e.currentTarget.style.background = "rgba(0,245,255,0.03)")}
+                      <tr key={r.id}
+                        style={{ borderBottom: i < records.length - 1 ? `1px solid ${tableBorder}` : "none", transition: "background 0.15s" }}
+                        onMouseEnter={e => (e.currentTarget.style.background = rowHoverBg)}
                         onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
-                        <td style={{ padding: "10px 14px", color: "rgba(255,255,255,0.4)", fontSize: 12 }}>{fmtDate(r.date)}</td>
-                        <td style={{ padding: "10px 14px", color: "#fff", fontWeight: 600 }}>{r.employeeName}</td>
+                        <td style={{ padding: "10px 14px", color: textSecondary, fontSize: 12 }}>{fmtDate(r.date)}</td>
+                        <td style={{ padding: "10px 14px", color: textPrimary, fontWeight: 600 }}>{r.employeeName}</td>
                         <td style={{ padding: "10px 14px" }}>
                           <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 20, fontWeight: 600, color: sColor, background: sBg }}>{statusAr(r.status)}</span>
                         </td>
@@ -241,8 +262,8 @@ export default function AdminReports() {
       )}
 
       {records.length === 0 && !loading && (
-        <div style={{ textAlign: "center", padding: "60px 0", color: "rgba(255,255,255,0.25)" }}>
-          <Calendar size={40} style={{ margin: "0 auto 12px", opacity: 0.2 }} />
+        <div style={{ textAlign: "center", padding: "60px 0", color: textMuted }}>
+          <Calendar size={40} style={{ margin: "0 auto 12px", opacity: 0.3 }} />
           <p style={{ fontSize: 13 }}>اختر الفترة الزمنية ثم اضغط عرض</p>
         </div>
       )}

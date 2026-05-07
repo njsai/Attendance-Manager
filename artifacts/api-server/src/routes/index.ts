@@ -18,6 +18,7 @@ import preferencesRouter from "./preferences.js";
 import subscriptionsRouter from "./subscriptions.js";
 import monitoringRouter from "./monitoring.js";
 import notificationsRouter from "./notifications.js";
+import companyAlertsRouter from "./company-alerts.js";
 
 const router: IRouter = Router();
 
@@ -29,6 +30,7 @@ router.use("/super-admin", superAdminRouter);
 router.use("/super-admin", subscriptionsRouter);
 router.use("/super-admin/monitoring", monitoringRouter);
 router.use("/super-admin/notifications", notificationsRouter);
+router.use("/company/alerts", companyAlertsRouter);
 router.use("/branches", branchesRouter);
 router.use("/departments", departmentsRouter);
 router.use("/shifts", shiftsRouter);

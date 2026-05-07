@@ -221,7 +221,7 @@ export async function checkSubscriptionExpiry() {
       const expiring = await query(
         `SELECT cs.company_id, c.name, cs.plan_name, cs.end_date
          FROM company_subscriptions cs JOIN companies c ON c.id = cs.company_id
-         WHERE cs.status = 'active' AND cs.end_date = CURRENT_DATE + $1
+         WHERE cs.status = 'active' AND cs.end_date = CURRENT_DATE + ($1::int * INTERVAL '1 day')
          AND NOT EXISTS (
            SELECT 1 FROM system_notifications sn
            WHERE sn.company_id = cs.company_id AND sn.type = $2

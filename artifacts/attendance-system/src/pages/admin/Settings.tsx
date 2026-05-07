@@ -3,6 +3,7 @@ import {
   Settings, Users, Key, MapPin, Save, Plus, Edit2, Trash2,
   Eye, EyeOff, Shield, CheckCircle, XCircle, RefreshCw, Lock, Navigation, ToggleLeft, ToggleRight
 } from "lucide-react";
+import { useTheme } from "@/lib/theme";
 
 const BASE = import.meta.env.BASE_URL;
 
@@ -263,6 +264,8 @@ function AddAccountModal({ onClose, onSaved }: { onClose: () => void; onSaved: (
 }
 
 export default function AdminSettings() {
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
   const [tab, setTab] = useState<"accounts" | "location" | "locationMode" | "password">("accounts");
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
@@ -415,9 +418,17 @@ export default function AdminSettings() {
     { key: "password", label: "تغيير كلمتي المرور", icon: Key },
   ] as const;
 
-  const nCard = { background: "rgba(255,255,255,0.02)", border: "1px solid rgba(0,245,255,0.08)", borderRadius: 18, padding: 20 };
-  const inputSt = { width: "100%", padding: "11px 14px", borderRadius: 11, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(0,245,255,0.12)", color: "#fff", fontSize: 13, outline: "none", boxSizing: "border-box" as const, colorScheme: "dark" };
-  const labelSt = { display: "block", fontSize: 11, color: "rgba(255,255,255,0.4)", marginBottom: 5 };
+  const textPrimary  = isDark ? "#fff" : "#0f172a";
+  const textSecondary = isDark ? "rgba(255,255,255,0.35)" : "#64748b";
+  const textMuted    = isDark ? "rgba(255,255,255,0.25)" : "#94a3b8";
+  const cardBg       = isDark ? "rgba(255,255,255,0.02)" : "#fff";
+  const cardBorder   = isDark ? "rgba(0,245,255,0.08)" : "#e2e8f0";
+  const inputBg      = isDark ? "rgba(255,255,255,0.04)" : "#f8fafc";
+  const inputBorderC = isDark ? "rgba(0,245,255,0.12)" : "#e2e8f0";
+  const rowHoverBg   = isDark ? "rgba(255,255,255,0.01)" : "#f8fafc";
+  const nCard = { background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 18, padding: 20, boxShadow: isDark ? "none" : "0 1px 4px rgba(0,0,0,0.06)" };
+  const inputSt = { width: "100%", padding: "11px 14px", borderRadius: 11, background: inputBg, border: `1px solid ${inputBorderC}`, color: textPrimary, fontSize: 13, outline: "none", boxSizing: "border-box" as const, colorScheme: isDark ? "dark" : "light" };
+  const labelSt = { display: "block", fontSize: 11, color: textSecondary, marginBottom: 5 };
 
   const roleColor: Record<string, { color: string; bg: string; border: string }> = {
     admin:    { color: "#a855f7", bg: "rgba(168,85,247,0.1)",  border: "rgba(168,85,247,0.2)" },
@@ -440,8 +451,8 @@ export default function AdminSettings() {
           <Settings size={18} style={{ color: "#00f5ff" }} />
         </div>
         <div>
-          <h1 style={{ fontSize: 18, fontWeight: 800, color: "#fff", margin: 0 }}>الإعدادات</h1>
-          <p style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", marginTop: 3 }}>إدارة الحسابات وإعدادات النظام</p>
+          <h1 style={{ fontSize: 18, fontWeight: 800, color: textPrimary, margin: 0 }}>الإعدادات</h1>
+          <p style={{ fontSize: 12, color: textSecondary, marginTop: 3 }}>إدارة الحسابات وإعدادات النظام</p>
         </div>
       </div>
 
@@ -451,7 +462,7 @@ export default function AdminSettings() {
           const active = tab === t.key;
           return (
             <button key={t.key} onClick={() => setTab(t.key)}
-              style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 11, border: active ? "1px solid rgba(0,245,255,0.3)" : "1px solid rgba(255,255,255,0.07)", background: active ? "rgba(0,245,255,0.08)" : "rgba(255,255,255,0.03)", color: active ? "#00f5ff" : "rgba(255,255,255,0.4)", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "'Tajawal', sans-serif" }}>
+              style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 11, border: active ? "1px solid rgba(0,245,255,0.3)" : `1px solid ${cardBorder}`, background: active ? "rgba(0,245,255,0.08)" : cardBg, color: active ? "#00f5ff" : textSecondary, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "'Tajawal', sans-serif" }}>
               <t.icon size={13} /> {t.label}
             </button>
           );
@@ -461,10 +472,10 @@ export default function AdminSettings() {
       {/* Accounts Tab */}
       {tab === "accounts" && (
         <div style={nCard}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, paddingBottom: 14, borderBottom: "1px solid rgba(0,245,255,0.07)" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, paddingBottom: 14, borderBottom: `1px solid ${cardBorder}` }}>
             <div>
-              <h2 style={{ fontSize: 14, fontWeight: 700, color: "#fff", margin: 0 }}>حسابات المستخدمين</h2>
-              <p style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", marginTop: 3 }}>{accounts.length} حساب مسجل</p>
+              <h2 style={{ fontSize: 14, fontWeight: 700, color: textPrimary, margin: 0 }}>حسابات المستخدمين</h2>
+              <p style={{ fontSize: 11, color: textSecondary, marginTop: 3 }}>{accounts.length} حساب مسجل</p>
             </div>
             <button onClick={() => setShowAdd(true)}
               style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 11, border: "none", background: "linear-gradient(135deg, rgba(0,245,255,0.7), rgba(59,130,246,0.7))", color: "#020817", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "'Tajawal', sans-serif" }}>
@@ -477,28 +488,28 @@ export default function AdminSettings() {
               <RefreshCw size={24} style={{ color: "#00f5ff", animation: "spin 1s linear infinite" }} />
             </div>
           ) : accounts.length === 0 ? (
-            <div style={{ textAlign: "center", padding: "40px 0", color: "rgba(255,255,255,0.25)" }}>
+            <div style={{ textAlign: "center", padding: "40px 0", color: textMuted }}>
               <Users size={36} style={{ margin: "0 auto 10px", opacity: 0.2 }} />
               <p style={{ fontSize: 13 }}>لا توجد حسابات</p>
             </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
               {accounts.map(acc => {
-                const rc = roleColor[acc.role] ?? { color: "rgba(255,255,255,0.5)", bg: "rgba(255,255,255,0.06)", border: "rgba(255,255,255,0.1)" };
+                const rc = roleColor[acc.role] ?? { color: textSecondary, bg: inputBg, border: cardBorder };
                 return (
-                  <div key={acc.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", borderRadius: 12, background: "rgba(255,255,255,0.01)" }}>
+                  <div key={acc.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", borderRadius: 12, background: rowHoverBg }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
                       <div style={{ width: 38, height: 38, borderRadius: 11, background: rc.bg, border: `1px solid ${rc.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 700, color: rc.color, flexShrink: 0 }}>
                         {acc.fullName.charAt(0)}
                       </div>
                       <div style={{ minWidth: 0 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                          <span style={{ fontSize: 13, fontWeight: 600, color: "#fff" }}>{acc.fullName}</span>
+                          <span style={{ fontSize: 13, fontWeight: 600, color: textPrimary }}>{acc.fullName}</span>
                           <span style={{ fontSize: 10, fontWeight: 600, color: rc.color, background: rc.bg, border: `1px solid ${rc.border}`, padding: "1px 7px", borderRadius: 20 }}>{ROLE_MAP[acc.role] || acc.role}</span>
                           {!acc.isActive && <span style={{ fontSize: 10, color: "#f87171", background: "rgba(248,113,113,0.1)", border: "1px solid rgba(248,113,113,0.2)", padding: "1px 7px", borderRadius: 20 }}>معطّل</span>}
                         </div>
-                        <p style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", fontFamily: "monospace", marginTop: 2 }} dir="ltr">{acc.username}</p>
-                        {(acc.email || acc.phone) && <p style={{ fontSize: 11, color: "rgba(255,255,255,0.25)" }}>{acc.email || acc.phone}</p>}
+                        <p style={{ fontSize: 11, color: textSecondary, fontFamily: "monospace", marginTop: 2 }} dir="ltr">{acc.username}</p>
+                        {(acc.email || acc.phone) && <p style={{ fontSize: 11, color: textMuted }}>{acc.email || acc.phone}</p>}
                       </div>
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
@@ -522,13 +533,13 @@ export default function AdminSettings() {
           )}
 
           {/* Legend */}
-          <div style={{ marginTop: 16, paddingTop: 14, borderTop: "1px solid rgba(255,255,255,0.05)", background: "rgba(255,255,255,0.01)", borderRadius: 12, padding: "12px" }}>
-            <p style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.3)", marginBottom: 8 }}>بيانات الدخول للاختبار:</p>
+          <div style={{ marginTop: 16, paddingTop: 14, borderTop: `1px solid ${cardBorder}`, background: rowHoverBg, borderRadius: 12, padding: "12px" }}>
+            <p style={{ fontSize: 11, fontWeight: 600, color: textSecondary, marginBottom: 8 }}>بيانات الدخول للاختبار:</p>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
               {[{ u: "admin", p: "admin123", r: "مدير" }, { u: "manager1", p: "manager123", r: "مشرف" }, { u: "emp1", p: "emp123", r: "موظف" }, { u: "emp2", p: "emp123", r: "موظف" }].map(x => (
-                <div key={x.u} style={{ background: "rgba(0,245,255,0.04)", borderRadius: 10, padding: "8px 10px", border: "1px solid rgba(0,245,255,0.08)" }}>
+                <div key={x.u} style={{ background: inputBg, borderRadius: 10, padding: "8px 10px", border: `1px solid ${cardBorder}` }}>
                   <p style={{ fontSize: 10, fontWeight: 700, color: "rgba(0,245,255,0.6)" }}>{x.r}</p>
-                  <p style={{ fontSize: 10, fontFamily: "monospace", color: "rgba(255,255,255,0.4)" }} dir="ltr">{x.u} / {x.p}</p>
+                  <p style={{ fontSize: 10, fontFamily: "monospace", color: textSecondary }} dir="ltr">{x.u} / {x.p}</p>
                 </div>
               ))}
             </div>
@@ -544,8 +555,8 @@ export default function AdminSettings() {
               <MapPin size={16} style={{ color: "#10b981" }} />
             </div>
             <div>
-              <h2 style={{ fontSize: 14, fontWeight: 700, color: "#fff", margin: 0 }}>موقع الشركة الجغرافي</h2>
-              <p style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", marginTop: 3 }}>يُستخدم للتحقق من موقع الموظف عند تسجيل الحضور</p>
+              <h2 style={{ fontSize: 14, fontWeight: 700, color: textPrimary, margin: 0 }}>موقع الشركة الجغرافي</h2>
+              <p style={{ fontSize: 11, color: textSecondary, marginTop: 3 }}>يُستخدم للتحقق من موقع الموظف عند تسجيل الحضور</p>
             </div>
           </div>
 
@@ -565,14 +576,14 @@ export default function AdminSettings() {
             <div>
               <label style={labelSt}>نطاق الحضور (متر)</label>
               <input type="number" value={location.radiusMeters} onChange={e => setLocation(l => ({ ...l, radiusMeters: parseInt(e.target.value) || 200 }))} dir="ltr" style={inputSt} />
-              <p style={{ fontSize: 10, color: "rgba(255,255,255,0.25)", marginTop: 4 }}>أقصى مسافة مسموح بها لتسجيل الحضور</p>
+              <p style={{ fontSize: 10, color: textMuted, marginTop: 4 }}>أقصى مسافة مسموح بها لتسجيل الحضور</p>
             </div>
             <div>
               <div style={{ padding: "12px 14px", background: "rgba(0,245,255,0.05)", borderRadius: 12, border: "1px solid rgba(0,245,255,0.12)" }}>
                 <p style={{ fontSize: 12, fontWeight: 600, color: "#00f5ff", marginBottom: 5, display: "flex", alignItems: "center", gap: 5 }}>
                   <MapPin size={12} /> الموقع الحالي
                 </p>
-                <p style={{ fontSize: 11, fontFamily: "monospace", color: "rgba(255,255,255,0.5)" }} dir="ltr">{location.latitude}, {location.longitude}</p>
+                <p style={{ fontSize: 11, fontFamily: "monospace", color: textSecondary }} dir="ltr">{location.latitude}, {location.longitude}</p>
                 <a href={`https://maps.google.com/?q=${location.latitude},${location.longitude}`} target="_blank" rel="noopener noreferrer"
                   style={{ fontSize: 10, color: "#00f5ff", textDecoration: "underline", display: "block", marginTop: 4 }}>
                   عرض على خريطة Google
@@ -596,27 +607,27 @@ export default function AdminSettings() {
               <Navigation size={16} style={{ color: "#a855f7" }} />
             </div>
             <div>
-              <h2 style={{ fontSize: 14, fontWeight: 700, color: "#fff", margin: 0 }}>وضع التحقق من الموقع الجغرافي</h2>
-              <p style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", marginTop: 3 }}>تحكم في إلزامية الموقع عند تسجيل الحضور</p>
+              <h2 style={{ fontSize: 14, fontWeight: 700, color: textPrimary, margin: 0 }}>وضع التحقق من الموقع الجغرافي</h2>
+              <p style={{ fontSize: 11, color: textSecondary, marginTop: 3 }}>تحكم في إلزامية الموقع عند تسجيل الحضور</p>
             </div>
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <button onClick={() => setLocationMode(m => m === "enabled" ? "disabled" : "enabled")}
-              style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px", borderRadius: 14, border: `2px solid ${locationMode === "enabled" ? "rgba(168,85,247,0.4)" : "rgba(255,255,255,0.08)"}`, background: locationMode === "enabled" ? "rgba(168,85,247,0.07)" : "rgba(255,255,255,0.02)", cursor: "pointer", textAlign: "right" }}>
+              style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px", borderRadius: 14, border: `2px solid ${locationMode === "enabled" ? "rgba(168,85,247,0.4)" : cardBorder}`, background: locationMode === "enabled" ? "rgba(168,85,247,0.07)" : inputBg, cursor: "pointer", textAlign: "right" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                {locationMode === "enabled" ? <ToggleRight size={28} style={{ color: "#a855f7" }} /> : <ToggleLeft size={28} style={{ color: "rgba(255,255,255,0.3)" }} />}
+                {locationMode === "enabled" ? <ToggleRight size={28} style={{ color: "#a855f7" }} /> : <ToggleLeft size={28} style={{ color: textSecondary }} />}
                 <div>
-                  <p style={{ fontWeight: 700, fontSize: 13, color: locationMode === "enabled" ? "#a855f7" : "rgba(255,255,255,0.5)", margin: 0 }}>{locationMode === "enabled" ? "مُفعَّل ✓" : "معطَّل"}</p>
-                  <p style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginTop: 3 }}>{locationMode === "enabled" ? "يجب أن يكون الموظف داخل نطاق GPS فرعه عند التسجيل" : "لا يُطلب التحقق من الموقع عند تسجيل الحضور"}</p>
+                  <p style={{ fontWeight: 700, fontSize: 13, color: locationMode === "enabled" ? "#a855f7" : textSecondary, margin: 0 }}>{locationMode === "enabled" ? "مُفعَّل ✓" : "معطَّل"}</p>
+                  <p style={{ fontSize: 11, color: textSecondary, marginTop: 3 }}>{locationMode === "enabled" ? "يجب أن يكون الموظف داخل نطاق GPS فرعه عند التسجيل" : "لا يُطلب التحقق من الموقع عند تسجيل الحضور"}</p>
                 </div>
               </div>
-              <div style={{ width: 44, height: 24, borderRadius: 12, background: locationMode === "enabled" ? "#a855f7" : "rgba(255,255,255,0.15)", position: "relative", flexShrink: 0, transition: "background 0.2s" }}>
+              <div style={{ width: 44, height: 24, borderRadius: 12, background: locationMode === "enabled" ? "#a855f7" : (isDark ? "rgba(255,255,255,0.15)" : "#e2e8f0"), position: "relative", flexShrink: 0, transition: "background 0.2s" }}>
                 <div style={{ width: 18, height: 18, background: "#fff", borderRadius: "50%", position: "absolute", top: 3, transition: "all 0.2s", right: locationMode === "enabled" ? 3 : undefined, left: locationMode === "enabled" ? undefined : 3 }} />
               </div>
             </button>
 
-            <div style={{ padding: "12px 14px", borderRadius: 12, border: `1px solid ${locationMode === "enabled" ? "rgba(245,158,11,0.2)" : "rgba(255,255,255,0.07)"}`, background: locationMode === "enabled" ? "rgba(245,158,11,0.05)" : "rgba(255,255,255,0.02)", fontSize: 12, color: locationMode === "enabled" ? "#f59e0b" : "rgba(255,255,255,0.35)" }}>
+            <div style={{ padding: "12px 14px", borderRadius: 12, border: `1px solid ${locationMode === "enabled" ? "rgba(245,158,11,0.2)" : cardBorder}`, background: locationMode === "enabled" ? "rgba(245,158,11,0.05)" : inputBg, fontSize: 12, color: locationMode === "enabled" ? "#f59e0b" : textSecondary }}>
               {locationMode === "enabled" ? (
                 <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
                   <p style={{ fontWeight: 600, margin: 0 }}>عند التفعيل:</p>
@@ -645,8 +656,8 @@ export default function AdminSettings() {
               <Shield size={16} style={{ color: "#f59e0b" }} />
             </div>
             <div>
-              <h2 style={{ fontSize: 14, fontWeight: 700, color: "#fff", margin: 0 }}>تغيير كلمة المرور الخاصة بك</h2>
-              <p style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", marginTop: 3 }}>يُنصح بتغييرها دورياً للحفاظ على الأمان</p>
+              <h2 style={{ fontSize: 14, fontWeight: 700, color: textPrimary, margin: 0 }}>تغيير كلمة المرور الخاصة بك</h2>
+              <p style={{ fontSize: 11, color: textSecondary, marginTop: 3 }}>يُنصح بتغييرها دورياً للحفاظ على الأمان</p>
             </div>
           </div>
 
@@ -655,7 +666,7 @@ export default function AdminSettings() {
               <label style={labelSt}>كلمة المرور الحالية</label>
               <div style={{ position: "relative" }}>
                 <input type={showSelf ? "text" : "password"} value={selfPass.old} onChange={e => setSelfPass(p => ({ ...p, old: e.target.value }))} placeholder="••••••••" style={inputSt} />
-                <button type="button" onClick={() => setShowSelf(!showSelf)} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "rgba(255,255,255,0.35)", cursor: "pointer" }}>
+                <button type="button" onClick={() => setShowSelf(!showSelf)} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: textSecondary, cursor: "pointer" }}>
                   {showSelf ? <EyeOff size={14} /> : <Eye size={14} />}
                 </button>
               </div>

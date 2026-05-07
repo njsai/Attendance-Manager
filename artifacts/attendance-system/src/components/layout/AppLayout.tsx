@@ -1,4 +1,4 @@
-import { ReactNode, useState } from "react";
+import { ReactNode, useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
@@ -6,7 +6,7 @@ import { useTheme } from "@/lib/theme";
 import {
   LayoutDashboard, Users, Building2, Clock,
   CalendarCheck, FileBarChart, LogOut, Menu, X, Home, Settings, MessageCircle,
-  Sun, Moon, Languages, Banknote, Zap, Bell, ChevronLeft,
+  Sun, Moon, Languages, Banknote, Zap, Bell, ChevronLeft, AlertTriangle, Info, CheckCircle,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -256,12 +256,67 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
   );
 }
 
+interface Alert {
+  id: number; type: string; severity: string; title: string; message: string;
+  is_read: boolean; created_at: string;
+}
+
+function severityIcon(s: string) {
+  if (s === "warning") return <AlertTriangle size={13} style={{ color: "#f59e0b", flexShrink: 0 }} />;
+  if (s === "error")   return <AlertTriangle size={13} style={{ color: "#f87171", flexShrink: 0 }} />;
+  if (s === "success") return <CheckCircle   size={13} style={{ color: "#10b981", flexShrink: 0 }} />;
+  return <Info size={13} style={{ color: "#00f5ff", flexShrink: 0 }} />;
+}
+
 export default function AppLayout({ children }: { children: ReactNode }) {
   const { user } = useAuth();
-  const { t, dir, locale } = useI18n();
+  const { t, dir, locale, lang } = useI18n();
   const { theme } = useTheme();
   const isDark = theme === "dark";
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [alertsOpen, setAlertsOpen] = useState(false);
+  const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const bellRef = useRef<HTMLDivElement>(null);
+  const BASE = import.meta.env.BASE_URL;
+
+  const fetchAlerts = async () => {
+    try {
+      const res = await fetch(`${BASE}api/company/alerts`, { credentials: "include" });
+      if (res.ok) {
+        const data = await res.json();
+        setAlerts(data.notifications || []);
+        setUnreadCount(data.unreadCount || 0);
+      }
+    } catch {}
+  };
+
+  useEffect(() => {
+    if (user) {
+      fetchAlerts();
+      const iv = setInterval(fetchAlerts, 60000);
+      return () => clearInterval(iv);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (!alertsOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (bellRef.current && !bellRef.current.contains(e.target as Node)) {
+        setAlertsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [alertsOpen]);
+
+  const markAllRead = async () => {
+    try {
+      await fetch(`${BASE}api/company/alerts/read-all`, { method: "PUT", credentials: "include" });
+      setAlerts(a => a.map(n => ({ ...n, is_read: true })));
+      setUnreadCount(0);
+    } catch {}
+  };
 
   if (!user) return <>{children}</>;
 
@@ -283,14 +338,20 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const menuColor = isDark ? "#00f5ff" : "#0891b2";
   const titleColor = isDark ? "#00f5ff" : "#0891b2";
 
+  const panelBg = isDark ? "#0d1424" : "#fff";
+  const panelBorder = isDark ? "rgba(0,245,255,0.1)" : "#e2e8f0";
+  const panelTextPrimary = isDark ? "#fff" : "#0f172a";
+  const panelTextSecondary = isDark ? "rgba(255,255,255,0.4)" : "#64748b";
+  const panelDivider = isDark ? "rgba(255,255,255,0.04)" : "#f1f5f9";
+  const panelUnreadBg = isDark ? "rgba(0,245,255,0.03)" : "#f0f9ff";
+
+  const fmtTime = (d: string) => new Date(d).toLocaleDateString(lang === "ar" ? "ar-IQ" : "en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+
   return (
     <div
       className="flex h-screen overflow-hidden"
       dir={dir}
-      style={{
-        background: appBg,
-        position: "relative",
-      }}
+      style={{ background: appBg, position: "relative" }}
     >
       {/* Ambient glow blobs */}
       {isDark && (
@@ -395,8 +456,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               style={{
                 display: "flex", alignItems: "center", gap: 6,
                 padding: "4px 12px", borderRadius: 20,
-                background: pillBg,
-                border: `1px solid ${pillBorder}`,
+                background: pillBg, border: `1px solid ${pillBorder}`,
                 fontSize: 11, color: pillColor,
               }}
             >
@@ -410,13 +470,106 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             <div style={{ fontSize: 12, color: dateColor }}>
               {new Date().toLocaleDateString(locale, { weekday: "short", month: "short", day: "numeric" })}
             </div>
-            <div style={{
-              width: 32, height: 32, borderRadius: 8,
-              background: bellBg, border: `1px solid ${bellBorder}`,
-              display: "flex", alignItems: "center", justifyContent: "center",
-              cursor: "pointer",
-            }}>
-              <Bell size={15} color={bellColor} />
+
+            {/* Bell with dropdown */}
+            <div ref={bellRef} style={{ position: "relative" }}>
+              <div
+                onClick={() => setAlertsOpen(v => !v)}
+                style={{
+                  width: 32, height: 32, borderRadius: 8,
+                  background: alertsOpen ? (isDark ? "rgba(0,245,255,0.12)" : "rgba(0,180,200,0.12)") : bellBg,
+                  border: `1px solid ${bellBorder}`,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  cursor: "pointer", position: "relative",
+                }}
+              >
+                <Bell size={15} color={bellColor} />
+                {unreadCount > 0 && (
+                  <span style={{
+                    position: "absolute", top: -5, right: -5,
+                    minWidth: 16, height: 16, borderRadius: 8,
+                    background: "#f87171", color: "#fff",
+                    fontSize: 9, fontWeight: 800,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    padding: "0 3px", lineHeight: 1,
+                  }}>
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </span>
+                )}
+              </div>
+
+              <AnimatePresence>
+                {alertsOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -8, scale: 0.97 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -8, scale: 0.97 }}
+                    transition={{ duration: 0.15 }}
+                    style={{
+                      position: "absolute", top: 40,
+                      [dir === "rtl" ? "right" : "left"]: 0,
+                      width: 320,
+                      background: panelBg,
+                      border: `1px solid ${panelBorder}`,
+                      borderRadius: 14,
+                      boxShadow: isDark ? "0 8px 32px rgba(0,0,0,0.5)" : "0 8px 24px rgba(0,0,0,0.12)",
+                      zIndex: 200,
+                      overflow: "hidden",
+                      fontFamily: "'Tajawal', sans-serif",
+                    }}
+                  >
+                    {/* Panel header */}
+                    <div style={{ padding: "12px 16px", borderBottom: `1px solid ${panelDivider}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <Bell size={14} color={bellColor} />
+                        <span style={{ fontSize: 13, fontWeight: 700, color: panelTextPrimary }}>
+                          {lang === "ar" ? "التنبيهات" : "Notifications"}
+                        </span>
+                        {unreadCount > 0 && (
+                          <span style={{ fontSize: 10, fontWeight: 700, background: "#f87171", color: "#fff", borderRadius: 20, padding: "1px 6px" }}>
+                            {unreadCount}
+                          </span>
+                        )}
+                      </div>
+                      {unreadCount > 0 && (
+                        <button onClick={markAllRead}
+                          style={{ fontSize: 11, color: "#00f5ff", background: "none", border: "none", cursor: "pointer", fontFamily: "'Tajawal', sans-serif" }}>
+                          {lang === "ar" ? "تحديد الكل كمقروء" : "Mark all read"}
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Notifications list */}
+                    <div style={{ maxHeight: 340, overflowY: "auto" }}>
+                      {alerts.length === 0 ? (
+                        <div style={{ padding: "36px 16px", textAlign: "center" }}>
+                          <Bell size={28} style={{ margin: "0 auto 8px", opacity: 0.2, color: panelTextPrimary }} />
+                          <p style={{ fontSize: 12, color: panelTextSecondary, margin: 0 }}>
+                            {lang === "ar" ? "لا توجد تنبيهات" : "No notifications"}
+                          </p>
+                        </div>
+                      ) : alerts.map((n, i) => (
+                        <div key={n.id} style={{
+                          padding: "10px 14px",
+                          background: !n.is_read ? panelUnreadBg : "transparent",
+                          borderBottom: i < alerts.length - 1 ? `1px solid ${panelDivider}` : "none",
+                          display: "flex", gap: 10, alignItems: "flex-start",
+                        }}>
+                          {severityIcon(n.severity)}
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: 12, fontWeight: 600, color: panelTextPrimary, lineHeight: 1.4 }}>{n.title}</div>
+                            <div style={{ fontSize: 11, color: panelTextSecondary, marginTop: 2, lineHeight: 1.4 }}>{n.message}</div>
+                            <div style={{ fontSize: 10, color: panelTextSecondary, marginTop: 4, opacity: 0.7 }}>{fmtTime(n.created_at)}</div>
+                          </div>
+                          {!n.is_read && (
+                            <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#00f5ff", flexShrink: 0, marginTop: 3 }} />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </div>
         </header>
