@@ -10,6 +10,7 @@ import {
   parseDevice, trackSession, removeSession,
 } from "../lib/security.js";
 import { loginRateLimit, superAdminRateLimit } from "../middleware/security.js";
+import { isDbReachable } from "../lib/db-state.js";
 
 const router = Router();
 
@@ -18,24 +19,6 @@ const LOCKOUT_MINUTES = 15;
 
 // ─── Demo accounts (used when DB is unavailable in dev) ───────────────────────
 const IS_DEV = process.env.NODE_ENV !== "production";
-
-// Track DB reachability — once it fails, skip future DB attempts in dev
-let _dbReachable: boolean | null = null;
-async function isDbReachable(): Promise<boolean> {
-  if (_dbReachable === false) return false;
-  if (_dbReachable === true) return true;
-  try {
-    await Promise.race([
-      db.execute(sql`SELECT 1`),
-      new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 2000)),
-    ]);
-    _dbReachable = true;
-    return true;
-  } catch {
-    _dbReachable = false;
-    return false;
-  }
-}
 
 const DEMO_EMPLOYEES: Record<string, { password: string; id: number; companyId: number; fullName: string; role: string; username: string; jobTitle: string }> = {
   admin:    { password: "admin123",    id: 1,  companyId: 1, fullName: "مدير الشركة",     role: "admin",    username: "admin",    jobTitle: "مدير عام" },
@@ -59,8 +42,8 @@ router.post("/login", loginRateLimit, async (req, res) => {
       return;
     }
 
-    // ── Demo mode fallback (when DB is unavailable in dev) ────────────────
-    if (IS_DEV) {
+    // ── Demo mode fallback: ONLY when DB is unavailable in dev ───────────
+    if (IS_DEV && !(await isDbReachable())) {
       const demo = DEMO_EMPLOYEES[username.trim().toLowerCase()];
       if (demo && demo.password === password) {
         req.session.userId = demo.id;
@@ -76,8 +59,12 @@ router.post("/login", loginRateLimit, async (req, res) => {
         });
         return;
       }
+      // DB unavailable and credentials don't match demo accounts
+      res.status(401).json({ message: "اسم المستخدم أو كلمة المرور غير صحيحة" });
+      return;
     }
 
+    // ── DB is available — real login ───────────────────────────────────────
     // IP-level brute force check
     const recentIpFails = await getRecentFailedAttempts(ip, 15);
     if (recentIpFails >= 20) {
@@ -255,8 +242,8 @@ router.post("/super-admin/login", superAdminRateLimit, async (req, res) => {
       return;
     }
 
-    // ── Demo mode fallback ────────────────────────────────────────────────
-    if (IS_DEV) {
+    // ── Demo mode fallback: ONLY when DB is unavailable in dev ───────────
+    if (IS_DEV && !(await isDbReachable())) {
       const demo = DEMO_SUPER_ADMINS[username.trim().toLowerCase()];
       if (demo && demo.password === password) {
         req.session.superAdminId = demo.id;
@@ -272,6 +259,8 @@ router.post("/super-admin/login", superAdminRateLimit, async (req, res) => {
         });
         return;
       }
+      res.status(401).json({ message: "بيانات الدخول غير صحيحة" });
+      return;
     }
 
     const recentFails = await getRecentFailedAttempts(ip, 30);

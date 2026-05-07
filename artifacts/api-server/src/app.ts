@@ -14,6 +14,7 @@ import {
   requestSizeLimiter,
 } from "./middleware/security.js";
 import { migrateLegacyPasswords } from "./lib/security.js";
+import { isDbReachable } from "./lib/db-state.js";
 import { pool } from "@workspace/db";
 
 const app: Express = express();
@@ -116,6 +117,34 @@ app.use("/api", auditMiddleware);
 app.get("/api/healthz", (_req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString(), secure: true });
 });
+
+// ─── Dev Fast-Fail: return instant empty responses when DB is unavailable ─────
+// In dev, all data routes return immediately ([] or {}) instead of hanging 8s
+if (!isProduction) {
+  app.use("/api", async (req, res, next) => {
+    // Auth routes handle their own DB fallback (demo accounts)
+    if (req.path.startsWith("/auth")) { next(); return; }
+    // Super-admin routes have no demo mode — let them fail fast
+    const dbOk = await isDbReachable();
+    if (dbOk) { next(); return; }
+    // DB is unavailable — return instant empty response
+    if (req.method === "GET") {
+      // Object-shaped endpoints
+      const p = req.path;
+      const isObj =
+        p.includes("/dashboard") || p.includes("/stats") || p.includes("/summary") ||
+        p.includes("/today") || p.includes("/my-stats") || p.includes("/balance") ||
+        p.includes("/settings") || p.includes("/location") || p.includes("/company") ||
+        p.includes("/profile") || p.includes("/reports/");
+      res.json(isObj ? {} : []);
+    } else {
+      res.status(503).json({
+        message: "قاعدة البيانات غير متاحة في وضع التطوير — هذه العملية تتطلب الاتصال بقاعدة البيانات",
+        demo: true,
+      });
+    }
+  });
+}
 
 // ─── Routes ───────────────────────────────────────────────────────────────────
 app.use("/api", router);
