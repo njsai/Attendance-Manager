@@ -4,6 +4,7 @@ import { companiesTable } from "@workspace/db";
 import { sql } from "drizzle-orm";
 import { mkdirSync, existsSync, writeFileSync, readdirSync, unlinkSync, statSync } from "fs";
 import { join } from "path";
+import { checkSubscriptionExpiry } from "../routes/subscriptions.js";
 
 export const BACKUP_DIR = process.env.BACKUP_DIR || "/home/runner/workspace/data/backups";
 const KEEP_DAYS = 30;
@@ -88,4 +89,13 @@ export function startBackupScheduler() {
   }, { timezone: "Asia/Riyadh" });
 
   console.log("[Backup] Scheduler started — daily at 02:00 AM (Asia/Riyadh)");
+
+  // ── Subscription expiry check every 6 hours ──────────────────────────────
+  cron.schedule("0 */6 * * *", async () => {
+    console.log("[Subscription] Running expiry check...");
+    await checkSubscriptionExpiry();
+  });
+
+  // Run once immediately on startup
+  setTimeout(() => checkSubscriptionExpiry().catch(console.error), 5000);
 }

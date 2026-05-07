@@ -15,6 +15,9 @@ import messagesRouter from "./messages.js";
 import securityRouter from "./security.js";
 import payrollRouter from "./payroll.js";
 import preferencesRouter from "./preferences.js";
+import subscriptionsRouter from "./subscriptions.js";
+import monitoringRouter from "./monitoring.js";
+import notificationsRouter from "./notifications.js";
 
 const router: IRouter = Router();
 
@@ -23,6 +26,9 @@ router.use("/setup", setupRouter);
 router.use("/auth", authRouter);
 router.use("/security", securityRouter);
 router.use("/super-admin", superAdminRouter);
+router.use("/super-admin", subscriptionsRouter);
+router.use("/super-admin/monitoring", monitoringRouter);
+router.use("/super-admin/notifications", notificationsRouter);
 router.use("/branches", branchesRouter);
 router.use("/departments", departmentsRouter);
 router.use("/shifts", shiftsRouter);

@@ -20,6 +20,9 @@ import SuperAdminLogin   from "@/pages/super-admin/Login";
 // ─── Lazy-loaded pages (less frequently visited) ──────────────────────────────
 const SuperAdminDashboard  = lazy(() => import("@/pages/super-admin/Dashboard"));
 const SecurityDashboard    = lazy(() => import("@/pages/super-admin/Security"));
+const MonitoringPage       = lazy(() => import("@/pages/super-admin/Monitoring"));
+const SubscriptionsPage    = lazy(() => import("@/pages/super-admin/Subscriptions"));
+const NotificationsPage    = lazy(() => import("@/pages/super-admin/Notifications"));
 const Employees            = lazy(() => import("@/pages/admin/Employees"));
 const AdminAttendance      = lazy(() => import("@/pages/admin/Attendance"));
 const AdminLeaves          = lazy(() => import("@/pages/admin/Leaves"));
@@ -86,6 +89,9 @@ function Router() {
         {/* Super Admin */}
         <Route path="/super-admin/login" component={SuperAdminLogin} />
         <Route path="/super-admin/security">{() => <SuperAdminGuard><SecurityDashboard /></SuperAdminGuard>}</Route>
+        <Route path="/super-admin/monitoring">{() => <SuperAdminGuard><MonitoringPage /></SuperAdminGuard>}</Route>
+        <Route path="/super-admin/subscriptions">{() => <SuperAdminGuard><SubscriptionsPage /></SuperAdminGuard>}</Route>
+        <Route path="/super-admin/notifications">{() => <SuperAdminGuard><NotificationsPage /></SuperAdminGuard>}</Route>
         <Route path="/super-admin">{() => <SuperAdminGuard><SuperAdminDashboard /></SuperAdminGuard>}</Route>
 
         {/* Company */}

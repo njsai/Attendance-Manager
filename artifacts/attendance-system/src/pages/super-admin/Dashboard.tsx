@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
-import { Shield, Building2, Plus, Trash2, Edit, Users, LogOut, ChevronDown, ChevronUp, CheckCircle, XCircle, Eye, EyeOff, Key, Loader2, RefreshCw, MessageCircle, ShieldAlert, HardDrive, Download, Archive } from "lucide-react";
+import { Shield, Building2, Plus, Trash2, Edit, Users, LogOut, ChevronDown, ChevronUp, CheckCircle, XCircle, Eye, EyeOff, Key, Loader2, RefreshCw, MessageCircle, ShieldAlert, HardDrive, Download, Archive, Activity, CreditCard, Bell } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import SuperAdminChat from "./Chat";
 
@@ -145,14 +145,23 @@ export default function SuperAdminDashboard() {
               <p style={{ fontSize: 11, color: "rgba(168,85,247,0.5)", margin: 0 }}>إدارة جميع الشركات</p>
             </div>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
             <button onClick={loadCompanies} style={{ padding: 8, borderRadius: 9, border: "1px solid rgba(255,255,255,0.06)", background: "rgba(255,255,255,0.03)", color: "rgba(255,255,255,0.4)", cursor: "pointer" }}>
               <RefreshCw size={16} />
             </button>
-            <button onClick={() => setLocation("/super-admin/security")} style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 14px", borderRadius: 10, border: "1px solid rgba(16,185,129,0.2)", background: "rgba(16,185,129,0.06)", color: "#10b981", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
-              <ShieldAlert size={14} /> مركز الأمان
+            <button onClick={() => setLocation("/super-admin/monitoring")} style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(0,245,255,0.2)", background: "rgba(0,245,255,0.06)", color: "#00f5ff", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+              <Activity size={14} /> المراقبة
             </button>
-            <button onClick={logout} style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 14px", borderRadius: 10, border: "1px solid rgba(248,113,113,0.2)", background: "rgba(248,113,113,0.06)", color: "#f87171", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+            <button onClick={() => setLocation("/super-admin/subscriptions")} style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(168,85,247,0.2)", background: "rgba(168,85,247,0.06)", color: "#a855f7", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+              <CreditCard size={14} /> الاشتراكات
+            </button>
+            <button onClick={() => setLocation("/super-admin/notifications")} style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(245,158,11,0.2)", background: "rgba(245,158,11,0.06)", color: "#f59e0b", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+              <Bell size={14} /> الإشعارات
+            </button>
+            <button onClick={() => setLocation("/super-admin/security")} style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(16,185,129,0.2)", background: "rgba(16,185,129,0.06)", color: "#10b981", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+              <ShieldAlert size={14} /> الأمان
+            </button>
+            <button onClick={logout} style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(248,113,113,0.2)", background: "rgba(248,113,113,0.06)", color: "#f87171", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
               <LogOut size={14} /> خروج
             </button>
           </div>
