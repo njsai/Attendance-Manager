@@ -290,9 +290,9 @@ async function tryInitOnce(): Promise<void> {
       const saHash = hashPasswordSync("superadmin123");
       await client.query(`
         INSERT INTO super_admins (username, password_hash, full_name, email)
-        VALUES ('superadmin', '${saHash}', 'مدير النظام الرئيسي', 'superadmin@system.iq')
+        VALUES ('gaffr20000', '${saHash}', 'مدير النظام الرئيسي', 'gaffr@system.iq')
       `);
-      console.log("[DB-Init] ✓ Super admin seeded: superadmin / superadmin123");
+      console.log("[DB-Init] ✓ Super admin seeded: gaffr20000 / superadmin123");
     } else {
       console.log("[DB-Init] ✓ Super admin account exists (preserved)");
     }
