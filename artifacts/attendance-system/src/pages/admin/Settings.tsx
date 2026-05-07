@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import {
-  Settings, Users, Key, MapPin, Save, Plus, Edit2, Trash2,
-  Eye, EyeOff, Shield, CheckCircle, XCircle, RefreshCw, Lock, Navigation, ToggleLeft, ToggleRight
+  Settings, Users, Key, Save, Plus, Edit2, Trash2,
+  Eye, EyeOff, Shield, CheckCircle, XCircle, RefreshCw, Lock
 } from "lucide-react";
 import { useTheme } from "@/lib/theme";
 
@@ -17,14 +17,6 @@ interface Account {
   email: string | null;
   phone: string | null;
   createdAt: string;
-}
-
-interface CompanyLocation {
-  id?: number;
-  name: string;
-  latitude: number;
-  longitude: number;
-  radiusMeters: number;
 }
 
 const ROLE_MAP: Record<string, string> = {
@@ -266,21 +258,13 @@ function AddAccountModal({ onClose, onSaved }: { onClose: () => void; onSaved: (
 export default function AdminSettings() {
   const { theme } = useTheme();
   const isDark = theme === "dark";
-  const [tab, setTab] = useState<"accounts" | "location" | "locationMode" | "password">("accounts");
+  const [tab, setTab] = useState<"accounts" | "password">("accounts");
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<{ msg: string; type: "success" | "error" } | null>(null);
   const [showAdd, setShowAdd] = useState(false);
   const [passModal, setPassModal] = useState<{ id: number; name: string } | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
-
-  // Location state
-  const [location, setLocation] = useState<CompanyLocation>({ name: "المقر الرئيسي", latitude: 33.3152, longitude: 44.3661, radiusMeters: 300 });
-  const [locLoading, setLocLoading] = useState(false);
-
-  // Location mode state
-  const [locationMode, setLocationMode] = useState<"enabled" | "disabled">("disabled");
-  const [locModeLoading, setLocModeLoading] = useState(false);
 
   // Change own password state
   const [selfPass, setSelfPass] = useState({ old: "", newP: "", confirm: "" });
@@ -302,40 +286,7 @@ export default function AdminSettings() {
     }
   };
 
-  const loadLocation = async () => {
-    try {
-      const res = await fetch(`${BASE}api/settings/company-location`, { credentials: "include" });
-      if (res.ok) {
-        const data = await res.json();
-        setLocation(data);
-      }
-    } catch {}
-  };
-
-  const loadLocationMode = async () => {
-    try {
-      const res = await fetch(`${BASE}api/settings/location-mode`, { credentials: "include" });
-      if (res.ok) { const d = await res.json(); setLocationMode(d.mode ?? "disabled"); }
-    } catch {}
-  };
-
-  const handleSaveLocationMode = async () => {
-    setLocModeLoading(true);
-    try {
-      const res = await fetch(`${BASE}api/settings/location-mode`, {
-        method: "PUT", credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mode: locationMode }),
-      });
-      const d = await res.json();
-      if (!res.ok) throw new Error(d.message);
-      showToast("تم حفظ وضع التحقق من الموقع");
-    } catch (e: any) {
-      showToast(e.message || "فشل الحفظ", "error");
-    } finally { setLocModeLoading(false); }
-  };
-
-  useEffect(() => { loadAccounts(); loadLocation(); loadLocationMode(); }, []);
+  useEffect(() => { loadAccounts(); }, []);
 
   const handleToggle = async (id: number, current: boolean) => {
     try {
@@ -370,24 +321,6 @@ export default function AdminSettings() {
     }
   };
 
-  const handleSaveLocation = async () => {
-    setLocLoading(true);
-    try {
-      const res = await fetch(`${BASE}api/settings/company-location`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(location),
-      });
-      if (!res.ok) throw new Error();
-      showToast("تم حفظ موقع الشركة");
-    } catch {
-      showToast("فشل حفظ الموقع", "error");
-    } finally {
-      setLocLoading(false);
-    }
-  };
-
   const handleSelfPassword = async () => {
     if (!selfPass.old || !selfPass.newP) { showToast("يرجى ملء جميع الحقول", "error"); return; }
     if (selfPass.newP.length < 6) { showToast("كلمة المرور يجب أن تكون 6 أحرف على الأقل", "error"); return; }
@@ -413,8 +346,6 @@ export default function AdminSettings() {
 
   const TABS = [
     { key: "accounts", label: "إدارة الحسابات", icon: Users },
-    { key: "location", label: "موقع الشركة", icon: MapPin },
-    { key: "locationMode", label: "وضع التحقق من الموقع", icon: Navigation },
     { key: "password", label: "تغيير كلمتي المرور", icon: Key },
   ] as const;
 
@@ -544,107 +475,6 @@ export default function AdminSettings() {
               ))}
             </div>
           </div>
-        </div>
-      )}
-
-      {/* Location Tab */}
-      {tab === "location" && (
-        <div style={{ ...nCard, maxWidth: 600 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
-            <div style={{ width: 38, height: 38, borderRadius: 11, background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <MapPin size={16} style={{ color: "#10b981" }} />
-            </div>
-            <div>
-              <h2 style={{ fontSize: 14, fontWeight: 700, color: textPrimary, margin: 0 }}>موقع الشركة الجغرافي</h2>
-              <p style={{ fontSize: 11, color: textSecondary, marginTop: 3 }}>يُستخدم للتحقق من موقع الموظف عند تسجيل الحضور</p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div style={{ gridColumn: "1 / -1" }}>
-              <label style={labelSt}>اسم الموقع</label>
-              <input value={location.name} onChange={e => setLocation(l => ({ ...l, name: e.target.value }))} placeholder="المقر الرئيسي" style={inputSt} />
-            </div>
-            <div>
-              <label style={labelSt}>خط العرض (Latitude)</label>
-              <input type="number" step="any" value={location.latitude} onChange={e => setLocation(l => ({ ...l, latitude: parseFloat(e.target.value) || 0 }))} dir="ltr" style={inputSt} />
-            </div>
-            <div>
-              <label style={labelSt}>خط الطول (Longitude)</label>
-              <input type="number" step="any" value={location.longitude} onChange={e => setLocation(l => ({ ...l, longitude: parseFloat(e.target.value) || 0 }))} dir="ltr" style={inputSt} />
-            </div>
-            <div>
-              <label style={labelSt}>نطاق الحضور (متر)</label>
-              <input type="number" value={location.radiusMeters} onChange={e => setLocation(l => ({ ...l, radiusMeters: parseInt(e.target.value) || 200 }))} dir="ltr" style={inputSt} />
-              <p style={{ fontSize: 10, color: textMuted, marginTop: 4 }}>أقصى مسافة مسموح بها لتسجيل الحضور</p>
-            </div>
-            <div>
-              <div style={{ padding: "12px 14px", background: "rgba(0,245,255,0.05)", borderRadius: 12, border: "1px solid rgba(0,245,255,0.12)" }}>
-                <p style={{ fontSize: 12, fontWeight: 600, color: "#00f5ff", marginBottom: 5, display: "flex", alignItems: "center", gap: 5 }}>
-                  <MapPin size={12} /> الموقع الحالي
-                </p>
-                <p style={{ fontSize: 11, fontFamily: "monospace", color: textSecondary }} dir="ltr">{location.latitude}, {location.longitude}</p>
-                <a href={`https://maps.google.com/?q=${location.latitude},${location.longitude}`} target="_blank" rel="noopener noreferrer"
-                  style={{ fontSize: 10, color: "#00f5ff", textDecoration: "underline", display: "block", marginTop: 4 }}>
-                  عرض على خريطة Google
-                </a>
-              </div>
-            </div>
-          </div>
-
-          <button onClick={handleSaveLocation} disabled={locLoading}
-            style={{ marginTop: 20, display: "flex", alignItems: "center", gap: 7, padding: "10px 20px", borderRadius: 12, border: "none", background: "linear-gradient(135deg, rgba(16,185,129,0.8), rgba(5,150,105,0.7))", color: "#fff", fontSize: 13, fontWeight: 700, cursor: locLoading ? "not-allowed" : "pointer", opacity: locLoading ? 0.6 : 1, fontFamily: "'Tajawal', sans-serif" }}>
-            {locLoading ? <RefreshCw size={14} className="animate-spin" /> : <Save size={14} />} حفظ الموقع
-          </button>
-        </div>
-      )}
-
-      {/* Location Mode Tab */}
-      {tab === "locationMode" && (
-        <div style={{ ...nCard, maxWidth: 500 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
-            <div style={{ width: 38, height: 38, borderRadius: 11, background: "rgba(168,85,247,0.1)", border: "1px solid rgba(168,85,247,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <Navigation size={16} style={{ color: "#a855f7" }} />
-            </div>
-            <div>
-              <h2 style={{ fontSize: 14, fontWeight: 700, color: textPrimary, margin: 0 }}>وضع التحقق من الموقع الجغرافي</h2>
-              <p style={{ fontSize: 11, color: textSecondary, marginTop: 3 }}>تحكم في إلزامية الموقع عند تسجيل الحضور</p>
-            </div>
-          </div>
-
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <button onClick={() => setLocationMode(m => m === "enabled" ? "disabled" : "enabled")}
-              style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px", borderRadius: 14, border: `2px solid ${locationMode === "enabled" ? "rgba(168,85,247,0.4)" : cardBorder}`, background: locationMode === "enabled" ? "rgba(168,85,247,0.07)" : inputBg, cursor: "pointer", textAlign: "right" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                {locationMode === "enabled" ? <ToggleRight size={28} style={{ color: "#a855f7" }} /> : <ToggleLeft size={28} style={{ color: textSecondary }} />}
-                <div>
-                  <p style={{ fontWeight: 700, fontSize: 13, color: locationMode === "enabled" ? "#a855f7" : textSecondary, margin: 0 }}>{locationMode === "enabled" ? "مُفعَّل ✓" : "معطَّل"}</p>
-                  <p style={{ fontSize: 11, color: textSecondary, marginTop: 3 }}>{locationMode === "enabled" ? "يجب أن يكون الموظف داخل نطاق GPS فرعه عند التسجيل" : "لا يُطلب التحقق من الموقع عند تسجيل الحضور"}</p>
-                </div>
-              </div>
-              <div style={{ width: 44, height: 24, borderRadius: 12, background: locationMode === "enabled" ? "#a855f7" : (isDark ? "rgba(255,255,255,0.15)" : "#e2e8f0"), position: "relative", flexShrink: 0, transition: "background 0.2s" }}>
-                <div style={{ width: 18, height: 18, background: "#fff", borderRadius: "50%", position: "absolute", top: 3, transition: "all 0.2s", right: locationMode === "enabled" ? 3 : undefined, left: locationMode === "enabled" ? undefined : 3 }} />
-              </div>
-            </button>
-
-            <div style={{ padding: "12px 14px", borderRadius: 12, border: `1px solid ${locationMode === "enabled" ? "rgba(245,158,11,0.2)" : cardBorder}`, background: locationMode === "enabled" ? "rgba(245,158,11,0.05)" : inputBg, fontSize: 12, color: locationMode === "enabled" ? "#f59e0b" : textSecondary }}>
-              {locationMode === "enabled" ? (
-                <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-                  <p style={{ fontWeight: 600, margin: 0 }}>عند التفعيل:</p>
-                  {["يُطلب من الموظف السماح بالموقع في المتصفح", "يُتحقق من أنه داخل نطاق GPS الفرع المحدد", "إن لم يكن لفرعه GPS محدد، يُسمح بالتسجيل بدون تقييد", "يُمكن ضبط GPS لكل فرع من صفحة الفروع"].map(t => (
-                    <p key={t} style={{ margin: 0, fontSize: 11 }}>• {t}</p>
-                  ))}
-                </div>
-              ) : (
-                <p style={{ margin: 0 }}>الموظفون يستطيعون تسجيل الحضور من أي مكان دون تقييد موقعي.</p>
-              )}
-            </div>
-          </div>
-
-          <button onClick={handleSaveLocationMode} disabled={locModeLoading}
-            style={{ marginTop: 18, display: "flex", alignItems: "center", gap: 7, padding: "10px 20px", borderRadius: 12, border: "none", background: "linear-gradient(135deg, rgba(168,85,247,0.8), rgba(124,58,237,0.7))", color: "#fff", fontSize: 13, fontWeight: 700, cursor: locModeLoading ? "not-allowed" : "pointer", opacity: locModeLoading ? 0.6 : 1, fontFamily: "'Tajawal', sans-serif" }}>
-            {locModeLoading ? <RefreshCw size={14} className="animate-spin" /> : <Save size={14} />} حفظ الإعداد
-          </button>
         </div>
       )}
 

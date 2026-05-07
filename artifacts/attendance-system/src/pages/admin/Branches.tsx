@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Plus, Building2, Edit2, Trash2, X, MapPin, Phone, Navigation, Globe } from "lucide-react";
+import { Plus, Building2, Edit2, Trash2, X, MapPin, Phone, Navigation, Globe, ToggleLeft, ToggleRight } from "lucide-react";
 import { useTheme } from "@/lib/theme";
 
 interface Branch {
@@ -11,6 +11,7 @@ interface Branch {
   latitude: number | null;
   longitude: number | null;
   radiusMeters: number | null;
+  locationVerificationEnabled: boolean;
   isActive: boolean;
   createdAt: string;
 }
@@ -234,6 +235,28 @@ export default function AdminBranches() {
     setShowModal(false);
   };
 
+  const toggleLocationVerification = async (branchId: number, current: boolean) => {
+    const branch = branches.find(b => b.id === branchId);
+    if (!branch) return;
+    try {
+      const res = await fetch(`${BASE}api/branches/${branchId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ ...branch, locationVerificationEnabled: !current }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setBranches(prev => prev.map(b => b.id === branchId ? updated : b));
+        setLocateMsg({ id: branchId, text: !current ? "تم تفعيل التحقق من الموقع لهذا الفرع" : "تم إيقاف التحقق من الموقع لهذا الفرع", ok: true });
+        setTimeout(() => setLocateMsg(null), 3000);
+      }
+    } catch {
+      setLocateMsg({ id: branchId, text: "خطأ في تحديث الإعداد", ok: false });
+      setTimeout(() => setLocateMsg(null), 3000);
+    }
+  };
+
   const quickLocate = (branchId: number) => {
     if (!navigator.geolocation) {
       setLocateMsg({ id: branchId, text: "المتصفح لا يدعم تحديد الموقع", ok: false });
@@ -338,6 +361,26 @@ export default function AdminBranches() {
                   </div>
                 </div>
                 <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                  <button
+                    onClick={() => toggleLocationVerification(b.id, b.locationVerificationEnabled)}
+                    title={b.locationVerificationEnabled ? "إيقاف التحقق من الموقع" : "تفعيل التحقق من الموقع"}
+                    style={{
+                      display: "flex", alignItems: "center", gap: 4,
+                      padding: "5px 10px", borderRadius: 9, border: "none",
+                      background: b.locationVerificationEnabled
+                        ? (isDark ? "rgba(168,85,247,0.15)" : "rgba(168,85,247,0.1)")
+                        : (isDark ? "rgba(255,255,255,0.05)" : "#f1f5f9"),
+                      color: b.locationVerificationEnabled ? "#a855f7" : (isDark ? "rgba(255,255,255,0.3)" : "#94a3b8"),
+                      fontSize: 11, fontWeight: 700,
+                      cursor: "pointer",
+                      fontFamily: "'Tajawal', sans-serif",
+                      transition: "all 0.2s",
+                    }}>
+                    {b.locationVerificationEnabled
+                      ? <ToggleRight size={14} />
+                      : <ToggleLeft size={14} />}
+                    {b.locationVerificationEnabled ? "تحقق مفعّل" : "تحقق معطّل"}
+                  </button>
                   <button
                     onClick={() => quickLocate(b.id)}
                     disabled={locatingId === b.id}

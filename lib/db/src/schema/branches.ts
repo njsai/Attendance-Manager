@@ -13,6 +13,7 @@ export const branchesTable = pgTable("branches", {
   latitude: real("latitude"),
   longitude: real("longitude"),
   radiusMeters: integer("radius_meters").default(200),
+  locationVerificationEnabled: boolean("location_verification_enabled").notNull().default(false),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });

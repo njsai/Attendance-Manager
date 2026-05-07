@@ -22,7 +22,7 @@ router.get("/", requireAuth, async (req, res) => {
 router.post("/", requireAdmin, async (req, res) => {
   try {
     const companyId = req.session.companyId!;
-    const { name, address, city, phone, latitude, longitude, radiusMeters } = req.body;
+    const { name, address, city, phone, latitude, longitude, radiusMeters, locationVerificationEnabled } = req.body;
     if (!name) { res.status(400).json({ message: "اسم الفرع مطلوب" }); return; }
     const [branch] = await db.insert(branchesTable)
       .values({
@@ -31,6 +31,7 @@ router.post("/", requireAdmin, async (req, res) => {
         latitude: latitude != null && latitude !== "" ? Number(latitude) : null,
         longitude: longitude != null && longitude !== "" ? Number(longitude) : null,
         radiusMeters: radiusMeters != null && radiusMeters !== "" ? Number(radiusMeters) : 200,
+        locationVerificationEnabled: locationVerificationEnabled === true,
       }).returning();
     res.status(201).json(branch);
   } catch (err) {
@@ -43,13 +44,14 @@ router.put("/:id", requireAdmin, async (req, res) => {
   try {
     const companyId = req.session.companyId!;
     const id = parseInt(String(req.params.id));
-    const { name, address, city, phone, isActive, latitude, longitude, radiusMeters } = req.body;
+    const { name, address, city, phone, isActive, latitude, longitude, radiusMeters, locationVerificationEnabled } = req.body;
     const [updated] = await db.update(branchesTable)
       .set({
         name, address: address ?? null, city: city ?? null, phone: phone ?? null, isActive,
         latitude: latitude != null && latitude !== "" ? Number(latitude) : null,
         longitude: longitude != null && longitude !== "" ? Number(longitude) : null,
         radiusMeters: radiusMeters != null && radiusMeters !== "" ? Number(radiusMeters) : 200,
+        locationVerificationEnabled: locationVerificationEnabled === true,
       })
       .where(and(eq(branchesTable.id, id), eq(branchesTable.companyId, companyId)))
       .returning();
