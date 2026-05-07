@@ -12,12 +12,14 @@ import reportsRouter from "./reports.js";
 import settingsRouter from "./settings.js";
 import superAdminRouter from "./super-admin.js";
 import messagesRouter from "./messages.js";
+import securityRouter from "./security.js";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
 router.use("/setup", setupRouter);
 router.use("/auth", authRouter);
+router.use("/security", securityRouter);
 router.use("/super-admin", superAdminRouter);
 router.use("/branches", branchesRouter);
 router.use("/departments", departmentsRouter);

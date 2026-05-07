@@ -1,148 +1,68 @@
 # نظام إدارة الحضور والانصراف — SaaS متعدد الشركات
 
-## الحسابات التجريبية
-- **مدير النظام العام:** superadmin / superadmin123 → /super-admin/login
-- **إدارة الشركة:** admin / admin123 (companyId=2) → /login
-- **مدير:** manager1 / manager123
-- **موظف 1:** emp1 / emp123
-- **موظف 2:** emp2 / emp123
+نظام SaaS لإدارة الحضور والانصراف متعدد الشركات مع تعرف على الوجه وحماية أمنية متقدمة.
 
-## البنية المعمارية
-- **Multi-tenant**: كل شركة معزولة بـ `company_id` على جميع الجداول
-- **Super Admin**: جلسة منفصلة (`superAdminId`) لإدارة جميع الشركات
-- **Session Auth**: كوكيز آمنة + trust proxy
-
-## الميزات المُنجزة
-### نظام المدير العام (Super Admin)
-- صفحة دخول مستقلة (/super-admin/login) بتصميم بنفسجي مميز
-- لوحة تحكم كاملة: إنشاء/تعديل/حذف/تفعيل الشركات
-- عرض موظفي كل شركة مع تغيير كلمات المرور
-- إحصائيات: عدد الشركات النشطة والموقوفة وإجمالي الموظفين
-
-### التعرف على الوجه (face-api.js)
-- مكوّن FaceCapture: كاميرا حية + كشف الوجه بالذكاء الاصطناعي
-- وضع التسجيل: تسجيل بصمة وجه الموظف (للمدير في صفحة الموظفين)
-- وضع التحقق: تسجيل الحضور/الانصراف ببصمة الوجه
-- نماذج AI: تُحمَّل من CDN، عتبة 0.55 مسافة إقليدية
-- زر "بصمة مسجلة ✓" أخضر إذا تم تسجيل بصمة الموظف
-
-### نظام الحضور للموظف
-- تسجيل الحضور يدوياً أو ببصمة الوجه
-- عداد وقت العمل لحظياً + حساب التأخير
-- سجل آخر الأيام مع الحالة (حاضر/غائب/متأخر/إجازة)
-
-### إدارة الشركة (Admin)
-- إدارة الموظفين مع تسجيل بصمات الوجه
-- إدارة الفروع والأقسام والورديات
-- تقارير الحضور والإجازات + تصدير Excel/PDF
-- إعدادات الشركة (موقع GPS، كلمات المرور)
-- **صفحة الإعدادات الكاملة** (مدير النظام فقط):
-  - إدارة الحسابات: إضافة/تغيير كلمة المرور/تفعيل-تعطيل/حذف
-  - ضبط موقع الشركة الجغرافي ونطاق الحضور
-  - تغيير كلمة المرور الخاصة
-
-## إعداد الجلسة والكوكيز
-- `trust proxy: 1` لدعم HTTPS عبر Replit proxy
-- `sameSite: "lax"` لتوافق جميع المتصفحات
-- `req.session.save()` صريح قبل إرسال الرد لضمان الحفظ
-- Vite dev proxy لـ `/api` → port 8080 للتوجيه الصحيح
-- جلسة تدوم 7 أيام (rolling)
-
----
-
-# Workspace
-
-## Overview
-
-pnpm workspace monorepo using TypeScript. Each package manages its own dependencies.
+## Run & Operate
+- API Server: `pnpm --filter @workspace/api-server run dev` (port 8080)
+- Frontend: `pnpm --filter @workspace/attendance-system run dev` (port 24620)
+- DB push: `pnpm --filter @workspace/db run push`
+- Typecheck: `pnpm run typecheck`
+- **Required env**: `DATABASE_URL`, `SESSION_SECRET` (optional but recommended in prod)
 
 ## Stack
+- **Runtime**: Node.js 24, TypeScript 5.9
+- **API**: Express 5 + express-session + connect-pg-simple
+- **DB**: PostgreSQL + Drizzle ORM
+- **Security**: bcrypt (12 rounds), Helmet.js, express-rate-limit, bcryptjs
+- **Frontend**: React + Vite + TailwindCSS + Wouter + TanStack Query
+- **Face Recognition**: face-api.js (models from CDN)
 
-- **Monorepo tool**: pnpm workspaces
-- **Node.js version**: 24
-- **Package manager**: pnpm
-- **TypeScript version**: 5.9
-- **API framework**: Express 5
-- **Database**: PostgreSQL + Drizzle ORM
-- **Validation**: Zod (`zod/v4`), `drizzle-zod`
-- **API codegen**: Orval (from OpenAPI spec)
-- **Build**: esbuild (CJS bundle)
+## Where Things Live
+- DB Schema: `lib/db/src/schema/` (employees, companies, attendance, leaves, messages, …)
+- API Routes: `artifacts/api-server/src/routes/`
+- Security lib: `artifacts/api-server/src/lib/security.ts`
+- Security middleware: `artifacts/api-server/src/middleware/security.ts`
+- Frontend pages: `artifacts/attendance-system/src/pages/`
+- Super Admin: `artifacts/attendance-system/src/pages/super-admin/`
 
-## Structure
+## Architecture Decisions
+- **Multi-tenant**: كل الجداول تحتوي `company_id` — عزل كامل بين الشركات
+- **Dual session**: `superAdminId` للسوبر ادمن / `userId+companyId+role` للموظفين
+- **Password hashing**: `bcrypt(sha256(password), 12)` — هجرة تلقائية من SHA-256 عند بدء السيرفر
+- **Brute force**: قفل الحساب بعد 5 محاولات / حظر IP بعد 20 محاولة / سجل login_attempts
+- **Audit trail**: كل POST/PUT/DELETE يُسجَّل في audit_logs مع IP + user + status
+- **Chat polling**: كل 3 ثواني — channel داخلي (موظفون↔إدارة) + support (شركة↔سوبر ادمن)
 
-```text
-artifacts-monorepo/
-├── artifacts/              # Deployable applications
-│   └── api-server/         # Express API server
-├── lib/                    # Shared libraries
-│   ├── api-spec/           # OpenAPI spec + Orval codegen config
-│   ├── api-client-react/   # Generated React Query hooks
-│   ├── api-zod/            # Generated Zod schemas from OpenAPI
-│   └── db/                 # Drizzle ORM schema + DB connection
-├── scripts/                # Utility scripts (single workspace package)
-│   └── src/                # Individual .ts scripts, run via `pnpm --filter @workspace/scripts run <script>`
-├── pnpm-workspace.yaml     # pnpm workspace (artifacts/*, lib/*, lib/integrations/*, scripts)
-├── tsconfig.base.json      # Shared TS options (composite, bundler resolution, es2022)
-├── tsconfig.json           # Root TS project references
-└── package.json            # Root package with hoisted devDeps
-```
+## Product
+- **السوبر ادمن**: إدارة الشركات (إنشاء/تعديل/تفعيل/حذف) + مركز الأمان + دردشة الدعم
+- **مدير الشركة**: إدارة الموظفين، الفروع، الأقسام، الشفتات، التقارير، الإعدادات
+- **المشرف/الموظف**: تسجيل حضور (يدوي أو وجه)، إجازات، دردشة داخلية
 
-## TypeScript & Composite Projects
+## الحسابات التجريبية
+- **سوبر ادمن**: superadmin / superadmin123 → /super-admin/login
+- **مدير شركة**: admin / admin123 → /login
+- **مشرف**: manager1 / manager123
+- **موظف**: emp1 / emp123
 
-Every package extends `tsconfig.base.json` which sets `composite: true`. The root `tsconfig.json` lists all packages as project references. This means:
+## Security Features
+| الميزة | التفاصيل |
+|--------|----------|
+| Password Hashing | bcrypt rounds=12 (هجرة تلقائية من SHA-256) |
+| Account Lockout | قفل بعد 5 محاولات فاشلة لمدة 15 دقيقة |
+| IP Rate Limiting | 500 req/15min عام، 10 login/15min، 5 super-admin/30min |
+| Security Headers | Helmet: HSTS, CSP, X-Frame, X-XSS, nosniff, no-store |
+| CSRF Protection | SameSite cookie + Origin/Referer validation |
+| Input Sanitization | Trim + null-byte removal + length limit |
+| SQL Injection | Drizzle ORM (parameterized queries فقط) |
+| Audit Logs | كل عمليات POST/PUT/DELETE مع IP + user + status |
+| Security Events | حوادث أمنية مع severity + إشعارات |
+| Device Tracking | تتبع الجلسات: IP + User-Agent + device |
+| Session Management | انتهاء تلقائي 8 ساعات، إنهاء يدوي، logout-all |
+| Tenant Isolation | company_id على كل الجداول + middleware validation |
 
-- **Always typecheck from the root** — run `pnpm run typecheck` (which runs `tsc --build --emitDeclarationOnly`). This builds the full dependency graph so that cross-package imports resolve correctly. Running `tsc` inside a single package will fail if its dependencies haven't been built yet.
-- **`emitDeclarationOnly`** — we only emit `.d.ts` files during typecheck; actual JS bundling is handled by esbuild/tsx/vite...etc, not `tsc`.
-- **Project references** — when package A depends on package B, A's `tsconfig.json` must list B in its `references` array. `tsc --build` uses this to determine build order and skip up-to-date packages.
-
-## Root Scripts
-
-- `pnpm run build` — runs `typecheck` first, then recursively runs `build` in all packages that define it
-- `pnpm run typecheck` — runs `tsc --build --emitDeclarationOnly` using project references
-
-## Packages
-
-### `artifacts/api-server` (`@workspace/api-server`)
-
-Express 5 API server. Routes live in `src/routes/` and use `@workspace/api-zod` for request and response validation and `@workspace/db` for persistence.
-
-- Entry: `src/index.ts` — reads `PORT`, starts Express
-- App setup: `src/app.ts` — mounts CORS, JSON/urlencoded parsing, routes at `/api`
-- Routes: `src/routes/index.ts` mounts sub-routers; `src/routes/health.ts` exposes `GET /health` (full path: `/api/health`)
-- Depends on: `@workspace/db`, `@workspace/api-zod`
-- `pnpm --filter @workspace/api-server run dev` — run the dev server
-- `pnpm --filter @workspace/api-server run build` — production esbuild bundle (`dist/index.cjs`)
-- Build bundles an allowlist of deps (express, cors, pg, drizzle-orm, zod, etc.) and externalizes the rest
-
-### `lib/db` (`@workspace/db`)
-
-Database layer using Drizzle ORM with PostgreSQL. Exports a Drizzle client instance and schema models.
-
-- `src/index.ts` — creates a `Pool` + Drizzle instance, exports schema
-- `src/schema/index.ts` — barrel re-export of all models
-- `src/schema/<modelname>.ts` — table definitions with `drizzle-zod` insert schemas (no models definitions exist right now)
-- `drizzle.config.ts` — Drizzle Kit config (requires `DATABASE_URL`, automatically provided by Replit)
-- Exports: `.` (pool, db, schema), `./schema` (schema only)
-
-Production migrations are handled by Replit when publishing. In development, we just use `pnpm --filter @workspace/db run push`, and we fallback to `pnpm --filter @workspace/db run push-force`.
-
-### `lib/api-spec` (`@workspace/api-spec`)
-
-Owns the OpenAPI 3.1 spec (`openapi.yaml`) and the Orval config (`orval.config.ts`). Running codegen produces output into two sibling packages:
-
-1. `lib/api-client-react/src/generated/` — React Query hooks + fetch client
-2. `lib/api-zod/src/generated/` — Zod schemas
-
-Run codegen: `pnpm --filter @workspace/api-spec run codegen`
-
-### `lib/api-zod` (`@workspace/api-zod`)
-
-Generated Zod schemas from the OpenAPI spec (e.g. `HealthCheckResponse`). Used by `api-server` for response validation.
-
-### `lib/api-client-react` (`@workspace/api-client-react`)
-
-Generated React Query hooks and fetch client from the OpenAPI spec (e.g. `useHealthCheck`, `healthCheck`).
-
-### `scripts` (`@workspace/scripts`)
-
-Utility scripts package. Each script is a `.ts` file in `src/` with a corresponding npm script in `package.json`. Run scripts via `pnpm --filter @workspace/scripts run <script>`. Scripts can import any workspace package (e.g., `@workspace/db`) by adding it as a dependency in `scripts/package.json`.
+## Gotchas
+- Sessions expire after 8 hours (rolling)
+- Password migration runs on every API server start (idempotent)
+- CSRF check skips `/login` endpoints (no session yet)
+- face-api.js models loaded from CDN — needs internet
+- `trust proxy: 1` required for correct IP detection behind Replit proxy

@@ -1,8 +1,9 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { companiesTable, employeesTable, superAdminsTable, branchesTable, departmentsTable, shiftsTable, companyLocationTable } from "@workspace/db";
-import { eq, count } from "drizzle-orm";
+import { eq, count, sql } from "drizzle-orm";
 import { requireSuperAdmin, hashPassword } from "../lib/auth.js";
+import { hashPasswordBcrypt } from "../lib/security.js";
 
 const router = Router();
 
@@ -63,11 +64,12 @@ router.post("/companies", requireSuperAdmin, async (req, res) => {
       companyId: company.id, name: "المقر الرئيسي", latitude: 33.3152, longitude: 44.3661, radiusMeters: 200,
     });
 
-    // Create admin user for this company
+    // Create admin user for this company (bcrypt hash)
+    const adminHash = await hashPasswordBcrypt(adminPassword);
     const [admin] = await db.insert(employeesTable).values({
       companyId: company.id,
       username: adminUsername,
-      passwordHash: hashPassword(adminPassword),
+      passwordHash: adminHash,
       fullName: adminFullName,
       role: "admin",
       isActive: true,
@@ -121,8 +123,9 @@ router.post("/companies/:id/employees", requireSuperAdmin, async (req, res) => {
     const companyId = parseInt(req.params.id);
     const { username, password, fullName, role } = req.body;
     if (!username || !password || !fullName) { res.status(400).json({ message: "البيانات مطلوبة" }); return; }
+    const empHash = await hashPasswordBcrypt(password);
     const [emp] = await db.insert(employeesTable).values({
-      companyId, username, passwordHash: hashPassword(password), fullName,
+      companyId, username, passwordHash: empHash, fullName,
       role: role || "employee", isActive: true,
     }).returning();
     res.status(201).json(emp);
@@ -138,7 +141,8 @@ router.put("/companies/:companyId/employees/:empId/change-password", requireSupe
     const empId = parseInt(req.params.empId);
     const { newPassword } = req.body;
     if (!newPassword || newPassword.length < 6) { res.status(400).json({ message: "كلمة المرور يجب أن تكون 6 أحرف على الأقل" }); return; }
-    await db.update(employeesTable).set({ passwordHash: hashPassword(newPassword) }).where(eq(employeesTable.id, empId));
+    const newHash = await hashPasswordBcrypt(newPassword);
+    await db.execute(sql`UPDATE employees SET password_hash = ${newHash}, failed_login_attempts = 0, locked_until = NULL WHERE id = ${empId}`);
     res.json({ message: "تم تغيير كلمة المرور" });
   } catch (err) { console.error(err); res.status(500).json({ message: "Server error" }); }
 });

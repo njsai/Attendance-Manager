@@ -3,26 +3,54 @@ import cors from "cors";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
 import router from "./routes/index.js";
+import {
+  helmetMiddleware,
+  globalRateLimit,
+  sanitizeBody,
+  auditMiddleware,
+  csrfProtection,
+  securityHeaders,
+  requestSizeLimiter,
+} from "./middleware/security.js";
+import { migrateLegacyPasswords } from "./lib/security.js";
 
 const app: Express = express();
 const PgSession = connectPgSimple(session);
 
-// Trust the Replit proxy (needed for correct cookie/session handling via HTTPS proxy)
+// Trust the Replit proxy
 app.set("trust proxy", 1);
 
+// ─── Security Headers (Helmet) ────────────────────────────────────────────────
+app.use(helmetMiddleware);
+app.use(securityHeaders);
+
+// ─── CORS ─────────────────────────────────────────────────────────────────────
 app.use(
   cors({
     origin: true,
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "X-CSRF-Token"],
+    exposedHeaders: ["X-RateLimit-Limit", "X-RateLimit-Remaining"],
   })
 );
 
-app.use(express.json({ limit: "10mb" }));
-app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+// ─── Body Parsing ─────────────────────────────────────────────────────────────
+app.use(requestSizeLimiter);
+app.use(express.json({ limit: "5mb" }));
+app.use(express.urlencoded({ extended: true, limit: "5mb" }));
+app.use(sanitizeBody);
 
+// ─── Rate Limiting ────────────────────────────────────────────────────────────
+app.use("/api", globalRateLimit);
+
+// ─── Session ─────────────────────────────────────────────────────────────────
 const isProduction = process.env.NODE_ENV === "production";
+const SESSION_SECRET = process.env.SESSION_SECRET;
+
+if (!SESSION_SECRET && isProduction) {
+  console.warn("⚠ SESSION_SECRET not set — using fallback. Set a strong secret in production!");
+}
 
 app.use(
   session({
@@ -30,9 +58,9 @@ app.use(
       conString: process.env.DATABASE_URL,
       tableName: "session",
       createTableIfMissing: false,
-      pruneSessionInterval: 60 * 15, // prune every 15 minutes
+      pruneSessionInterval: 60 * 15,
     }),
-    secret: process.env.SESSION_SECRET || "attendance-secret-key-2024-prod",
+    secret: SESSION_SECRET || "attend-sec-key-must-change-in-prod-2024!",
     resave: false,
     saveUninitialized: false,
     rolling: true,
@@ -41,23 +69,34 @@ app.use(
       secure: isProduction,
       httpOnly: true,
       sameSite: isProduction ? "none" : "lax",
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      maxAge: 8 * 60 * 60 * 1000, // 8 hours (session expiration)
       path: "/",
     },
   })
 );
 
-// Health check before auth
+// ─── CSRF Protection ──────────────────────────────────────────────────────────
+app.use("/api", csrfProtection);
+
+// ─── Audit Logging ────────────────────────────────────────────────────────────
+app.use("/api", auditMiddleware);
+
+// ─── Health Check ─────────────────────────────────────────────────────────────
 app.get("/api/healthz", (_req, res) => {
-  res.json({ status: "ok", timestamp: new Date().toISOString() });
+  res.json({ status: "ok", timestamp: new Date().toISOString(), secure: true });
 });
 
+// ─── Routes ───────────────────────────────────────────────────────────────────
 app.use("/api", router);
 
-// Global error handler
-app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
-  console.error("Unhandled error:", err);
-  res.status(500).json({ message: "خطأ في الخادم" });
+// ─── Global Error Handler ─────────────────────────────────────────────────────
+app.use((err: any, req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  console.error("Unhandled error:", err?.message ?? err);
+  // Never leak stack traces or internal details
+  res.status(err?.status ?? 500).json({ message: "خطأ في الخادم الداخلي" });
 });
+
+// ─── Startup: migrate legacy passwords to bcrypt ──────────────────────────────
+migrateLegacyPasswords().catch(console.error);
 
 export default app;

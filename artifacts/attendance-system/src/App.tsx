@@ -9,6 +9,7 @@ import AppLayout from "@/components/layout/AppLayout";
 import Login from "@/pages/Login";
 import SuperAdminLogin from "@/pages/super-admin/Login";
 import SuperAdminDashboard from "@/pages/super-admin/Dashboard";
+import SecurityDashboard from "@/pages/super-admin/Security";
 import AdminDashboard from "@/pages/admin/Dashboard";
 import ManagerDashboard from "@/pages/manager/Dashboard";
 import EmployeeDashboard from "@/pages/employee/Dashboard";
@@ -64,6 +65,7 @@ function Router() {
     <Switch>
       {/* Super Admin */}
       <Route path="/super-admin/login" component={SuperAdminLogin} />
+      <Route path="/super-admin/security">{() => <SuperAdminGuard><SecurityDashboard /></SuperAdminGuard>}</Route>
       <Route path="/super-admin">{() => <SuperAdminGuard><SuperAdminDashboard /></SuperAdminGuard>}</Route>
 
       {/* Company */}

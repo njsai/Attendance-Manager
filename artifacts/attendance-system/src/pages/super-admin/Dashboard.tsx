@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
-import { Shield, Building2, Plus, Trash2, Edit, Users, LogOut, ChevronDown, ChevronUp, CheckCircle, XCircle, Eye, EyeOff, Key, Loader2, RefreshCw, MessageCircle } from "lucide-react";
+import { Shield, Building2, Plus, Trash2, Edit, Users, LogOut, ChevronDown, ChevronUp, CheckCircle, XCircle, Eye, EyeOff, Key, Loader2, RefreshCw, MessageCircle, ShieldAlert } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import SuperAdminChat from "./Chat";
 
@@ -97,6 +97,10 @@ export default function SuperAdminDashboard() {
           <div className="flex items-center gap-3">
             <button onClick={loadCompanies} className="text-slate-400 hover:text-white p-2 rounded-lg hover:bg-white/5 transition-colors">
               <RefreshCw className="w-5 h-5" />
+            </button>
+            <button onClick={() => setLocation("/super-admin/security")}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-green-500/10 hover:bg-green-500/20 text-green-400 text-sm font-medium transition-all">
+              <ShieldAlert className="w-4 h-4" /> مركز الأمان
             </button>
             <button onClick={logout} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 text-sm font-medium transition-all">
               <LogOut className="w-4 h-4" /> خروج

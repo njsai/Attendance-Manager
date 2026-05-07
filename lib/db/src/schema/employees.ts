@@ -23,6 +23,11 @@ export const employeesTable = pgTable("employees", {
   salary: real("salary"),
   faceDescriptor: text("face_descriptor"),
   isActive: boolean("is_active").notNull().default(true),
+  failedLoginAttempts: integer("failed_login_attempts").notNull().default(0),
+  lockedUntil: timestamp("locked_until"),
+  lastLoginAt: timestamp("last_login_at"),
+  lastLoginIp: text("last_login_ip"),
+  passwordChangedAt: timestamp("password_changed_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

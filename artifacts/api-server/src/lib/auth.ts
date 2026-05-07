@@ -1,9 +1,13 @@
 import { Request, Response, NextFunction } from "express";
-import crypto from "crypto";
+import { verifyPassword, hashPasswordSync } from "./security.js";
 
+// Backward-compatible sync hash (SHA-256) — used only for creating new employees
+// via super-admin during initial setup. All logins use async bcrypt verify.
 export function hashPassword(password: string): string {
-  return crypto.createHash("sha256").update(password + "salt_attend_2024").digest("hex");
+  return hashPasswordSync(password);
 }
+
+export { verifyPassword };
 
 export function requireAuth(req: Request, res: Response, next: NextFunction) {
   if (req.session?.superAdminId) { next(); return; }
@@ -48,5 +52,7 @@ declare module "express-session" {
     role: string;
     companyId: number;
     superAdminId: number;
+    deviceInfo: string;
+    loginIp: string;
   }
 }
