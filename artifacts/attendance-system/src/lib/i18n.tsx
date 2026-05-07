@@ -80,12 +80,12 @@ const translations = {
     hoursUnit: "ساعة",
     minuteShort: "د",
 
-    // Dashboard
+    // Dashboard cards
     todayAttendance: "سجل الحضور اليوم",
     todayAttendanceBoard: "سجل الحضور اليوم",
     presentToday: "حاضر اليوم",
-    absentToday: "غائب",
-    lateToday: "متأخر",
+    absentToday: "غائب اليوم",
+    lateToday: "متأخر اليوم",
     onLeaveToday: "في إجازة",
     attendanceRate: "نسبة الحضور",
     pendingLeaves: "إجازات معلقة",
@@ -102,6 +102,40 @@ const translations = {
     noLateToday: "لا يوجد متأخرون اليوم",
     noOnLeaveToday: "لا يوجد في إجازة اليوم",
     noPendingLeaves: "لا توجد إجازات معلقة",
+
+    // Board table headers
+    employeeCol: "الموظف",
+    branchDeptCol: "الفرع / القسم",
+    statusCol: "الحالة",
+    checkInCol: "الدخول",
+    checkOutCol: "الخروج",
+    workDurationCol: "مدة العمل",
+    delayCol: "تأخير",
+    onTime: "في الوقت",
+    inProgress: "جارٍ",
+    showingOf: "عرض",
+    ofEmployees: "من",
+
+    // Board filters / legend
+    boardAll: "الكل",
+    boardPresent: "حاضر",
+    boardLate: "متأخر",
+    boardAbsent: "غائب",
+    boardLeave: "إجازة",
+    legendWorking: "جارٍ العمل",
+    legendLate: "متأخر",
+    legendCheckedOut: "انصرف",
+    legendAbsent: "غائب",
+    noResults: "لا توجد نتائج",
+
+    // Chart
+    attendanceStats: "إحصائيات الحضور",
+    attendanceRateSub: "الموظفون النشطون اليوم",
+    excellent: "ممتاز",
+    goodRate: "متوسط",
+    poor: "ضعيف",
+    activeNow: "يعمل الآن",
+    presentOf: "حاضر من أصل",
 
     // Stats
     presentDays: "أيام الحضور",
@@ -120,7 +154,6 @@ const translations = {
     success: "تمت العملية بنجاح",
     error: "حدث خطأ",
     noData: "لا توجد بيانات",
-    noResults: "لا توجد نتائج",
     confirmDelete: "هل أنت متأكد من الحذف؟",
     failedLoad: "فشل تحميل البيانات",
     connectionError: "خطأ في الاتصال",
@@ -235,6 +268,27 @@ const translations = {
     confirmDeleteEmployee: "هل تريد حذف هذا الموظف؟",
     failedSave: "فشل",
     noEmployeesFound: "لا يوجد موظفون",
+    emailLabel: "البريد الإلكتروني",
+    phoneLabel: "رقم الهاتف",
+    addressLabel: "العنوان",
+    roleLabel: "الدور",
+    roleEmployee: "موظف",
+    roleManager: "مشرف",
+    roleAdmin: "إدارة عليا",
+    emailField: "البريد الإلكتروني",
+    phoneField: "رقم الهاتف",
+    salaryField: "الراتب",
+    departmentField: "القسم",
+    branchField: "الفرع",
+    shiftField: "الوردية",
+    statusField: "الحالة",
+    shiftTime: "وقت الدوام",
+    usernameLabel: "المستخدم",
+    connectionErrorMsg: "خطأ في الاتصال",
+    activeIndicator: "● نشط",
+    suspendedIndicator: "○ موقوف",
+    employeeCount: "موظف",
+    activeCount: "نشط",
 
     // Manager dashboard
     welcome: "مرحباً",
@@ -245,6 +299,7 @@ const translations = {
 
     // Login
     systemName: "نظام الحضور والانصراف",
+    systemTitle: "الحضور والانصراف",
     enterCredentials: "أدخل بياناتك للدخول",
     enterUsername: "أدخل اسم المستخدم",
     passwordPlaceholder: "••••••••",
@@ -257,19 +312,18 @@ const translations = {
     connectionTimeout: "انتهت مهلة الاتصال بالخادم، تحقق من الشبكة وحاول مرة أخرى",
 
     // Company
-    company: "الشركة",
-    companies: "الشركات",
-    totalCompanies: "إجمالي الشركات",
-    activeCompanies: "شركات نشطة",
-    inactiveCompanies: "شركات موقوفة",
-    createCompany: "إنشاء شركة",
+    companyName: "اسم الشركة",
+    companyLogo: "شعار الشركة",
+    companyAddress: "عنوان الشركة",
+    companyPhone: "هاتف الشركة",
+    companyEmail: "بريد الشركة",
+    companiesManagement: "إدارة الشركات",
+    addCompany: "إضافة شركة",
     editCompany: "تعديل الشركة",
     deleteCompany: "حذف الشركة",
-
-    // System
-    systemTitle: "نظام الحضور",
-    version: "الإصدار",
-    copyright: "جميع الحقوق محفوظة",
+    noCompanies: "لا توجد شركات",
+    companyAdminUsername: "مستخدم المدير",
+    companyAdminPassword: "كلمة مرور المدير",
   },
 
   en: {
@@ -277,9 +331,9 @@ const translations = {
     dashboard: "Dashboard",
     employees: "Employees",
     branches: "Branches",
-    departments: "Departments & Shifts",
-    attendance: "Attendance Log",
-    leaves: "Leave Requests",
+    departments: "Departments",
+    attendance: "Attendance",
+    leaves: "Leaves",
     reports: "Reports",
     chat: "Chat",
     settings: "Settings",
@@ -289,8 +343,8 @@ const translations = {
     payroll: "Payroll",
 
     // Roles
-    admin: "System Admin",
-    manager: "Supervisor",
+    admin: "Admin",
+    manager: "Manager",
     employee: "Employee",
     superAdmin: "Super Admin",
 
@@ -303,7 +357,7 @@ const translations = {
     notCheckedIn: "Not Checked In",
     working: "Working",
     checkedOutStatus: "Checked Out",
-    notCheckedInYet: "Not Checked In",
+    notCheckedInYet: "Not Checked In Yet",
 
     // Actions
     save: "Save",
@@ -326,8 +380,8 @@ const translations = {
     checkOut: "Check Out",
     breakStart: "Start Break",
     breakEnd: "End Break",
-    faceCheckIn: "Face Check In",
-    faceCheckOut: "Face Check Out",
+    faceCheckIn: "Face Check-In",
+    faceCheckOut: "Face Check-Out",
 
     // Common labels
     name: "Name",
@@ -345,16 +399,16 @@ const translations = {
     salary: "Salary",
     role: "Role",
     days: "days",
-    minutes: "minutes",
+    minutes: "min",
     hoursUnit: "hrs",
     minuteShort: "m",
 
-    // Dashboard
+    // Dashboard cards
     todayAttendance: "Today's Attendance",
     todayAttendanceBoard: "Today's Attendance Board",
     presentToday: "Present Today",
-    absentToday: "Absent",
-    lateToday: "Late",
+    absentToday: "Absent Today",
+    lateToday: "Late Today",
     onLeaveToday: "On Leave",
     attendanceRate: "Attendance Rate",
     pendingLeaves: "Pending Leaves",
@@ -365,12 +419,46 @@ const translations = {
     details: "Details",
     autoRefreshMinute: "Auto-refresh every minute",
     systemOnline: "System Online",
-    noEmployees: "No employees",
-    noPresentToday: "No present employees today",
-    noAbsentToday: "No absent employees today",
-    noLateToday: "No late employees today",
-    noOnLeaveToday: "No one on leave today",
-    noPendingLeaves: "No pending leaves",
+    noEmployees: "No employees found",
+    noPresentToday: "No one is present today",
+    noAbsentToday: "No one is absent today",
+    noLateToday: "No one is late today",
+    noOnLeaveToday: "No one is on leave today",
+    noPendingLeaves: "No pending leave requests",
+
+    // Board table headers
+    employeeCol: "Employee",
+    branchDeptCol: "Branch / Dept",
+    statusCol: "Status",
+    checkInCol: "Check In",
+    checkOutCol: "Check Out",
+    workDurationCol: "Duration",
+    delayCol: "Delay",
+    onTime: "On time",
+    inProgress: "Active",
+    showingOf: "Showing",
+    ofEmployees: "of",
+
+    // Board filters / legend
+    boardAll: "All",
+    boardPresent: "Present",
+    boardLate: "Late",
+    boardAbsent: "Absent",
+    boardLeave: "Leave",
+    legendWorking: "Working",
+    legendLate: "Late",
+    legendCheckedOut: "Checked Out",
+    legendAbsent: "Absent",
+    noResults: "No results found",
+
+    // Chart
+    attendanceStats: "Attendance Stats",
+    attendanceRateSub: "Active employees today",
+    excellent: "Excellent",
+    goodRate: "Average",
+    poor: "Poor",
+    activeNow: "Active Now",
+    presentOf: "present out of",
 
     // Stats
     presentDays: "Present Days",
@@ -389,19 +477,18 @@ const translations = {
     success: "Operation successful",
     error: "An error occurred",
     noData: "No data available",
-    noResults: "No results found",
     confirmDelete: "Are you sure you want to delete?",
     failedLoad: "Failed to load data",
     connectionError: "Connection error",
-    checkInSuccess: "Attendance recorded successfully ✓",
-    checkOutSuccess: "Departure recorded successfully ✓",
+    checkInSuccess: "Checked in successfully ✓",
+    checkOutSuccess: "Checked out successfully ✓",
     faceNotRecognized: "Face not recognized — try again or use manual check-in",
 
     // GPS
-    locationMode: "Attendance Location Mode",
-    locationEnabled: "Enabled — Employee must be within their branch radius",
-    locationDisabled: "Disabled — No location required for check-in",
-    locationRequired: "You must be within your branch radius to check in",
+    locationMode: "Location Verification Mode",
+    locationEnabled: "Enabled — Employee must be within branch radius",
+    locationDisabled: "Disabled — Location not required for check-in",
+    locationRequired: "You must be within the branch radius to check in",
     gpsError: "Could not determine your location. Check location permissions.",
     outsideRadius: "You are outside the allowed branch radius",
     locationLabel: "Location:",
@@ -414,7 +501,7 @@ const translations = {
     backupCompany: "Company",
     restore: "Restore",
     download: "Download",
-    backupCreated: "Backup created successfully",
+    backupCreated: "Backup created",
     backupDeleted: "Backup deleted",
 
     // Reports
@@ -429,36 +516,36 @@ const translations = {
     darkMode: "Dark Mode",
     lightMode: "Light Mode",
     language: "Language",
-    arabic: "عربي",
+    arabic: "Arabic",
     english: "English",
 
     // Attendance board
-    checkInTime: "Check-in Time",
-    checkOutTime: "Check-out Time",
+    checkInTime: "Check In Time",
+    checkOutTime: "Check Out Time",
     workDuration: "Work Duration",
     workDurationLabel: "Work Duration",
     delay: "Delay",
     autoRefresh: "Auto-refresh every minute",
-    entryTime: "Entry time:",
-    exitTime: "Exit time",
+    entryTime: "Entry:",
+    exitTime: "Exit Time",
     lateBy: "Late by",
     recentRecord: "Recent Records",
     entryShort: "In:",
     exitShort: "Out:",
-    hoursShort: "Hours",
+    hoursShort: "hrs",
     notCheckedInToday: "You haven't checked in today yet",
     todayAttendanceCard: "Today's Attendance",
-    faceNotRegistered: "Your face is not registered yet — contact your manager",
+    faceNotRegistered: "Face not registered yet — contact your manager",
 
     // Leaves
     leaveType: "Leave Type",
     leaveReason: "Reason",
     leaveStatus: "Request Status",
-    pending: "Pending",
+    pending: "Under Review",
     approved: "Approved",
     rejected: "Rejected",
     annual: "Annual",
-    sick: "Sick Leave",
+    sick: "Sick",
     emergency: "Emergency",
     unpaid: "Unpaid",
     other: "Other",
@@ -467,17 +554,17 @@ const translations = {
     leaveRequests: "Leave Requests",
     reviewLeaves: "Review and approve employee leave requests",
     searchByEmployee: "Search by employee name...",
-    noLeaveRequests: "No leave requests",
+    noLeaveRequests: "No leave requests found",
     approveLeave: "Approve",
     rejectLeave: "Reject",
-    rejectionReason: "Rejection Reason:",
+    rejectionReason: "Rejection reason:",
     confirmApproveLeave: "Confirm approving this leave request?",
     rejectionReasonPrompt: "Rejection reason (optional):",
     failedLoadLeaves: "Failed to load leaves",
-    approveSuccess: "Leave approved successfully",
+    approveSuccess: "Leave approved",
     rejectSuccess: "Leave rejected",
     failedAction: "Operation failed",
-    pendingStatus: "Pending Review",
+    pendingStatus: "Pending",
 
     // Employee management
     addEmployee: "Add Employee",
@@ -504,66 +591,87 @@ const translations = {
     confirmDeleteEmployee: "Are you sure you want to delete this employee?",
     failedSave: "Failed to save",
     noEmployeesFound: "No employees found",
+    emailLabel: "Email",
+    phoneLabel: "Phone",
+    addressLabel: "Address",
+    roleLabel: "Role",
+    roleEmployee: "Employee",
+    roleManager: "Manager",
+    roleAdmin: "Admin",
+    emailField: "Email",
+    phoneField: "Phone Number",
+    salaryField: "Salary",
+    departmentField: "Department",
+    branchField: "Branch",
+    shiftField: "Shift",
+    statusField: "Status",
+    shiftTime: "Shift Hours",
+    usernameLabel: "Username",
+    connectionErrorMsg: "Connection error",
+    activeIndicator: "● Active",
+    suspendedIndicator: "○ Suspended",
+    employeeCount: "employees",
+    activeCount: "active",
 
     // Manager dashboard
     welcome: "Welcome",
     myAttendanceTab: "My Attendance",
     teamTab: "Team",
     teamAttendanceToday: "Team Attendance Today",
-    noRecordsToday: "No records today",
+    noRecordsToday: "No records for today",
 
     // Login
     systemName: "Attendance Management System",
+    systemTitle: "Attendance",
     enterCredentials: "Enter your credentials to sign in",
-    enterUsername: "Enter your username",
+    enterUsername: "Enter username",
     passwordPlaceholder: "••••••••",
     loggingIn: "Signing in...",
     loginBtn: "Sign In",
-    forgotCredentials: "Contact your system admin if you forgot your credentials",
+    forgotCredentials: "Contact your system administrator if you forgot your credentials",
     superAdminLoginLink: "Super Admin Login →",
     invalidCredentials: "Invalid username or password",
-    companyInactive: "Your company has been suspended. Please contact support.",
-    connectionTimeout: "Connection timeout. Check your network and try again.",
+    companyInactive: "Your company has been deactivated. Please contact support.",
+    connectionTimeout: "Server connection timed out. Check your network and try again.",
 
     // Company
-    company: "Company",
-    companies: "Companies",
-    totalCompanies: "Total Companies",
-    activeCompanies: "Active Companies",
-    inactiveCompanies: "Suspended Companies",
-    createCompany: "Create Company",
+    companyName: "Company Name",
+    companyLogo: "Company Logo",
+    companyAddress: "Company Address",
+    companyPhone: "Company Phone",
+    companyEmail: "Company Email",
+    companiesManagement: "Companies Management",
+    addCompany: "Add Company",
     editCompany: "Edit Company",
     deleteCompany: "Delete Company",
-
-    // System
-    systemTitle: "Attendance System",
-    version: "Version",
-    copyright: "All rights reserved",
+    noCompanies: "No companies found",
+    companyAdminUsername: "Admin Username",
+    companyAdminPassword: "Admin Password",
   },
-} as const;
+};
 
-export type TranslationKey = keyof typeof translations.ar;
+type TranslationKey = keyof typeof translations.ar;
 
-interface I18nContextType {
+interface I18nContextValue {
   lang: Lang;
-  setLang: (lang: Lang) => void;
+  setLang: (l: Lang) => void;
   t: (key: TranslationKey) => string;
   dir: "rtl" | "ltr";
   locale: string;
 }
 
-const I18nContext = createContext<I18nContextType | null>(null);
+const I18nContext = createContext<I18nContextValue | null>(null);
 
 export function I18nProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<Lang>(() => {
-    return (localStorage.getItem("lang") as Lang) ?? "ar";
+    try { return (localStorage.getItem("lang") as Lang) || "ar"; } catch { return "ar"; }
   });
 
-  const setLang = (newLang: Lang) => {
-    setLangState(newLang);
-    localStorage.setItem("lang", newLang);
-    document.documentElement.setAttribute("lang", newLang);
-    document.documentElement.setAttribute("dir", newLang === "ar" ? "rtl" : "ltr");
+  const setLang = (l: Lang) => {
+    setLangState(l);
+    try { localStorage.setItem("lang", l); } catch { }
+    document.documentElement.setAttribute("lang", l);
+    document.documentElement.setAttribute("dir", l === "ar" ? "rtl" : "ltr");
   };
 
   useEffect(() => {
@@ -572,17 +680,16 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   }, [lang]);
 
   const t = (key: TranslationKey): string => {
-    return translations[lang][key] as string;
+    return (translations[lang] as Record<string, string>)[key]
+      ?? (translations.ar as Record<string, string>)[key]
+      ?? key;
   };
 
+  const dir: "rtl" | "ltr" = lang === "ar" ? "rtl" : "ltr";
+  const locale = lang === "ar" ? "ar-IQ" : "en-US";
+
   return (
-    <I18nContext.Provider value={{
-      lang,
-      setLang,
-      t,
-      dir: lang === "ar" ? "rtl" : "ltr",
-      locale: lang === "ar" ? "ar-IQ" : "en-US",
-    }}>
+    <I18nContext.Provider value={{ lang, setLang, t, dir, locale }}>
       {children}
     </I18nContext.Provider>
   );
@@ -590,6 +697,6 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
 export function useI18n() {
   const ctx = useContext(I18nContext);
-  if (!ctx) throw new Error("useI18n must be used inside I18nProvider");
+  if (!ctx) throw new Error("useI18n must be used within I18nProvider");
   return ctx;
 }
