@@ -1,0 +1,171 @@
+Build a complete enterprise-grade biometric face attendance module inside my existing multi-tenant HR SaaS system.
+
+SYSTEM GOAL:
+Create a secure face recognition attendance ecosystem for companies that integrates biometric devices, backend logic, database synchronization, real-time attendance, payroll linkage, branch validation, and audit security.
+
+ARCHITECTURE:
+The system must include:
+
+1) COMPANY ENROLLMENT SYSTEM
+- Generate a unique 6-character alphanumeric Company Enrollment Code for every company.
+- The code must be globally unique.
+- Prevent duplicate codes.
+- Store code in database.
+- Allow regeneration only by Super Admin.
+- Track code creation history.
+
+2) DEVICE REGISTRATION SYSTEM
+- Each biometric device must have:
+  Device ID
+  Device Secret Token
+  API Key
+  Device Name
+  Device Type
+  Branch Assignment
+  Company Assignment
+  Device Status
+  Last Sync Time
+  Firmware Version
+  IP Address
+- Devices cannot connect without authorization.
+- Bind each device permanently to one company.
+- Prevent device reassignment without Super Admin approval.
+
+3) FACE BIOMETRIC EMPLOYEE ENROLLMENT
+- Company Admin can register employees into biometric system.
+- Save:
+  Employee ID
+  Employee Name
+  Department
+  Position
+  Branch
+  Salary Profile
+  Face Template Reference
+  Device Enrollment Status
+- Never store raw face images.
+- Store encrypted biometric templates only.
+
+4) ATTENDANCE API
+Create secure API endpoints for biometric devices:
+
+POST /api/biometric/checkin
+POST /api/biometric/checkout
+POST /api/biometric/sync
+POST /api/biometric/heartbeat
+
+Each request must validate:
+- API key
+- Device token
+- Device ID
+- Company code
+- Timestamp signature
+
+Reject unauthorized requests.
+
+5) REAL-TIME ATTENDANCE ENGINE
+When employee scans face:
+- Validate employee exists.
+- Validate device ownership.
+- Validate company.
+- Validate branch.
+- Validate work schedule.
+- Validate duplicate attendance.
+- Validate anti-spoof rules.
+- Save attendance instantly.
+
+6) ANTI DUPLICATION
+- Prevent duplicate attendance within configurable time window.
+- Default 60 seconds.
+
+7) OFFLINE MODE
+If device loses internet:
+- Store events locally.
+- Auto sync after reconnection.
+- Maintain event integrity.
+
+8) PAYROLL INTEGRATION
+Attendance automatically affects:
+- Working hours
+- Overtime
+- Late arrivals
+- Absence
+- Deductions
+- Monthly payroll
+
+9) DATABASE
+Create normalized tables:
+
+companies
+branches
+devices
+device_logs
+employees
+biometric_profiles
+attendance_logs
+attendance_events
+payroll_records
+security_logs
+audit_logs
+
+Add indexes for high performance.
+
+10) SECURITY
+Implement:
+- AES-256 encryption
+- TLS 1.3
+- Argon2 password hashing
+- Rate limiting
+- Brute force protection
+- Replay attack protection
+- SQL injection protection
+- XSS protection
+- CSRF protection
+- Session protection
+
+11) AUDIT LOGGING
+Track:
+- Device connections
+- Failed authentication
+- Face scan attempts
+- Admin changes
+- Device changes
+- Attendance edits
+
+12) ALERT SYSTEM
+Notify admins on:
+- Unauthorized device attempts
+- Suspicious scans
+- Multiple failed scans
+- Device offline
+- Sync failure
+
+13) DASHBOARD
+Create biometric dashboard showing:
+- Live attendance
+- Online devices
+- Offline devices
+- Failed scans
+- Late employees
+- Branch statistics
+
+14) PERFORMANCE
+System must support:
+- 1000 companies
+- 100,000 employees
+- 10,000 concurrent scans
+
+15) TESTING
+Automatically run:
+- Load testing
+- API testing
+- Security validation
+- Device simulation
+- Database stress testing
+
+16) BACKUP
+Create:
+- Automatic encrypted backups
+- Daily, weekly, monthly backups
+- Restore points
+
+Build production-ready backend, database schema, API logic, validation logic, and UI management panels.
