@@ -29,6 +29,12 @@ import EmployeeLoans     from "@/pages/employee/Loans";
 import ChatPage          from "@/pages/Chat";
 import EmployeeProfile   from "@/pages/employee/Profile";
 import AdminEmployeeProfile from "@/pages/admin/EmployeeProfile";
+import AdminCalendar     from "@/pages/admin/Calendar";
+import EmployeeCalendar  from "@/pages/employee/Calendar";
+import AdminPerformance  from "@/pages/admin/Performance";
+import EmployeePerformance from "@/pages/employee/Performance";
+import AdminKnowledgeCenter from "@/pages/admin/KnowledgeCenter";
+import EmployeeKnowledgeCenter from "@/pages/employee/KnowledgeCenter";
 
 // ─── Lazy-loaded (super admin + rarely visited) ───────────────────────────────
 const SuperAdminDashboard  = lazy(() => import("@/pages/super-admin/Dashboard"));
@@ -143,12 +149,18 @@ function Router() {
         <Route path="/settings">{() => <Guard adminOnly><AdminSettings /></Guard>}</Route>
         <Route path="/payroll">{() => <Guard adminOnly><AdminPayroll /></Guard>}</Route>
         <Route path="/loans">{() => <Guard adminOnly><AdminLoans /></Guard>}</Route>
+        <Route path="/calendar">{() => <Guard adminOnly><AdminCalendar /></Guard>}</Route>
+        <Route path="/performance">{() => <Guard adminOnly><AdminPerformance /></Guard>}</Route>
+        <Route path="/knowledge">{() => <Guard adminOnly><AdminKnowledgeCenter /></Guard>}</Route>
 
         {/* Employee */}
         <Route path="/my-attendance">{() => <Guard><EmployeeDashboard /></Guard>}</Route>
         <Route path="/my-leaves">{() => <Guard><MyLeaves /></Guard>}</Route>
         <Route path="/my-loans">{() => <Guard><EmployeeLoans /></Guard>}</Route>
         <Route path="/my-profile">{() => <Guard><EmployeeProfile /></Guard>}</Route>
+        <Route path="/my-calendar">{() => <Guard><EmployeeCalendar /></Guard>}</Route>
+        <Route path="/my-performance">{() => <Guard><EmployeePerformance /></Guard>}</Route>
+        <Route path="/knowledge-center">{() => <Guard><EmployeeKnowledgeCenter /></Guard>}</Route>
 
         {/* Admin profile view */}
         <Route path="/employees/:id/profile">{() => <Guard adminOnly><AdminEmployeeProfile /></Guard>}</Route>

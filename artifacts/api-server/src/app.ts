@@ -42,7 +42,10 @@ app.use(
 
 // ─── Body Parsing ─────────────────────────────────────────────────────────────
 app.use(requestSizeLimiter);
-app.use(express.json({ limit: "10mb" }));
+// Default 15MB to accommodate base64-encoded Knowledge Center uploads (10MB raw
+// file → ~13.4MB base64). All routes enforce their own payload limits via the
+// requestSizeLimiter middleware and per-route validation.
+app.use(express.json({ limit: "15mb" }));
 app.use(express.urlencoded({ extended: true, limit: "5mb" }));
 app.use(sanitizeBody);
 

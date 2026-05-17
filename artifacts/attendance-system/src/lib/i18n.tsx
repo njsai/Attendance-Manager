@@ -22,6 +22,11 @@ const translations = {
     myProfile: "ملفي الشخصي",
     logout: "تسجيل الخروج",
     payroll: "الرواتب",
+    calendar: "التقويم",
+    myCalendar: "تقويمي",
+    performance: "تقييم الأداء",
+    myPerformance: "أدائي",
+    knowledgeCenter: "مركز المعرفة",
 
     // Roles
     admin: "مدير النظام",
@@ -354,6 +359,11 @@ const translations = {
     myProfile: "My Profile",
     logout: "Logout",
     payroll: "Payroll",
+    calendar: "Calendar",
+    myCalendar: "My Calendar",
+    performance: "Performance",
+    myPerformance: "My Performance",
+    knowledgeCenter: "Knowledge Center",
 
     // Roles
     admin: "Admin",

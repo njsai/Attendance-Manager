@@ -7,6 +7,7 @@ import {
   LayoutDashboard, Users, Building2, Clock,
   CalendarCheck, FileBarChart, LogOut, Menu, X, Home, Settings, MessageCircle,
   Sun, Moon, Languages, Banknote, Zap, Bell, ChevronLeft, AlertTriangle, Info, CheckCircle, UserCircle, CreditCard,
+  Calendar, TrendingUp, BookOpen,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import NotificationBell from "@/components/NotificationBell";
@@ -30,23 +31,32 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
     { name: t("reports"),     path: "/reports",     icon: FileBarChart },
     { name: t("payroll"),     path: "/payroll",     icon: Banknote },
     { name: t("loans"),       path: "/loans",       icon: CreditCard },
-    { name: t("chat"),        path: "/chat",        icon: MessageCircle },
-    { name: t("settings"),    path: "/settings",    icon: Settings },
+    { name: t("chat"),            path: "/chat",        icon: MessageCircle },
+    { name: t("calendar"),        path: "/calendar",    icon: Calendar },
+    { name: t("performance"),     path: "/performance", icon: TrendingUp },
+    { name: t("knowledgeCenter"), path: "/knowledge",   icon: BookOpen },
+    { name: t("settings"),        path: "/settings",    icon: Settings },
   ];
 
   const MANAGER_NAV = [
-    { name: t("home"),        path: "/",           icon: Home },
-    { name: t("myLeaves"),    path: "/my-leaves",  icon: Clock },
-    { name: t("myProfile"),   path: "/my-profile", icon: UserCircle },
-    { name: t("chat"),        path: "/chat",       icon: MessageCircle },
+    { name: t("home"),            path: "/",               icon: Home },
+    { name: t("myLeaves"),        path: "/my-leaves",      icon: Clock },
+    { name: t("myProfile"),       path: "/my-profile",     icon: UserCircle },
+    { name: t("myCalendar"),      path: "/my-calendar",    icon: Calendar },
+    { name: t("myPerformance"),   path: "/my-performance", icon: TrendingUp },
+    { name: t("knowledgeCenter"), path: "/knowledge-center", icon: BookOpen },
+    { name: t("chat"),            path: "/chat",           icon: MessageCircle },
   ];
 
   const EMPLOYEE_NAV = [
-    { name: t("home"),        path: "/",           icon: Home },
-    { name: t("myLeaves"),    path: "/my-leaves",  icon: Clock },
-    { name: t("myLoans"),     path: "/my-loans",   icon: CreditCard },
-    { name: t("myProfile"),   path: "/my-profile", icon: UserCircle },
-    { name: t("chat"),        path: "/chat",       icon: MessageCircle },
+    { name: t("home"),            path: "/",               icon: Home },
+    { name: t("myLeaves"),        path: "/my-leaves",      icon: Clock },
+    { name: t("myLoans"),         path: "/my-loans",       icon: CreditCard },
+    { name: t("myProfile"),       path: "/my-profile",     icon: UserCircle },
+    { name: t("myCalendar"),      path: "/my-calendar",    icon: Calendar },
+    { name: t("myPerformance"),   path: "/my-performance", icon: TrendingUp },
+    { name: t("knowledgeCenter"), path: "/knowledge-center", icon: BookOpen },
+    { name: t("chat"),            path: "/chat",           icon: MessageCircle },
   ];
 
   const ROLE_LABEL: Record<string, string> = {

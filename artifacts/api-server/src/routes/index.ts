@@ -24,6 +24,9 @@ import auditLogsRouter from "./audit-logs.js";
 import documentsRouter from "./documents.js";
 import loansRouter from "./loans.js";
 import userNotificationsRouter from "./user-notifications.js";
+import calendarRouter from "./calendar.js";
+import performanceRouter from "./performance.js";
+import knowledgeRouter from "./knowledge.js";
 
 const router: IRouter = Router();
 
@@ -52,5 +55,8 @@ router.use("/audit-logs", auditLogsRouter);
 router.use("/documents", documentsRouter);
 router.use("/loans", loansRouter);
 router.use("/user-notifications", userNotificationsRouter);
+router.use("/calendar", calendarRouter);
+router.use("/performance", performanceRouter);
+router.use("/knowledge", knowledgeRouter);
 
 export default router;

@@ -1,0 +1,7 @@
+ALTER TABLE knowledge_docs
+  ALTER COLUMN file_data DROP NOT NULL,
+  ALTER COLUMN file_name DROP NOT NULL,
+  ALTER COLUMN file_type DROP NOT NULL;
+
+ALTER TABLE knowledge_docs
+  ADD COLUMN IF NOT EXISTS file_url TEXT;

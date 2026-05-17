@@ -178,15 +178,18 @@ export function csrfProtection(req: Request, res: Response, next: NextFunction) 
   next();
 }
 
-// Upload routes send base64-encoded files in JSON; a 5MB binary becomes ~6.7MB
-// base64, so upload paths use a 12MB transport ceiling (raw file ≤ 5MB enforced
-// in route logic). All other routes retain the original 5MB cap.
-const UPLOAD_PATHS = ["/api/profile/", "/api/documents/"];
+// Upload routes send base64-encoded files in JSON.  A 5MB binary becomes ~6.7MB
+// base64, and a 10MB binary becomes ~13.4MB base64.  We therefore use per-path
+// ceilings: knowledge allows 15MB transport (raw ≤ 10MB), profile/documents use
+// 12MB transport (raw ≤ 5MB), all other routes retain the 5MB cap.
+const UPLOAD_PATHS_LARGE = ["/api/knowledge"];
+const UPLOAD_PATHS_STD   = ["/api/profile/", "/api/documents/"];
 
 // ─── Request Size Limiter ─────────────────────────────────────────────────────
 export function requestSizeLimiter(req: Request, res: Response, next: NextFunction) {
-  const isUpload = UPLOAD_PATHS.some(p => req.path.includes(p));
-  const maxSize = isUpload ? 12 * 1024 * 1024 : 5 * 1024 * 1024;
+  const isLarge = UPLOAD_PATHS_LARGE.some(p => req.path.startsWith(p));
+  const isStd   = UPLOAD_PATHS_STD.some(p => req.path.includes(p));
+  const maxSize = isLarge ? 15 * 1024 * 1024 : isStd ? 12 * 1024 * 1024 : 5 * 1024 * 1024;
   const contentLength = parseInt(req.headers["content-length"] || "0");
   if (contentLength > maxSize) {
     res.status(413).json({ message: "حجم الطلب كبير جداً", error: "PAYLOAD_TOO_LARGE" });
