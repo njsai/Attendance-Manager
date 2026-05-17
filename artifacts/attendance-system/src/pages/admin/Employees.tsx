@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
+import { useLocation } from "wouter";
 import { getCachedStale, setCached, invalidatePrefix } from "@/lib/pageCache";
-import { Plus, Search, Edit2, Trash2, ToggleLeft, ToggleRight, X, User, Mail, Phone, MapPin, Briefcase, Building, Clock, DollarSign, Shield, ScanFace } from "lucide-react";
+import { Plus, Search, Edit2, Trash2, ToggleLeft, ToggleRight, X, User, Mail, Phone, MapPin, Briefcase, Building, Clock, DollarSign, Shield, ScanFace, UserCircle } from "lucide-react";
 import FaceCapture from "@/components/FaceCapture";
 import { useI18n } from "@/lib/i18n";
 import { useTheme } from "@/lib/theme";
@@ -164,6 +165,7 @@ function EmployeeCard({ emp, onEdit, onDelete, onToggle, onFaceEnroll }: {
   const { t, dir } = useI18n();
   const { theme } = useTheme();
   const isDark = theme === "dark";
+  const [, navigate] = useLocation();
 
   const [open, setOpen] = useState(false);
 
@@ -245,6 +247,9 @@ function EmployeeCard({ emp, onEdit, onDelete, onToggle, onFaceEnroll }: {
           <div style={{ display: "flex", gap: 6, paddingTop: 4, flexWrap: "wrap" }}>
             <button onClick={onEdit} style={{ display: "flex", alignItems: "center", gap: 4, padding: "6px 10px", borderRadius: 8, border: "none", background: isDark ? "rgba(0,245,255,0.07)" : "rgba(8,145,178,0.07)", color: cyanColor, fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "'Tajawal', 'Inter', sans-serif" }}>
               <Edit2 size={12} /> {t("edit")}
+            </button>
+            <button onClick={() => navigate(`/employees/${emp.id}/profile`)} style={{ display: "flex", alignItems: "center", gap: 4, padding: "6px 10px", borderRadius: 8, border: "none", background: isDark ? "rgba(168,85,247,0.08)" : "rgba(124,58,237,0.07)", color: isDark ? "#a855f7" : "#7c3aed", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "'Tajawal', 'Inter', sans-serif" }}>
+              <UserCircle size={12} /> الملف الشخصي
             </button>
             <button onClick={onToggle} style={{ display: "flex", alignItems: "center", gap: 4, padding: "6px 10px", borderRadius: 8, border: "none", background: emp.isActive ? "rgba(245,158,11,0.08)" : "rgba(16,185,129,0.08)", color: emp.isActive ? "#f59e0b" : "#10b981", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "'Tajawal', 'Inter', sans-serif" }}>
               {emp.isActive ? <><ToggleLeft size={12} /> {t("suspendEmployee")}</> : <><ToggleRight size={12} /> {t("activateEmployee")}</>}

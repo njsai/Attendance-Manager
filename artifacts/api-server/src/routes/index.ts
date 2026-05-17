@@ -19,6 +19,9 @@ import subscriptionsRouter from "./subscriptions.js";
 import monitoringRouter from "./monitoring.js";
 import notificationsRouter from "./notifications.js";
 import companyAlertsRouter from "./company-alerts.js";
+import profileRouter from "./profile.js";
+import auditLogsRouter from "./audit-logs.js";
+import documentsRouter from "./documents.js";
 
 const router: IRouter = Router();
 
@@ -42,5 +45,8 @@ router.use("/settings", settingsRouter);
 router.use("/messages", messagesRouter);
 router.use("/payroll", payrollRouter);
 router.use("/preferences", preferencesRouter);
+router.use("/profile", profileRouter);
+router.use("/audit-logs", auditLogsRouter);
+router.use("/documents", documentsRouter);
 
 export default router;

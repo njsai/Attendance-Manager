@@ -80,12 +80,16 @@ export const superAdminRateLimit = rateLimit({
   },
 });
 
+// Fields containing binary/base64 data that must not be truncated or trimmed
+const BINARY_FIELDS = new Set(["fileData", "photo_data", "file_data"]);
+
 // ─── Input Sanitization Middleware ────────────────────────────────────────────
 export function sanitizeBody(req: Request, _res: Response, next: NextFunction) {
   if (req.body && typeof req.body === "object") {
     for (const key of Object.keys(req.body)) {
       if (typeof req.body[key] === "string") {
-        // Trim whitespace; SQL injection is prevented by Drizzle ORM parameterized queries
+        if (BINARY_FIELDS.has(key)) continue; // preserve binary/base64 fields intact
+        // Trim whitespace; SQL injection is prevented by parameterized queries
         req.body[key] = req.body[key].trim();
         // Remove null bytes
         req.body[key] = req.body[key].replace(/\0/g, "");
@@ -174,9 +178,15 @@ export function csrfProtection(req: Request, res: Response, next: NextFunction) 
   next();
 }
 
+// Upload routes send base64-encoded files in JSON; a 5MB binary becomes ~6.7MB
+// base64, so upload paths use a 12MB transport ceiling (raw file ≤ 5MB enforced
+// in route logic). All other routes retain the original 5MB cap.
+const UPLOAD_PATHS = ["/api/profile/", "/api/documents/"];
+
 // ─── Request Size Limiter ─────────────────────────────────────────────────────
 export function requestSizeLimiter(req: Request, res: Response, next: NextFunction) {
-  const maxSize = 5 * 1024 * 1024; // 5MB
+  const isUpload = UPLOAD_PATHS.some(p => req.path.includes(p));
+  const maxSize = isUpload ? 12 * 1024 * 1024 : 5 * 1024 * 1024;
   const contentLength = parseInt(req.headers["content-length"] || "0");
   if (contentLength > maxSize) {
     res.status(413).json({ message: "حجم الطلب كبير جداً", error: "PAYLOAD_TOO_LARGE" });

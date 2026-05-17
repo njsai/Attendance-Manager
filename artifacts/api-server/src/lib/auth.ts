@@ -38,6 +38,18 @@ export function requireAdmin(req: Request, res: Response, next: NextFunction) {
   next();
 }
 
+export function requireStrictAdmin(req: Request, res: Response, next: NextFunction) {
+  if (!req.session?.userId || !req.session?.companyId) {
+    res.status(401).json({ message: "Unauthorized" });
+    return;
+  }
+  if (req.session.role !== "admin") {
+    res.status(403).json({ message: "ممنوع - للمديرين فقط" });
+    return;
+  }
+  next();
+}
+
 export function requireSuperAdmin(req: Request, res: Response, next: NextFunction) {
   if (!req.session?.superAdminId) {
     res.status(401).json({ message: "Unauthorized - Super Admin only" });

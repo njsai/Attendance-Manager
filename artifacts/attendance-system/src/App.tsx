@@ -25,6 +25,8 @@ import AdminSettings     from "@/pages/admin/Settings";
 import AdminPayroll      from "@/pages/admin/Payroll";
 import MyLeaves          from "@/pages/employee/MyLeaves";
 import ChatPage          from "@/pages/Chat";
+import EmployeeProfile   from "@/pages/employee/Profile";
+import AdminEmployeeProfile from "@/pages/admin/EmployeeProfile";
 
 // ─── Lazy-loaded (super admin + rarely visited) ───────────────────────────────
 const SuperAdminDashboard  = lazy(() => import("@/pages/super-admin/Dashboard"));
@@ -142,6 +144,10 @@ function Router() {
         {/* Employee */}
         <Route path="/my-attendance">{() => <Guard><EmployeeDashboard /></Guard>}</Route>
         <Route path="/my-leaves">{() => <Guard><MyLeaves /></Guard>}</Route>
+        <Route path="/my-profile">{() => <Guard><EmployeeProfile /></Guard>}</Route>
+
+        {/* Admin profile view */}
+        <Route path="/employees/:id/profile">{() => <Guard adminOnly><AdminEmployeeProfile /></Guard>}</Route>
 
         {/* Chat */}
         <Route path="/chat">{() => <Guard><ChatPage /></Guard>}</Route>

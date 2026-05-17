@@ -17,6 +17,7 @@ const translations = {
     settings: "الإعدادات",
     home: "الرئيسية",
     myLeaves: "إجازاتي",
+    myProfile: "ملفي الشخصي",
     logout: "تسجيل الخروج",
     payroll: "الرواتب",
 
@@ -346,6 +347,7 @@ const translations = {
     settings: "Settings",
     home: "Home",
     myLeaves: "My Leaves",
+    myProfile: "My Profile",
     logout: "Logout",
     payroll: "Payroll",
 
