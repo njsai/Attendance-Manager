@@ -23,6 +23,7 @@ import profileRouter from "./profile.js";
 import auditLogsRouter from "./audit-logs.js";
 import documentsRouter from "./documents.js";
 import loansRouter from "./loans.js";
+import userNotificationsRouter from "./user-notifications.js";
 
 const router: IRouter = Router();
 
@@ -50,5 +51,6 @@ router.use("/profile", profileRouter);
 router.use("/audit-logs", auditLogsRouter);
 router.use("/documents", documentsRouter);
 router.use("/loans", loansRouter);
+router.use("/user-notifications", userNotificationsRouter);
 
 export default router;

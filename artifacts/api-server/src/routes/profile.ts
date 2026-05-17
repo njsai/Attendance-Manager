@@ -2,6 +2,7 @@ import { Router, type Request, type Response } from "express";
 import type { PoolClient } from "pg";
 import { pool } from "@workspace/db";
 import { requireAuth, requireStrictAdmin } from "../lib/auth.js";
+import { createNotification } from "../lib/createNotification.js";
 
 const router = Router();
 
@@ -286,6 +287,16 @@ async function updateDocStatus(req: Request, res: Response) {
         field: "document_status", oldValue: previousStatus, newValue: status,
       });
     } finally { client.release(); }
+
+    void createNotification(
+      docRows[0].employee_id, companyId,
+      status === "approved" ? "document_approved" : "document_rejected",
+      status === "approved" ? "تمت الموافقة على المستند" : "تم رفض المستند",
+      status === "approved"
+        ? `تمت الموافقة على المستند المرفوع (${docRows[0].doc_type})`
+        : `تم رفض المستند المرفوع (${docRows[0].doc_type})`,
+      docId, "document"
+    ).catch(err => console.warn("[Notification]", err));
 
     res.json(docRows[0]);
   } catch (err) { console.error(err); res.status(500).json({ message: "Server error" }); }

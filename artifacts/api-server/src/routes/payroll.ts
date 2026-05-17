@@ -6,6 +6,7 @@ import {
 } from "@workspace/db";
 import { eq, and, sql, desc, gte, lte, count } from "drizzle-orm";
 import { requireAuth, requireAdmin, requireCompanyAuth } from "../lib/auth.js";
+import { createNotification } from "../lib/createNotification.js";
 
 // Type that covers both the main db connection and a Drizzle transaction object
 type DbOrTx = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -442,6 +443,13 @@ router.post("/generate", requireAdmin, async (req, res) => {
           }
         });
 
+        // Notify employee that their payroll was generated (fire-and-forget)
+        void createNotification(
+          emp.id, companyId,
+          "payroll_generated",
+          "تم إصدار كشف الراتب",
+          `تم إصدار راتب شهر ${m}/${y}. يمكنك مراجعته من قسم الرواتب`,
+        ).catch(err => console.warn("[Notification]", err));
         created++;
       } catch (e: any) {
         if (isDuplicateKey(e)) skipped++;
@@ -507,6 +515,16 @@ router.post("/:id/pay", requireAdmin, async (req, res) => {
       .set({ status, paidAt: status === "paid" ? new Date() : null, updatedAt: new Date() })
       .where(and(eq(payrollTable.id, id), eq(payrollTable.companyId, companyId)))
       .returning();
+
+    if (status === "paid" && updated) {
+      void createNotification(
+        updated.employeeId, companyId,
+        "payroll_paid",
+        "تم صرف الراتب",
+        `تم صرف راتبك لشهر ${updated.month}/${updated.year} بمبلغ ${Number(updated.netSalary).toLocaleString()} ${updated.currency ?? ""}`,
+        id, "payroll"
+      ).catch(err => console.warn("[Notification]", err));
+    }
 
     res.json(updated);
   } catch (err) { console.error(err); res.status(500).json({ message: "خطأ في الخادم" }); }

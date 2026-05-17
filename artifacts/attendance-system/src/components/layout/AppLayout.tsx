@@ -9,6 +9,7 @@ import {
   Sun, Moon, Languages, Banknote, Zap, Bell, ChevronLeft, AlertTriangle, Info, CheckCircle, UserCircle, CreditCard,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import NotificationBell from "@/components/NotificationBell";
 
 function SidebarContent({ onClose }: { onClose?: () => void }) {
   const { user, logout } = useAuth();
@@ -475,8 +476,11 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               {new Date().toLocaleDateString(locale, { weekday: "short", month: "short", day: "numeric" })}
             </div>
 
-            {/* Bell with dropdown */}
-            <div ref={bellRef} style={{ position: "relative" }}>
+            {/* Per-user HR notifications bell (all roles) */}
+            <NotificationBell />
+
+            {/* Company system alerts bell (admin only) */}
+            {user.role === "admin" && <div ref={bellRef} style={{ position: "relative" }}>
               <div
                 onClick={() => setAlertsOpen(v => !v)}
                 style={{
@@ -574,7 +578,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                   </motion.div>
                 )}
               </AnimatePresence>
-            </div>
+            </div>}
           </div>
         </header>
 

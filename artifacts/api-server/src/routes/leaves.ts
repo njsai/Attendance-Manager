@@ -3,6 +3,7 @@ import { db } from "@workspace/db";
 import { leavesTable, employeesTable, departmentsTable } from "@workspace/db";
 import { eq, and, desc } from "drizzle-orm";
 import { requireAuth, requireAdmin } from "../lib/auth.js";
+import { createNotification } from "../lib/createNotification.js";
 
 const router = Router();
 
@@ -68,6 +69,15 @@ router.put("/:id/approve", requireAdmin, async (req, res) => {
       .leftJoin(employeesTable, eq(leavesTable.employeeId, employeesTable.id))
       .leftJoin(departmentsTable, eq(employeesTable.departmentId, departmentsTable.id))
       .where(eq(leavesTable.id, id));
+    if (full?.employeeId) {
+      void createNotification(
+        full.employeeId, req.session.companyId!,
+        "leave_approved",
+        "تمت الموافقة على طلب الإجازة",
+        `تمت الموافقة على طلب إجازتك من ${full.startDate} إلى ${full.endDate}`,
+        id, "leave"
+      ).catch(err => console.warn("[Notification]", err));
+    }
     res.json(full);
   } catch (err) { console.error(err); res.status(500).json({ message: "Server error" }); }
 });
@@ -81,6 +91,17 @@ router.put("/:id/reject", requireAdmin, async (req, res) => {
       .leftJoin(employeesTable, eq(leavesTable.employeeId, employeesTable.id))
       .leftJoin(departmentsTable, eq(employeesTable.departmentId, departmentsTable.id))
       .where(eq(leavesTable.id, id));
+    if (full?.employeeId) {
+      void createNotification(
+        full.employeeId, req.session.companyId!,
+        "leave_rejected",
+        "تم رفض طلب الإجازة",
+        reason
+          ? `تم رفض طلب إجازتك. السبب: ${reason}`
+          : `تم رفض طلب إجازتك من ${full.startDate} إلى ${full.endDate}`,
+        id, "leave"
+      ).catch(err => console.warn("[Notification]", err));
+    }
     res.json(full);
   } catch (err) { console.error(err); res.status(500).json({ message: "Server error" }); }
 });

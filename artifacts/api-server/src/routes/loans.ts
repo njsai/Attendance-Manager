@@ -3,6 +3,7 @@ import { db } from "@workspace/db";
 import { loansTable, loanInstallmentsTable, employeesTable } from "@workspace/db";
 import { eq, and, desc } from "drizzle-orm";
 import { requireAuth, requireAdmin, requireCompanyAuth } from "../lib/auth.js";
+import { createNotification } from "../lib/createNotification.js";
 
 const router = Router();
 
@@ -120,6 +121,14 @@ router.put("/:id/approve", requireAdmin, async (req, res) => {
       .leftJoin(employeesTable, eq(loansTable.employeeId, employeesTable.id))
       .where(eq(loansTable.id, updated.id));
 
+    void createNotification(
+      updated.employeeId, companyId,
+      "loan_approved",
+      "تمت الموافقة على طلب السلفة",
+      `تمت الموافقة على طلب سلفتك بمبلغ ${updated.monthlyDeduction} شهرياً على ${count} قسط`,
+      id, "loan"
+    ).catch(err => console.warn("[Notification]", err));
+
     res.json(full);
   } catch (err) { console.error(err); res.status(500).json({ message: "خطأ في الخادم" }); }
 });
@@ -146,6 +155,14 @@ router.put("/:id/reject", requireAdmin, async (req, res) => {
     const [full] = await db.select(loanSelect).from(loansTable)
       .leftJoin(employeesTable, eq(loansTable.employeeId, employeesTable.id))
       .where(eq(loansTable.id, updated.id));
+
+    void createNotification(
+      updated.employeeId, companyId,
+      "loan_rejected",
+      "تم رفض طلب السلفة",
+      `تم رفض طلب سلفتك بمبلغ ${Number(updated.amount).toLocaleString()}`,
+      id, "loan"
+    ).catch(err => console.warn("[Notification]", err));
 
     res.json(full);
   } catch (err) { console.error(err); res.status(500).json({ message: "خطأ في الخادم" }); }
