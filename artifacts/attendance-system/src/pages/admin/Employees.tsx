@@ -284,6 +284,7 @@ export default function AdminEmployees() {
   const [showModal, setShowModal] = useState(false);
   const [editEmp, setEditEmp] = useState<Partial<Employee> | null>(null);
   const [faceEnrollEmp, setFaceEnrollEmp] = useState<Employee | null>(null);
+  const [faceReplaceConfirm, setFaceReplaceConfirm] = useState<Employee | null>(null);
   const [faceMsg, setFaceMsg] = useState("");
   const BASE = import.meta.env.BASE_URL;
 
@@ -384,6 +385,42 @@ export default function AdminEmployees() {
       {faceEnrollEmp && (
         <FaceCapture mode="enroll" onCapture={handleFaceCapture} onClose={() => setFaceEnrollEmp(null)} />
       )}
+
+      {/* Face replace confirmation dialog */}
+      {faceReplaceConfirm && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", backdropFilter: "blur(6px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999, padding: 16 }} dir="rtl">
+          <div style={{ background: isDark ? "rgba(10,12,28,0.98)" : "#fff", border: `1px solid ${isDark ? "rgba(255,255,255,0.08)" : "#e2e8f0"}`, borderRadius: 20, padding: 28, maxWidth: 400, width: "100%", boxShadow: "0 20px 60px rgba(0,0,0,0.5)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+              <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(245,158,11,0.15)", border: "1px solid rgba(245,158,11,0.3)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <ScanFace size={22} style={{ color: "#f59e0b" }} />
+              </div>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 15, color: isDark ? "#fff" : "#0f172a" }}>بصمة موجودة مسبقاً</div>
+                <div style={{ fontSize: 12, color: isDark ? "rgba(255,255,255,0.5)" : "#64748b", marginTop: 2 }}>يحق لكل موظف بصمة واحدة فقط</div>
+              </div>
+            </div>
+            <p style={{ fontSize: 13, color: isDark ? "rgba(255,255,255,0.7)" : "#475569", lineHeight: 1.6, marginBottom: 20 }}>
+              الموظف <strong style={{ color: isDark ? "#fff" : "#0f172a" }}>{faceReplaceConfirm.fullName}</strong> لديه بصمة وجه مسجّلة بالفعل.
+              هل تريد استبدال البصمة الحالية بأخرى جديدة؟
+            </p>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button
+                onClick={() => { setFaceEnrollEmp(faceReplaceConfirm); setFaceReplaceConfirm(null); }}
+                style={{ flex: 1, padding: "11px", borderRadius: 12, border: "none", background: "linear-gradient(135deg,#f59e0b,#d97706)", color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: "'Tajawal','Inter',sans-serif" }}
+              >
+                استبدال البصمة
+              </button>
+              <button
+                onClick={() => setFaceReplaceConfirm(null)}
+                style={{ flex: 1, padding: "11px", borderRadius: 12, border: `1px solid ${isDark ? "rgba(255,255,255,0.1)" : "#e2e8f0"}`, background: isDark ? "rgba(255,255,255,0.05)" : "#f8fafc", color: isDark ? "rgba(255,255,255,0.7)" : "#64748b", fontWeight: 600, fontSize: 13, cursor: "pointer", fontFamily: "'Tajawal','Inter',sans-serif" }}
+              >
+                إلغاء
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {faceMsg && (
         <div style={{ position: "fixed", bottom: 24, insetInlineEnd: 24, padding: "10px 20px", borderRadius: 14, fontSize: 13, fontWeight: 700, zIndex: 9999, background: faceMsg.startsWith("✓") ? "rgba(16,185,129,0.9)" : "rgba(239,68,68,0.9)", color: "#fff", backdropFilter: "blur(12px)" }}>
           {faceMsg}
@@ -435,7 +472,7 @@ export default function AdminEmployees() {
               onEdit={() => { setEditEmp(emp); setShowModal(true); }}
               onDelete={() => handleDelete(emp.id)}
               onToggle={() => handleToggle(emp.id)}
-              onFaceEnroll={() => setFaceEnrollEmp(emp)} />
+              onFaceEnroll={() => emp.hasFace ? setFaceReplaceConfirm(emp) : setFaceEnrollEmp(emp)} />
           ))
         )}
       </div>
