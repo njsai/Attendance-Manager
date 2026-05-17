@@ -25,6 +25,8 @@ export const payrollTable = pgTable("payroll", {
   lateMinutes: integer("late_minutes").notNull().default(0),
   overtimeMinutes: integer("overtime_minutes").notNull().default(0),
   leaveDays: integer("leave_days").notNull().default(0),
+  leaveDeduction: real("leave_deduction").notNull().default(0),
+  loanDeduction: real("loan_deduction").notNull().default(0),
   notes: text("notes"),
   createdBy: integer("created_by").references(() => employeesTable.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at").notNull().defaultNow(),

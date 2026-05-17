@@ -29,6 +29,7 @@ type PayrollRecord = {
   id: number; employeeId: number; employeeName: string; jobTitle?: string; departmentName?: string;
   month: number; year: number; basicSalary: number; incentives: number; overtimePay: number;
   deductions: number; advances: number; lateDeduction: number; absenceDeduction: number;
+  leaveDeduction: number; loanDeduction: number;
   netSalary: number; currency: string; status: string; paidAt?: string;
   workDays: number; absentDays: number; lateMinutes: number; overtimeMinutes: number;
   leaveDays: number; notes?: string; createdAt: string; updatedAt?: string;
@@ -138,6 +139,8 @@ function PayrollSlip({ record, onClose }: { record: PayrollRecord; onClose: () =
           <tr class="deduction"><td>سلف</td><td>-${fmt(record.advances, record.currency)}</td></tr>
           <tr class="deduction"><td>خصم التأخير</td><td>-${fmt(record.lateDeduction, record.currency)}</td></tr>
           <tr class="deduction"><td>خصم الغياب</td><td>-${fmt(record.absenceDeduction, record.currency)}</td></tr>
+          <tr class="deduction"><td>خصم الإجازات غير المدفوعة</td><td>-${fmt((record.leaveDeduction ?? 0), record.currency)}</td></tr>
+          <tr class="deduction"><td>قسط القرض / السلفة</td><td>-${fmt((record.loanDeduction ?? 0), record.currency)}</td></tr>
           <tr class="net-row"><td>صافي الراتب</td><td>${fmt(record.netSalary, record.currency)}</td></tr>
         </tbody>
       </table>
@@ -202,14 +205,16 @@ function PayrollSlip({ record, onClose }: { record: PayrollRecord; onClose: () =
       startY: infoY + 26,
       head: [["Item", "Amount"]],
       body: [
-        ["Basic Salary",      fmt(record.basicSalary, record.currency)],
-        ["Incentives",        fmt(record.incentives, record.currency)],
-        ["Overtime Pay",      fmt(record.overtimePay, record.currency)],
-        ["Deductions",       `-${fmt(record.deductions, record.currency)}`],
-        ["Advances",         `-${fmt(record.advances, record.currency)}`],
-        ["Late Deduction",   `-${fmt(record.lateDeduction, record.currency)}`],
-        ["Absence Deduction",`-${fmt(record.absenceDeduction, record.currency)}`],
-        ["NET SALARY",        fmt(record.netSalary, record.currency)],
+        ["Basic Salary",           fmt(record.basicSalary, record.currency)],
+        ["Incentives",             fmt(record.incentives, record.currency)],
+        ["Overtime Pay",           fmt(record.overtimePay, record.currency)],
+        ["Deductions",            `-${fmt(record.deductions, record.currency)}`],
+        ["Advances",              `-${fmt(record.advances, record.currency)}`],
+        ["Late Deduction",        `-${fmt(record.lateDeduction, record.currency)}`],
+        ["Absence Deduction",     `-${fmt(record.absenceDeduction, record.currency)}`],
+        ["Unpaid Leave Deduction",`-${fmt((record.leaveDeduction ?? 0), record.currency)}`],
+        ["Loan Installment",      `-${fmt((record.loanDeduction ?? 0), record.currency)}`],
+        ["NET SALARY",             fmt(record.netSalary, record.currency)],
       ],
       styles: { font: "helvetica", fontSize: 10, cellPadding: 5, textColor: [30, 30, 30] },
       headStyles: { fillColor: [30, 58, 95], textColor: [255, 255, 255], fontStyle: "bold" },
@@ -218,7 +223,7 @@ function PayrollSlip({ record, onClose }: { record: PayrollRecord; onClose: () =
       tableLineColor: [220, 228, 236],
       tableLineWidth: 0.1,
       didParseCell: (data) => {
-        if (data.row.index === 7) {
+        if (data.row.index === 9) {
           data.cell.styles.fillColor = [30, 58, 95];
           (data.cell.styles as any).textColor = [255, 255, 255];
           data.cell.styles.fontStyle = "bold";
@@ -288,7 +293,7 @@ function PayrollSlip({ record, onClose }: { record: PayrollRecord; onClose: () =
           </div>
           <div style={{ background: "rgba(248,113,113,0.05)", border: "1px solid rgba(248,113,113,0.15)", borderRadius: 12, padding: "12px 14px" }}>
             <p style={{ color: "#f87171", fontSize: 10, fontWeight: 700, marginBottom: 8 }}>الخصومات</p>
-            {[["خصومات أخرى", record.deductions], ["سلف", record.advances], ["خصم التأخير", record.lateDeduction], ["خصم الغياب", record.absenceDeduction]].map(([k, v]) => (
+            {[["خصومات أخرى", record.deductions], ["سلف", record.advances], ["خصم التأخير", record.lateDeduction], ["خصم الغياب", record.absenceDeduction], ["خصم إجازات غير مدفوعة", record.leaveDeduction ?? 0], ["قسط السلفة / القرض", record.loanDeduction ?? 0]].map(([k, v]) => (
               <div key={k as string} style={rowSt()}>
                 <span style={{ color: rowLabelC }}>{k as string}</span>
                 <span style={{ color: (v as number) > 0 ? "#f87171" : isDark ? "rgba(255,255,255,0.2)" : "#cbd5e1", fontWeight: 600 }}>{(v as number) > 0 ? `-${fmt(v as number, record.currency)}` : "٠"}</span>
@@ -933,8 +938,8 @@ export default function Payroll() {
                         <td style={{ padding: "10px 12px", color: "#10b981", whiteSpace: "nowrap" }}>{r.incentives > 0 ? `+${fmt(r.incentives, r.currency)}` : "—"}</td>
                         <td style={{ padding: "10px 12px", color: cyanColor, whiteSpace: "nowrap" }}>{r.overtimePay > 0 ? `+${fmt(r.overtimePay, r.currency)}` : "—"}</td>
                         <td style={{ padding: "10px 12px", color: "#f87171", whiteSpace: "nowrap" }}>
-                          {(r.deductions + r.advances + r.lateDeduction + r.absenceDeduction) > 0
-                            ? `-${fmt(r.deductions + r.advances + r.lateDeduction + r.absenceDeduction, r.currency)}` : "—"}
+                          {(r.deductions + r.advances + r.lateDeduction + r.absenceDeduction + (r.leaveDeduction ?? 0) + (r.loanDeduction ?? 0)) > 0
+                            ? `-${fmt(r.deductions + r.advances + r.lateDeduction + r.absenceDeduction + (r.leaveDeduction ?? 0) + (r.loanDeduction ?? 0), r.currency)}` : "—"}
                         </td>
                         <td style={{ padding: "10px 12px", whiteSpace: "nowrap" }}>
                           <span style={{ color: textPrimary, fontWeight: 900, fontSize: 14 }}>{fmt(r.netSalary, r.currency)}</span>

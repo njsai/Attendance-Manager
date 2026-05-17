@@ -6,7 +6,7 @@ import { useTheme } from "@/lib/theme";
 import {
   LayoutDashboard, Users, Building2, Clock,
   CalendarCheck, FileBarChart, LogOut, Menu, X, Home, Settings, MessageCircle,
-  Sun, Moon, Languages, Banknote, Zap, Bell, ChevronLeft, AlertTriangle, Info, CheckCircle, UserCircle,
+  Sun, Moon, Languages, Banknote, Zap, Bell, ChevronLeft, AlertTriangle, Info, CheckCircle, UserCircle, CreditCard,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -28,6 +28,7 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
     { name: t("leaves"),      path: "/leaves",      icon: Clock },
     { name: t("reports"),     path: "/reports",     icon: FileBarChart },
     { name: t("payroll"),     path: "/payroll",     icon: Banknote },
+    { name: t("loans"),       path: "/loans",       icon: CreditCard },
     { name: t("chat"),        path: "/chat",        icon: MessageCircle },
     { name: t("settings"),    path: "/settings",    icon: Settings },
   ];
@@ -42,6 +43,7 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
   const EMPLOYEE_NAV = [
     { name: t("home"),        path: "/",           icon: Home },
     { name: t("myLeaves"),    path: "/my-leaves",  icon: Clock },
+    { name: t("myLoans"),     path: "/my-loans",   icon: CreditCard },
     { name: t("myProfile"),   path: "/my-profile", icon: UserCircle },
     { name: t("chat"),        path: "/chat",       icon: MessageCircle },
   ];

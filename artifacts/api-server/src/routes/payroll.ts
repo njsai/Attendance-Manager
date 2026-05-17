@@ -2,10 +2,13 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import {
   payrollTable, payrollLogsTable, employeesTable, departmentsTable,
-  attendanceTable, companiesTable,
+  attendanceTable, companiesTable, loansTable, loanInstallmentsTable,
 } from "@workspace/db";
 import { eq, and, sql, desc, gte, lte, count } from "drizzle-orm";
 import { requireAuth, requireAdmin, requireCompanyAuth } from "../lib/auth.js";
+
+// Type that covers both the main db connection and a Drizzle transaction object
+type DbOrTx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 const router = Router();
 
@@ -27,12 +30,97 @@ async function logPayrollChange(
 function calcNet(p: {
   basicSalary: any; incentives: any; overtimePay: any;
   deductions: any; advances: any; lateDeduction: any; absenceDeduction: any;
+  leaveDeduction?: any; loanDeduction?: any;
 }) {
   return (
     Number(p.basicSalary)   + Number(p.incentives)   + Number(p.overtimePay)
     - Number(p.deductions)  - Number(p.advances)
     - Number(p.lateDeduction) - Number(p.absenceDeduction)
+    - Number(p.leaveDeduction ?? 0) - Number(p.loanDeduction ?? 0)
   );
+}
+
+// ─── Helper: compute unpaid leave deduction for employee in a month ───────────
+// Correctly handles leaves that span month boundaries by calculating the
+// actual overlap between each leave's date range and the target month.
+async function buildLeaveDeduction(employeeId: number, month: number, year: number, dailyRate: number): Promise<number> {
+  const monthStart = `${year}-${String(month).padStart(2, "0")}-01`;
+  const lastDay = new Date(year, month, 0).getDate();
+  const monthEnd = `${year}-${String(month).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+
+  // For each overlapping leave, compute the number of days that fall within
+  // this month using GREATEST/LEAST to clip the leave range to [monthStart, monthEnd].
+  const rows = await db.execute(
+    sql`SELECT
+          (LEAST(end_date, ${monthEnd}::date) - GREATEST(start_date, ${monthStart}::date) + 1) AS overlap_days
+        FROM leaves
+        WHERE employee_id = ${employeeId}
+          AND status = 'approved'
+          AND leave_type = 'unpaid'
+          AND start_date <= ${monthEnd}::date
+          AND end_date   >= ${monthStart}::date`
+  );
+
+  let unpaidDays = 0;
+  for (const r of rows.rows as any[]) {
+    const days = Number(r.overlap_days ?? 0);
+    if (days > 0) unpaidDays += days;
+  }
+
+  return Math.round(unpaidDays * dailyRate * 100) / 100;
+}
+
+// ─── Helper: apply loan installments for ALL active loans (within a transaction)
+async function applyLoanInstallment(
+  tx: DbOrTx,
+  employeeId: number, companyId: number,
+  month: number, year: number,
+  payrollId: number
+): Promise<number> {
+  // Find ALL approved loans with remaining installments
+  const rows = await tx.execute(
+    sql`SELECT id, amount, monthly_deduction, installments_paid, installments_count
+        FROM loans
+        WHERE employee_id = ${employeeId}
+          AND company_id = ${companyId}
+          AND status = 'approved'
+          AND installments_paid < installments_count
+        ORDER BY created_at ASC`
+  );
+
+  if (rows.rows.length === 0) return 0;
+
+  let totalDeduction = 0;
+
+  for (const loan of rows.rows as any[]) {
+    const paid = Number(loan.installments_paid);
+    const total = Number(loan.installments_count);
+    const isFinal = paid + 1 >= total;
+
+    // Final installment: settle exact remaining balance to eliminate rounding drift
+    const deductionAmount = isFinal
+      ? Math.round((Number(loan.amount) - Number(loan.monthly_deduction) * paid) * 100) / 100
+      : Number(loan.monthly_deduction);
+
+    // Record the installment
+    await tx.insert(loanInstallmentsTable).values({
+      loanId: loan.id,
+      payrollId,
+      month,
+      year,
+      amount: deductionAmount,
+    });
+
+    // Increment installments_paid
+    await tx.update(loansTable).set({
+      installmentsPaid: paid + 1,
+      updatedAt: new Date(),
+    }).where(eq(loansTable.id, loan.id));
+
+    totalDeduction += deductionAmount;
+  }
+
+  return Math.round(totalDeduction * 100) / 100;
 }
 
 // ─── Helper: check if error is a duplicate key violation ─────────────────────
@@ -96,6 +184,8 @@ router.get("/", requireCompanyAuth, async (req, res) => {
         advances: payrollTable.advances,
         lateDeduction: payrollTable.lateDeduction,
         absenceDeduction: payrollTable.absenceDeduction,
+        leaveDeduction: payrollTable.leaveDeduction,
+        loanDeduction: payrollTable.loanDeduction,
         netSalary: payrollTable.netSalary,
         currency: payrollTable.currency,
         status: payrollTable.status,
@@ -136,6 +226,8 @@ router.get("/", requireCompanyAuth, async (req, res) => {
       advances: payrollTable.advances,
       lateDeduction: payrollTable.lateDeduction,
       absenceDeduction: payrollTable.absenceDeduction,
+      leaveDeduction: payrollTable.leaveDeduction,
+      loanDeduction: payrollTable.loanDeduction,
       netSalary: payrollTable.netSalary,
       currency: payrollTable.currency,
       status: payrollTable.status,
@@ -173,11 +265,17 @@ router.get("/stats", requireAdmin, async (req, res) => {
       deductions: payrollTable.deductions,
       overtimePay: payrollTable.overtimePay,
       advances: payrollTable.advances,
+      lateDeduction: payrollTable.lateDeduction,
+      absenceDeduction: payrollTable.absenceDeduction,
+      leaveDeduction: payrollTable.leaveDeduction,
+      loanDeduction: payrollTable.loanDeduction,
     }).from(payrollTable).where(and(...conditions));
 
     const totalNet = rows.reduce((s, r) => s + (r.netSalary ?? 0), 0);
     const totalPaid = rows.filter(r => r.status === "paid").reduce((s, r) => s + (r.netSalary ?? 0), 0);
-    const totalDeductions = rows.reduce((s, r) => s + (r.deductions ?? 0), 0);
+    const totalDeductions = rows.reduce((s, r) =>
+      s + (r.deductions ?? 0) + (r.lateDeduction ?? 0) + (r.absenceDeduction ?? 0)
+        + (r.leaveDeduction ?? 0) + (r.loanDeduction ?? 0), 0);
     const totalOvertime = rows.reduce((s, r) => s + (r.overtimePay ?? 0), 0);
     const totalAdvances = rows.reduce((s, r) => s + (r.advances ?? 0), 0);
     const unpaidCount = rows.filter(r => r.status === "unpaid").length;
@@ -226,21 +324,48 @@ router.post("/", requireAdmin, async (req, res) => {
 
     // Get attendance stats
     const stats = await buildAttendanceStats(employeeId, month, year);
-    const netSalary = calcNet({ basicSalary, incentives, overtimePay, deductions, advances, lateDeduction, absenceDeduction });
 
-    const [p] = await db.insert(payrollTable).values({
-      companyId, employeeId: parseInt(employeeId),
-      month: parseInt(month), year: parseInt(year),
-      basicSalary: parseFloat(basicSalary), incentives: parseFloat(incentives),
-      overtimePay: parseFloat(overtimePay), deductions: parseFloat(deductions),
-      advances: parseFloat(advances), lateDeduction: parseFloat(lateDeduction),
-      absenceDeduction: parseFloat(absenceDeduction),
-      netSalary, currency, notes,
-      workDays: stats.workDays, absentDays: stats.absentDays,
-      lateMinutes: stats.lateMinutes, overtimeMinutes: stats.overtimeMinutes,
-      leaveDays: stats.leaveDays,
-      createdBy: userId,
-    }).returning();
+    const m = parseInt(month);
+    const y = parseInt(year);
+    const empId = parseInt(employeeId);
+    const daysInMonth = new Date(y, m, 0).getDate();
+    const dailyRate = daysInMonth > 0 ? parseFloat(basicSalary) / daysInMonth : 0;
+
+    // Auto-compute leave and loan deductions (same as /generate)
+    const leaveDeduction = await buildLeaveDeduction(empId, m, y, dailyRate);
+
+    const netBeforeLoan = calcNet({ basicSalary, incentives, overtimePay, deductions, advances, lateDeduction, absenceDeduction, leaveDeduction, loanDeduction: 0 });
+
+    let p: any;
+    await db.transaction(async (tx) => {
+      const [inserted] = await tx.insert(payrollTable).values({
+        companyId, employeeId: empId,
+        month: m, year: y,
+        basicSalary: parseFloat(basicSalary), incentives: parseFloat(incentives),
+        overtimePay: parseFloat(overtimePay), deductions: parseFloat(deductions),
+        advances: parseFloat(advances), lateDeduction: parseFloat(lateDeduction),
+        absenceDeduction: parseFloat(absenceDeduction),
+        leaveDeduction, loanDeduction: 0,
+        netSalary: netBeforeLoan, currency, notes,
+        workDays: stats.workDays, absentDays: stats.absentDays,
+        lateMinutes: stats.lateMinutes, overtimeMinutes: stats.overtimeMinutes,
+        leaveDays: stats.leaveDays,
+        createdBy: userId,
+      }).returning();
+
+      const loanDeduction = await applyLoanInstallment(tx, empId, companyId, m, y, inserted.id);
+
+      if (loanDeduction > 0) {
+        const netSalary = netBeforeLoan - loanDeduction;
+        const [updated] = await tx.update(payrollTable)
+          .set({ loanDeduction, netSalary })
+          .where(eq(payrollTable.id, inserted.id))
+          .returning();
+        p = updated;
+      } else {
+        p = inserted;
+      }
+    });
 
     res.status(201).json(p);
   } catch (err: any) {
@@ -257,6 +382,9 @@ router.post("/generate", requireAdmin, async (req, res) => {
     const { month, year } = req.body;
     if (!month || !year) { res.status(400).json({ message: "الشهر والسنة مطلوبان" }); return; }
 
+    const m = parseInt(month);
+    const y = parseInt(year);
+
     // Get company settings
     const [company] = await db.select({
       currency: companiesTable.currency,
@@ -271,12 +399,12 @@ router.post("/generate", requireAdmin, async (req, res) => {
     }).from(employeesTable)
       .where(and(eq(employeesTable.companyId, companyId), eq(employeesTable.isActive, true)));
 
-    const daysInMonth = new Date(parseInt(year), parseInt(month), 0).getDate();
+    const daysInMonth = new Date(y, m, 0).getDate();
     let created = 0, skipped = 0;
 
     for (const emp of employees) {
       const basicSalary = emp.salary ?? 0;
-      const stats = await buildAttendanceStats(emp.id, parseInt(month), parseInt(year));
+      const stats = await buildAttendanceStats(emp.id, m, y);
 
       // Calculate deductions
       const dailyRate = daysInMonth > 0 ? basicSalary / daysInMonth : 0;
@@ -284,19 +412,36 @@ router.post("/generate", requireAdmin, async (req, res) => {
       const lateDeduction = Math.round((stats.lateMinutes / 60) * hourlyRate * (company?.lateDeductionRate ?? 1) * 100) / 100;
       const absenceDeduction = Math.round(stats.absentDays * dailyRate * (company?.absenceDeductionRate ?? 1) * 100) / 100;
       const overtimePay = Math.round((stats.overtimeMinutes / 60) * hourlyRate * (company?.overtimeRate ?? 1.5) * 100) / 100;
-      const netSalary = calcNet({ basicSalary, incentives: 0, overtimePay, deductions: 0, advances: 0, lateDeduction, absenceDeduction });
+
+      // Unpaid leave deduction
+      const leaveDeduction = await buildLeaveDeduction(emp.id, m, y, dailyRate);
+
+      // Compute net before loan (loan needs payroll ID)
+      const netBeforeLoan = calcNet({ basicSalary, incentives: 0, overtimePay, deductions: 0, advances: 0, lateDeduction, absenceDeduction, leaveDeduction, loanDeduction: 0 });
 
       try {
-        await db.insert(payrollTable).values({
-          companyId, employeeId: emp.id,
-          month: parseInt(month), year: parseInt(year),
-          basicSalary, incentives: 0, overtimePay, deductions: 0, advances: 0,
-          lateDeduction, absenceDeduction, netSalary,
-          currency: company?.currency ?? "IQD",
-          workDays: stats.workDays, absentDays: stats.absentDays,
-          lateMinutes: stats.lateMinutes, overtimeMinutes: stats.overtimeMinutes,
-          leaveDays: stats.leaveDays, createdBy: userId,
+        await db.transaction(async (tx) => {
+          const [inserted] = await tx.insert(payrollTable).values({
+            companyId, employeeId: emp.id,
+            month: m, year: y,
+            basicSalary, incentives: 0, overtimePay, deductions: 0, advances: 0,
+            lateDeduction, absenceDeduction, leaveDeduction, loanDeduction: 0,
+            netSalary: netBeforeLoan,
+            currency: company?.currency ?? "IQD",
+            workDays: stats.workDays, absentDays: stats.absentDays,
+            lateMinutes: stats.lateMinutes, overtimeMinutes: stats.overtimeMinutes,
+            leaveDays: stats.leaveDays, createdBy: userId,
+          }).returning();
+
+          // Apply loan installments inside the same transaction
+          const loanDeduction = await applyLoanInstallment(tx, emp.id, companyId, m, y, inserted.id);
+
+          if (loanDeduction > 0) {
+            const netSalary = netBeforeLoan - loanDeduction;
+            await tx.update(payrollTable).set({ loanDeduction, netSalary }).where(eq(payrollTable.id, inserted.id));
+          }
         });
+
         created++;
       } catch (e: any) {
         if (isDuplicateKey(e)) skipped++;

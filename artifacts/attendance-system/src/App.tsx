@@ -23,7 +23,9 @@ import DepartmentsAndShifts from "@/pages/admin/DepartmentsAndShifts";
 import AdminBranches     from "@/pages/admin/Branches";
 import AdminSettings     from "@/pages/admin/Settings";
 import AdminPayroll      from "@/pages/admin/Payroll";
+import AdminLoans        from "@/pages/admin/Loans";
 import MyLeaves          from "@/pages/employee/MyLeaves";
+import EmployeeLoans     from "@/pages/employee/Loans";
 import ChatPage          from "@/pages/Chat";
 import EmployeeProfile   from "@/pages/employee/Profile";
 import AdminEmployeeProfile from "@/pages/admin/EmployeeProfile";
@@ -140,10 +142,12 @@ function Router() {
         <Route path="/shifts">{() => <Guard adminOnly><DepartmentsAndShifts /></Guard>}</Route>
         <Route path="/settings">{() => <Guard adminOnly><AdminSettings /></Guard>}</Route>
         <Route path="/payroll">{() => <Guard adminOnly><AdminPayroll /></Guard>}</Route>
+        <Route path="/loans">{() => <Guard adminOnly><AdminLoans /></Guard>}</Route>
 
         {/* Employee */}
         <Route path="/my-attendance">{() => <Guard><EmployeeDashboard /></Guard>}</Route>
         <Route path="/my-leaves">{() => <Guard><MyLeaves /></Guard>}</Route>
+        <Route path="/my-loans">{() => <Guard><EmployeeLoans /></Guard>}</Route>
         <Route path="/my-profile">{() => <Guard><EmployeeProfile /></Guard>}</Route>
 
         {/* Admin profile view */}

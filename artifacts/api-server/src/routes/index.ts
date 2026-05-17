@@ -22,6 +22,7 @@ import companyAlertsRouter from "./company-alerts.js";
 import profileRouter from "./profile.js";
 import auditLogsRouter from "./audit-logs.js";
 import documentsRouter from "./documents.js";
+import loansRouter from "./loans.js";
 
 const router: IRouter = Router();
 
@@ -48,5 +49,6 @@ router.use("/preferences", preferencesRouter);
 router.use("/profile", profileRouter);
 router.use("/audit-logs", auditLogsRouter);
 router.use("/documents", documentsRouter);
+router.use("/loans", loansRouter);
 
 export default router;
