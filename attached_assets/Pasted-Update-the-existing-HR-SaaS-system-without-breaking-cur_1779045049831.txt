@@ -1,0 +1,253 @@
+Update the existing HR SaaS system without breaking current features.
+
+Implement the following Attendance + Overtime + Payroll logic exactly.
+
+Attendance Logic
+
+Employee side:
+
+Employee only has:
+ • Check-in button only.
+
+Employee does NOT have:
+ • Check-out button
+ • Overtime request
+ • Overtime editing
+
+When employee checks in:
+ • Save check-in time
+ • Detect assigned shift automatically
+
+Example:
+
+Shift = 08:00 AM → 04:00 PM
+
+After shift end:
+
+System must automatically perform check-out using shift end time.
+
+Example:
+
+Check-in = 08:03
+Shift end = 04:00
+
+System auto check-out = 04:00
+
+No manual check-out.
+
+⸻
+
+Shift Management
+
+Management side only:
+
+Admin can create shifts:
+ • Shift name
+ • Start time
+ • End time
+ • Break duration
+
+Admin can assign shifts to employees.
+
+⸻
+
+Overtime Management
+
+Overtime is NEVER requested by employees.
+
+Only management can assign overtime.
+
+From Employee Management page:
+
+Admin selects employee.
+
+Create visible action buttons:
+ • Assign Overtime
+ • Edit Overtime
+ • Delete Overtime
+ • Approve Overtime
+ • View Overtime History
+
+When admin clicks “Assign Overtime”
+
+Open popup form:
+ • Date
+ • Start time
+ • End time
+ • Notes
+
+Example:
+
+Date = 2026-05-17
+From = 04:00 PM
+To = 07:00 PM
+
+Save overtime record.
+
+⸻
+
+Overtime Hours Calculation
+
+Formula:
+
+Overtime hours = End time - Start time
+
+Example:
+
+04:00 → 07:00 = 3 hours
+
+⸻
+
+Automatic Salary Based Overtime Calculation
+
+System must automatically calculate hourly rate from employee salary.
+
+Formula:
+
+Hourly Rate =
+Monthly Salary ÷ Working Days Per Month ÷ Working Hours Per Day
+
+Example:
+
+Salary = 900
+Working Days = 30
+Working Hours = 8
+
+Hourly Rate = 3.75
+
+⸻
+
+Overtime Multipliers
+
+Admin can configure company settings:
+ • Normal overtime = 1.5x
+ • Weekend overtime = 2x
+ • Holiday overtime = 2x
+
+System detects day automatically.
+
+Formula:
+
+Overtime Rate =
+Hourly Rate × Multiplier
+
+Formula:
+
+Overtime Pay =
+Overtime Hours × Overtime Rate
+
+⸻
+
+Late Deduction Logic
+
+System automatically detects late check-in.
+
+Formula:
+
+Late Hours =
+Actual Check-in - Shift Start
+
+Late deduction:
+
+Late Hours × Hourly Rate
+
+Automatically deduct from payroll.
+
+⸻
+
+Payroll Integration
+
+Formula:
+
+Final Salary =
+
+Basic Salary
+ • Allowances
+ • Overtime Pay
+− Late Deduction
+− Other Deductions
+
+System automatically connects:
+ • Attendance
+ • Shift
+ • Overtime
+ • Late deduction
+ • Payroll
+
+No manual calculation.
+
+⸻
+
+Payslip Integration
+
+Employee salary slip must show:
+ • Basic Salary
+ • Hourly Rate
+ • Allowances
+ • Overtime Hours
+ • Overtime Type
+ • Overtime Multiplier
+ • Overtime Amount
+ • Late Hours
+ • Late Deduction
+ • Other Deductions
+ • Final Salary
+
+⸻
+
+Employee Dashboard
+
+Employee can only view:
+ • Shift schedule
+ • Attendance records
+ • Overtime assigned by admin
+ • Overtime earnings
+ • Late deductions
+ • Salary slips
+
+Employee cannot edit any overtime data.
+
+⸻
+
+Management Dashboard
+
+Admin can:
+ • Assign overtime
+ • Edit overtime
+ • Delete overtime
+ • Approve overtime
+ • View overtime history
+ • View late records
+ • Override late deductions if needed
+
+⸻
+
+Reports
+
+Create reports:
+
+Overtime Reports:
+ • Daily
+ • Weekly
+ • Monthly
+ • By employee
+ • By department
+
+Late Reports:
+ • Daily
+ • Weekly
+ • Monthly
+
+Payroll Reports:
+ • Monthly payroll summary
+
+⸻
+
+Security
+
+Apply:
+ • Role-based permissions
+ • Company isolation
+ • Audit logs
+
+No employee can access another employee data
