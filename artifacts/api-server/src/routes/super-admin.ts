@@ -30,13 +30,45 @@ async function generateUniqueCompanyCode(): Promise<string> {
   throw new Error("Failed to generate unique company code");
 }
 
-// ─── Get all companies with stats ────────────────────────────────────────────
+// ─── Get all companies with stats + subscription info ────────────────────────
 router.get("/companies", requireSuperAdmin, async (_req, res) => {
   try {
-    const companies = await db.select().from(companiesTable).orderBy(companiesTable.createdAt);
-    const result = await Promise.all(companies.map(async (c) => {
-      const [{ count: empCount }] = await db.select({ count: count() }).from(employeesTable).where(eq(employeesTable.companyId, c.id));
-      return { ...c, employeeCount: Number(empCount) };
+    const rows = await db.execute(sql`
+      SELECT
+        c.*,
+        COUNT(e.id)::int AS employee_count,
+        cs.id          AS sub_id,
+        cs.plan_name,
+        cs.plan_type,
+        cs.status      AS sub_status,
+        cs.end_date,
+        CASE
+          WHEN cs.end_date IS NULL THEN NULL
+          ELSE (cs.end_date - CURRENT_DATE)::int
+        END AS days_remaining
+      FROM companies c
+      LEFT JOIN employees e ON e.company_id = c.id
+      LEFT JOIN LATERAL (
+        SELECT id, plan_name, plan_type, status, end_date
+        FROM company_subscriptions
+        WHERE company_id = c.id
+        ORDER BY created_at DESC LIMIT 1
+      ) cs ON TRUE
+      GROUP BY c.id, cs.id, cs.plan_name, cs.plan_type, cs.status, cs.end_date
+      ORDER BY
+        CASE
+          WHEN cs.end_date IS NOT NULL AND cs.status = 'active' THEN cs.end_date
+          ELSE '9999-12-31'::date
+        END ASC,
+        c.created_at DESC
+    `);
+    const result = (rows.rows as any[]).map(r => ({
+      id: r.id, name: r.name, address: r.address, phone: r.phone, email: r.email,
+      isActive: r.is_active, companyCode: r.company_code, currency: r.currency,
+      createdAt: r.created_at, employeeCount: Number(r.employee_count),
+      subId: r.sub_id, planName: r.plan_name, planType: r.plan_type,
+      subStatus: r.sub_status, endDate: r.end_date,
+      daysRemaining: r.days_remaining !== null ? Number(r.days_remaining) : null,
     }));
     res.json(result);
   } catch (err) { console.error(err); res.status(500).json({ message: "Server error" }); }
@@ -90,6 +122,23 @@ router.post("/companies", requireSuperAdmin, async (req, res) => {
       role: "admin",
       isActive: true,
     }).returning({ id: employeesTable.id, username: employeesTable.username });
+
+    // Auto-assign full-access lifetime subscription
+    await db.execute(sql`
+      INSERT INTO company_subscriptions
+        (company_id, plan_id, plan_name, plan_type, price, currency,
+         start_date, end_date, status, auto_renew,
+         max_employees, max_branches, storage_gb, notes)
+      VALUES
+        (${company.id}, NULL, 'الوصول الكامل', 'lifetime', 0, 'IQD',
+         CURRENT_DATE, NULL, 'active', false,
+         999999, 999999, 999, 'مضاف تلقائياً عند إنشاء الشركة')
+    `);
+
+    await db.execute(sql`
+      INSERT INTO system_notifications (type, severity, title, message, company_id)
+      VALUES ('company_created', 'success', 'شركة جديدة', ${'تم إنشاء شركة "' + name + '" وتفعيل اشتراكها الكامل'}, ${company.id})
+    `);
 
     res.status(201).json({
       company,

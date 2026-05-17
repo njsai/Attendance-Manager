@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
-import { Shield, Building2, Plus, Trash2, Edit, Users, LogOut, ChevronDown, ChevronUp, CheckCircle, XCircle, Eye, EyeOff, Key, Loader2, RefreshCw, MessageCircle, ShieldAlert, HardDrive, Download, Archive, Activity, CreditCard, Bell, Globe, Settings } from "lucide-react";
+import { Shield, Building2, Plus, Trash2, Edit, Users, LogOut, ChevronDown, ChevronUp, CheckCircle, XCircle, Eye, EyeOff, Key, Loader2, RefreshCw, MessageCircle, ShieldAlert, HardDrive, Download, Archive, Activity, CreditCard, Bell, Globe, Settings, Calendar, AlertTriangle, Infinity } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import SuperAdminChat from "./Chat";
 import { useI18n } from "@/lib/i18n";
@@ -20,6 +20,8 @@ async function apiFetch(path: string, opts?: RequestInit) {
 interface Company {
   id: number; name: string; address?: string; phone?: string; email?: string;
   isActive: boolean; createdAt: string; employeeCount: number;
+  subId?: number | null; planName?: string | null; planType?: string | null;
+  subStatus?: string | null; endDate?: string | null; daysRemaining?: number | null;
 }
 
 export default function SuperAdminDashboard() {
@@ -44,8 +46,16 @@ export default function SuperAdminDashboard() {
   const [backupsLoading, setBackupsLoading] = useState(false);
   const [creatingBackup, setCreatingBackup] = useState(false);
   const [backupCompanyId, setBackupCompanyId] = useState<string>("0");
+  const [unreadNotifCount, setUnreadNotifCount] = useState(0);
 
   const showMsg = (msg: string, ok = true) => { setFeedback({ msg, ok }); setTimeout(() => setFeedback(null), 3000); };
+
+  const loadUnreadCount = async () => {
+    try {
+      const data = await apiFetch("api/super-admin/notifications");
+      setUnreadNotifCount(data.unreadCount ?? 0);
+    } catch { /* silent */ }
+  };
 
   const loadCompanies = async () => {
     setLoading(true);
@@ -54,7 +64,12 @@ export default function SuperAdminDashboard() {
     finally { setLoading(false); }
   };
 
-  useEffect(() => { loadCompanies(); }, []);
+  useEffect(() => {
+    loadCompanies();
+    loadUnreadCount();
+    const interval = setInterval(loadUnreadCount, 60_000);
+    return () => clearInterval(interval);
+  }, []);
 
   const loadEmployees = async (cId: number) => {
     if (companyEmployees[cId]) return;
@@ -164,8 +179,14 @@ export default function SuperAdminDashboard() {
             <button onClick={() => setLocation("/super-admin/subscriptions")} style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(168,85,247,0.2)", background: "rgba(168,85,247,0.06)", color: "#a855f7", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
               <CreditCard size={14} /> {T.subscriptions}
             </button>
-            <button onClick={() => setLocation("/super-admin/notifications")} style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(245,158,11,0.2)", background: "rgba(245,158,11,0.06)", color: "#f59e0b", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
-              <Bell size={14} /> {T.notifications}
+            <button onClick={() => setLocation("/super-admin/notifications")} style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(245,158,11,0.2)", background: "rgba(245,158,11,0.06)", color: "#f59e0b", fontSize: 12, fontWeight: 600, cursor: "pointer", position: "relative" }}>
+              <Bell size={14} />
+              {unreadNotifCount > 0 && (
+                <span style={{ position: "absolute", top: -5, insetInlineEnd: -5, minWidth: 17, height: 17, borderRadius: 9, background: "#f87171", color: "#fff", fontSize: 10, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 3px", border: "2px solid rgba(5,8,23,0.9)" }}>
+                  {unreadNotifCount > 99 ? "99+" : unreadNotifCount}
+                </span>
+              )}
+              {T.notifications}
             </button>
             <button onClick={() => setLocation("/super-admin/security")} style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: 10, border: "1px solid rgba(16,185,129,0.2)", background: "rgba(16,185,129,0.06)", color: "#10b981", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
               <ShieldAlert size={14} /> {T.security}
@@ -346,16 +367,54 @@ export default function SuperAdminDashboard() {
                         <Building2 size={20} style={{ color: "#00f5ff" }} />
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                           <h3 style={{ color: C.textPrimary, fontWeight: 700, fontSize: 14, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{company.name}</h3>
                           <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 20, fontWeight: 600, background: company.isActive ? "rgba(16,185,129,0.12)" : "rgba(248,113,113,0.12)", color: company.isActive ? "#10b981" : "#f87171", border: `1px solid ${company.isActive ? "rgba(16,185,129,0.25)" : "rgba(248,113,113,0.25)"}`, flexShrink: 0 }}>
                             {company.isActive ? T.active : T.suspended}
                           </span>
+                          {/* Subscription expiry badge */}
+                          {company.subStatus === "active" && company.planType === "lifetime" && (
+                            <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 20, fontWeight: 600, background: "rgba(0,245,255,0.08)", color: "#00f5ff", border: "1px solid rgba(0,245,255,0.2)", display: "flex", alignItems: "center", gap: 3, flexShrink: 0 }}>
+                              <Infinity size={9} /> دائم
+                            </span>
+                          )}
+                          {company.subStatus === "active" && company.planType !== "lifetime" && company.daysRemaining !== null && company.daysRemaining !== undefined && (
+                            <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 20, fontWeight: 600, flexShrink: 0,
+                              background: company.daysRemaining <= 1 ? "rgba(248,113,113,0.15)" : company.daysRemaining <= 7 ? "rgba(245,158,11,0.12)" : "rgba(16,185,129,0.08)",
+                              color: company.daysRemaining <= 1 ? "#f87171" : company.daysRemaining <= 7 ? "#f59e0b" : "#10b981",
+                              border: `1px solid ${company.daysRemaining <= 1 ? "rgba(248,113,113,0.3)" : company.daysRemaining <= 7 ? "rgba(245,158,11,0.25)" : "rgba(16,185,129,0.2)"}`,
+                              display: "flex", alignItems: "center", gap: 3,
+                              animation: company.daysRemaining <= 1 ? "pulse 1.5s infinite" : "none",
+                            }}>
+                              {company.daysRemaining <= 7 && <AlertTriangle size={9} />}
+                              {company.daysRemaining <= 0 ? "منتهي" : `${company.daysRemaining} يوم`}
+                            </span>
+                          )}
+                          {company.subStatus === "expired" && (
+                            <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 20, fontWeight: 600, background: "rgba(248,113,113,0.12)", color: "#f87171", border: "1px solid rgba(248,113,113,0.25)", flexShrink: 0 }}>
+                              انتهى الاشتراك
+                            </span>
+                          )}
+                          {!company.subId && (
+                            <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 20, fontWeight: 600, background: "rgba(156,163,175,0.1)", color: "#9ca3af", border: "1px solid rgba(156,163,175,0.2)", flexShrink: 0 }}>
+                              بدون اشتراك
+                            </span>
+                          )}
                         </div>
-                        <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 4 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 4, flexWrap: "wrap" }}>
                           {company.phone && <span style={{ fontSize: 11, color: C.textMuted }}>📞 {company.phone}</span>}
                           {company.email && <span style={{ fontSize: 11, color: C.textMuted }}>✉️ {company.email}</span>}
                           <span style={{ fontSize: 11, color: "#00f5ff", display: "flex", alignItems: "center", gap: 3 }}><Users size={10} /> {company.employeeCount} {T.employees}</span>
+                          {company.endDate && company.planType !== "lifetime" && (
+                            <span style={{ fontSize: 11, color: C.textMuted, display: "flex", alignItems: "center", gap: 3 }}>
+                              <Calendar size={9} /> {new Date(company.endDate).toLocaleDateString("ar-IQ")}
+                            </span>
+                          )}
+                          {company.planName && (
+                            <span style={{ fontSize: 11, color: "rgba(168,85,247,0.7)", display: "flex", alignItems: "center", gap: 3 }}>
+                              <CreditCard size={9} /> {company.planName}
+                            </span>
+                          )}
                         </div>
                       </div>
                       <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
