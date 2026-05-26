@@ -609,11 +609,20 @@ router.post("/check-in", requireAuth, async (req, res) => {
     if (req.session.role !== "admin") {
       const { pool } = await import("@workspace/db");
 
-      // 1) Weekly off days
-      const companyRow = await pool.query(
-        `SELECT weekly_off_days FROM companies WHERE id = $1`, [companyId]
+      // 1) Weekly off days — employee override first, then company default
+      const empRow = await pool.query(
+        `SELECT weekly_off_days FROM employees WHERE id = $1`, [req.session.userId]
       );
-      const rawWeekly: string = (companyRow.rows[0] as any)?.weekly_off_days ?? "5,6";
+      const empWeeklyRaw: string | null = (empRow.rows[0] as any)?.weekly_off_days ?? null;
+      let rawWeekly: string;
+      if (empWeeklyRaw !== null && empWeeklyRaw !== "") {
+        rawWeekly = empWeeklyRaw;
+      } else {
+        const companyRow = await pool.query(
+          `SELECT weekly_off_days FROM companies WHERE id = $1`, [companyId]
+        );
+        rawWeekly = (companyRow.rows[0] as any)?.weekly_off_days ?? "5,6";
+      }
       const weeklyOff = rawWeekly ? rawWeekly.split(",").map(Number) : [];
       const todayDow = now.getDay(); // 0=Sun … 6=Sat
       if (weeklyOff.includes(todayDow)) {

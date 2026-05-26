@@ -2,8 +2,85 @@ import { useState, useEffect, useRef } from "react";
 import { useRoute } from "wouter";
 import { useI18n } from "@/lib/i18n";
 import { useTheme } from "@/lib/theme";
-import { User, Phone, Mail, MapPin, Upload, FileText, CheckCircle, XCircle, Trash2, AlertTriangle, History, ChevronLeft, ChevronRight, Camera } from "lucide-react";
+import { User, Phone, Mail, MapPin, Upload, FileText, CheckCircle, XCircle, Trash2, AlertTriangle, History, ChevronLeft, ChevronRight, Camera, CalendarDays, Save, RefreshCw } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+
+// ── WeeklyOffCard sub-component ─────────────────────────────────────────────
+const DAY_NAMES = ["الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت"];
+
+interface WeeklyOffCardProps {
+  isDark: boolean; textPrimary: string; textSecondary: string; card: React.CSSProperties;
+  weeklyOffPending: number[]; setWeeklyOffPending: React.Dispatch<React.SetStateAction<number[]>>;
+  weeklyOffDays: number[]; weeklyOffIsOverride: boolean;
+  weeklyOffCompanyDays: number[];
+  weeklyOffSaving: boolean; weeklyOffSaved: boolean;
+  useOverride: boolean; setUseOverride: (v: boolean) => void;
+  onSave: () => void;
+}
+
+function WeeklyOffCard({ isDark, textPrimary, textSecondary, card, weeklyOffPending, setWeeklyOffPending, weeklyOffDays, weeklyOffIsOverride, weeklyOffCompanyDays, weeklyOffSaving, weeklyOffSaved, useOverride, setUseOverride, onSave }: WeeklyOffCardProps) {
+  const activeDays = useOverride ? weeklyOffPending : weeklyOffCompanyDays;
+  const changed = useOverride
+    ? JSON.stringify([...weeklyOffPending].sort()) !== JSON.stringify([...weeklyOffDays].sort())
+    : weeklyOffIsOverride !== useOverride;
+
+  return (
+    <div style={{ ...card, marginTop: 12 }}>
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14, flexWrap: "wrap", gap: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+          <div style={{ width: 32, height: 32, borderRadius: 9, background: "rgba(99,102,241,0.12)", border: "1px solid rgba(99,102,241,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <CalendarDays size={15} style={{ color: "#818cf8" }} />
+          </div>
+          <div>
+            <p style={{ color: textPrimary, fontWeight: 700, fontSize: 13, margin: 0 }}>أيام الراحة الأسبوعية</p>
+            <p style={{ color: textSecondary, fontSize: 11, margin: 0, marginTop: 2 }}>
+              {useOverride ? "تخصيص خاص بهذا الموظف" : "يستخدم إعداد الشركة الافتراضي"}
+            </p>
+          </div>
+        </div>
+        <button onClick={onSave} disabled={!changed || weeklyOffSaving}
+          style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 14px", borderRadius: 9, border: "none", background: weeklyOffSaved ? "rgba(34,197,94,0.9)" : (weeklyOffSaving ? "rgba(99,102,241,0.3)" : "linear-gradient(135deg,#6366f1,#4f46e5)"), color: "#fff", fontWeight: 700, fontSize: 12, cursor: weeklyOffSaving || !changed ? "not-allowed" : "pointer", opacity: !changed && !weeklyOffSaved ? 0.6 : 1, fontFamily: "'Tajawal','Inter',sans-serif" }}>
+          {weeklyOffSaved ? <><CheckCircle size={13} /> تم الحفظ</> : weeklyOffSaving ? <><RefreshCw size={13} style={{ animation: "spin 1s linear infinite" }} /> حفظ...</> : <><Save size={13} /> حفظ</>}
+        </button>
+      </div>
+
+      {/* Mode toggle */}
+      <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+        {([
+          { val: false as const, label: "إعداد الشركة", desc: DAY_NAMES.filter((_, i) => weeklyOffCompanyDays.includes(i)).join("، ") || "بلا" },
+          { val: true as const, label: "تخصيص للموظف", desc: "حدد أيام خاصة بهذا الموظف" },
+        ] as const).map(opt => (
+          <button key={String(opt.val)} onClick={() => { setUseOverride(opt.val); if (!opt.val) setWeeklyOffPending(weeklyOffCompanyDays); }}
+            style={{ flex: 1, padding: "9px 12px", borderRadius: 10, border: "none", cursor: "pointer", background: useOverride === opt.val ? (isDark ? "rgba(99,102,241,0.15)" : "rgba(99,102,241,0.08)") : (isDark ? "rgba(255,255,255,0.03)" : "#f8fafc"), outline: useOverride === opt.val ? "2px solid rgba(99,102,241,0.5)" : "none", outlineOffset: 1, fontFamily: "'Tajawal','Inter',sans-serif", textAlign: "right" as const }}>
+            <p style={{ fontWeight: 700, fontSize: 12, color: useOverride === opt.val ? "#818cf8" : textPrimary, margin: 0 }}>{opt.label}</p>
+            <p style={{ fontSize: 10, color: textSecondary, margin: "2px 0 0" }}>{opt.desc}</p>
+          </button>
+        ))}
+      </div>
+
+      {/* Days grid */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 6 }}>
+        {DAY_NAMES.map((name, idx) => {
+          const isOff = activeDays.includes(idx);
+          return (
+            <button key={idx} onClick={() => { if (!useOverride) return; setWeeklyOffPending(prev => prev.includes(idx) ? prev.filter(d => d !== idx) : [...prev, idx]); }}
+              style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "8px 2px", borderRadius: 10, border: "none", cursor: useOverride ? "pointer" : "default", background: isOff ? "linear-gradient(135deg,rgba(239,68,68,0.15),rgba(220,38,38,0.1))" : "linear-gradient(135deg,rgba(34,197,94,0.1),rgba(16,185,129,0.07))", opacity: !useOverride && !isOff ? 0.5 : 1, transition: "all 0.15s" }}>
+              <span style={{ fontSize: 11, fontWeight: 700, color: isOff ? "#f87171" : "#22c55e" }}>{name}</span>
+              <div style={{ width: 6, height: 6, borderRadius: "50%", background: isOff ? "#f87171" : "#22c55e", marginTop: 4 }} />
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Summary */}
+      <div style={{ marginTop: 10, fontSize: 11, color: textSecondary, textAlign: "center" }}>
+        أيام الراحة: <strong style={{ color: textPrimary }}>{activeDays.map(d => DAY_NAMES[d]).join("، ") || "لا يوجد"}</strong>
+        {useOverride && <span style={{ marginRight: 6, color: "#818cf8" }}>• تخصيص مستقل</span>}
+      </div>
+    </div>
+  );
+}
 
 interface Doc {
   id: number;
@@ -135,6 +212,15 @@ export default function AdminEmployeeProfile() {
     emergency_contact_name: "", emergency_contact_phone: "", emergency_contact_rel: "",
   });
 
+  // ── Weekly off days state ────────────────────────────────────────────────
+  const [weeklyOffDays, setWeeklyOffDays] = useState<number[]>([5, 6]);
+  const [weeklyOffPending, setWeeklyOffPending] = useState<number[]>([5, 6]);
+  const [weeklyOffIsOverride, setWeeklyOffIsOverride] = useState(false);
+  const [weeklyOffCompanyDays, setWeeklyOffCompanyDays] = useState<number[]>([5, 6]);
+  const [weeklyOffSaving, setWeeklyOffSaving] = useState(false);
+  const [weeklyOffSaved, setWeeklyOffSaved] = useState(false);
+  const [useOverride, setUseOverride] = useState(false);
+
   const textPrimary = isDark ? "#ffffff" : "#0f172a";
   const textSecondary = isDark ? "rgba(255,255,255,0.35)" : "rgba(15,23,42,0.45)";
   const textMuted = isDark ? "rgba(255,255,255,0.25)" : "rgba(15,23,42,0.3)";
@@ -152,11 +238,19 @@ export default function AdminEmployeeProfile() {
       fetch(`${BASE}api/departments`, { credentials: "include" }).then(r => r.json()),
       fetch(`${BASE}api/shifts`, { credentials: "include" }).then(r => r.json()),
       fetch(`${BASE}api/branches`, { credentials: "include" }).then(r => r.json()),
-    ]).then(([data, depts, shiftList, branchList]) => {
+      fetch(`${BASE}api/employees/${empId}/weekly-off`, { credentials: "include" }).then(r => r.ok ? r.json() : null),
+    ]).then(([data, depts, shiftList, branchList, weeklyOff]) => {
       setProfile(data);
       setDepartments(Array.isArray(depts) ? depts : (depts.departments ?? []));
       setShifts(Array.isArray(shiftList) ? shiftList : (shiftList.shifts ?? []));
       setBranches(Array.isArray(branchList) ? branchList : (branchList.branches ?? []));
+      if (weeklyOff) {
+        setWeeklyOffDays(weeklyOff.weeklyOffDays ?? [5, 6]);
+        setWeeklyOffPending(weeklyOff.weeklyOffDays ?? [5, 6]);
+        setWeeklyOffIsOverride(weeklyOff.isOverride ?? false);
+        setWeeklyOffCompanyDays(weeklyOff.companyDays ?? [5, 6]);
+        setUseOverride(weeklyOff.isOverride ?? false);
+      }
       setForm({
         phone: data.phone ?? "", email: data.email ?? "", address: data.address ?? "",
         full_name: data.full_name ?? "", job_title: data.job_title ?? "",
@@ -174,6 +268,28 @@ export default function AdminEmployeeProfile() {
       .catch(() => setError("فشل تحميل البيانات"))
       .finally(() => setLoading(false));
   }, [empId, BASE]);
+
+  const handleWeeklyOffSave = async () => {
+    setWeeklyOffSaving(true);
+    try {
+      const body = useOverride
+        ? { weeklyOffDays: weeklyOffPending }
+        : { useCompanyDefault: true };
+      const res = await fetch(`${BASE}api/employees/${empId}/weekly-off`, {
+        method: "PUT", credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const saved = data.weeklyOffDays ?? (useOverride ? weeklyOffPending : weeklyOffCompanyDays);
+        setWeeklyOffDays(saved);
+        setWeeklyOffIsOverride(useOverride);
+        setWeeklyOffSaved(true);
+        setTimeout(() => setWeeklyOffSaved(false), 3000);
+      }
+    } finally { setWeeklyOffSaving(false); }
+  };
 
   const fetchLogs = (page: number) => {
     setLogsLoading(true);
@@ -502,6 +618,19 @@ export default function AdminEmployeeProfile() {
             </button>
           </form>
         </div>
+
+      )}
+
+      {tab === "info" && (
+        <WeeklyOffCard
+          isDark={isDark} textPrimary={textPrimary} textSecondary={textSecondary} card={card}
+          weeklyOffPending={weeklyOffPending} setWeeklyOffPending={setWeeklyOffPending}
+          weeklyOffDays={weeklyOffDays} weeklyOffIsOverride={weeklyOffIsOverride}
+          weeklyOffCompanyDays={weeklyOffCompanyDays}
+          weeklyOffSaving={weeklyOffSaving} weeklyOffSaved={weeklyOffSaved}
+          useOverride={useOverride} setUseOverride={setUseOverride}
+          onSave={handleWeeklyOffSave}
+        />
       )}
 
       {/* Documents tab */}

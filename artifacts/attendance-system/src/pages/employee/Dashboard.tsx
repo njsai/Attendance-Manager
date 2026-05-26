@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { getCachedStale, setCached } from "@/lib/pageCache";
 import { useAuth } from "@/lib/auth";
-import { Clock, MapPin, LogIn, LogOut, AlertTriangle, Calendar, CheckCircle, XCircle, Timer, ScanFace } from "lucide-react";
+import { Clock, MapPin, LogIn, LogOut, AlertTriangle, Calendar, CheckCircle, XCircle, Timer, ScanFace, ClipboardList, Hourglass, CalendarX } from "lucide-react";
 import FaceCapture from "@/components/FaceCapture";
 import { motion, AnimatePresence } from "framer-motion";
 import { useI18n } from "@/lib/i18n";
@@ -25,6 +25,12 @@ interface Stats {
   totalLateMinutes: number;
   recentRecords: AttendanceRecord[];
   month: string;
+}
+
+interface LeaveSummary {
+  pendingCount: number;
+  approvedDaysMonth: number;
+  approvedDaysYear: number;
 }
 
 interface TodayRecord {
@@ -91,6 +97,7 @@ export default function EmployeeDashboard() {
   const [showFace, setShowFace] = useState(false);
   const [faceMode, setFaceMode] = useState<"check-in" | "check-out">("check-in");
   const [knownDescriptors, setKnownDescriptors] = useState<KnownDescriptor[]>([]);
+  const [leaveSummary, setLeaveSummary] = useState<LeaveSummary>({ pendingCount: 0, approvedDaysMonth: 0, approvedDaysYear: 0 });
   const BASE = import.meta.env.BASE_URL;
 
   function fmt12(dateStr: string | null | undefined): string {
@@ -118,9 +125,10 @@ export default function EmployeeDashboard() {
     const hasCached = !!getCachedStale('emp-dash');
     if (!hasCached) setLoading(true);
     try {
-      const [todayRes, statsRes] = await Promise.all([
+      const [todayRes, statsRes, leaveSumRes] = await Promise.all([
         fetch(`${BASE}api/attendance/today`, { credentials: "include" }),
         fetch(`${BASE}api/attendance/my-stats`, { credentials: "include" }),
+        fetch(`${BASE}api/leaves/my-summary`, { credentials: "include" }),
       ]);
       const todayData = await todayRes.json();
       const statsData = await statsRes.json();
@@ -134,6 +142,10 @@ export default function EmployeeDashboard() {
         recentRecords: Array.isArray(statsData.recentRecords) ? statsData.recentRecords : [],
         month: statsData.month ?? "",
       } : { presentDays: 0, absentDays: 0, lateDays: 0, totalWorkingHours: 0, totalLateMinutes: 0, recentRecords: [], month: "" };
+      if (leaveSumRes.ok) {
+        const ls = await leaveSumRes.json();
+        setLeaveSummary({ pendingCount: ls.pendingCount ?? 0, approvedDaysMonth: ls.approvedDaysMonth ?? 0, approvedDaysYear: ls.approvedDaysYear ?? 0 });
+      }
       setToday(newToday);
       setStats(newStats);
       setCached('emp-dash', { today: newToday, stats: newStats });
@@ -375,9 +387,9 @@ export default function EmployeeDashboard() {
       {/* Monthly Stats */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
         {[
-          { icon: CheckCircle,   val: stats.presentDays,                      label: t("presentDays"), color: "#10b981", glow: "rgba(16,185,129,0.15)" },
-          { icon: XCircle,       val: stats.absentDays,                       label: t("absentDays"),  color: "#f87171", glow: "rgba(248,113,113,0.15)" },
-          { icon: AlertTriangle, val: stats.lateDays,                         label: t("lateDays"),    color: "#f59e0b", glow: "rgba(245,158,11,0.15)" },
+          { icon: CheckCircle,   val: stats.presentDays,                         label: t("presentDays"), color: "#10b981", glow: "rgba(16,185,129,0.15)" },
+          { icon: XCircle,       val: stats.absentDays,                          label: t("absentDays"),  color: "#f87171", glow: "rgba(248,113,113,0.15)" },
+          { icon: AlertTriangle, val: stats.lateDays,                            label: t("lateDays"),    color: "#f59e0b", glow: "rgba(245,158,11,0.15)" },
           { icon: Timer,         val: (stats.totalWorkingHours ?? 0).toFixed(1), label: t("workingHours"), color: isDark ? "#00f5ff" : "#0891b2", glow: "rgba(0,245,255,0.15)" },
         ].map(({ icon: Icon, val, label, color, glow }) => (
           <div key={label} style={{ background: isDark ? "rgba(255,255,255,0.02)" : "rgba(255,255,255,0.85)", border: `1px solid ${glow}`, borderRadius: 16, padding: "16px 12px", textAlign: "center" }}>
@@ -386,6 +398,55 @@ export default function EmployeeDashboard() {
             <p style={{ fontSize: 11, color: textSecondary, marginTop: 4 }}>{label}</p>
           </div>
         ))}
+      </div>
+
+      {/* ─── My Needs / Summary ─────────────────────────────────────── */}
+      <div style={{ ...cardStyle }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+          <div style={{ width: 32, height: 32, borderRadius: 9, background: "rgba(99,102,241,0.12)", border: "1px solid rgba(99,102,241,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <ClipboardList size={15} style={{ color: "#818cf8" }} />
+          </div>
+          <h3 style={{ color: textPrimary, fontWeight: 700, fontSize: 13, margin: 0 }}>{t("myNeeds")}</h3>
+          <span style={{ fontSize: 11, color: textSecondary }}>{stats.month}</span>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+          {/* Work hours this month */}
+          <div style={{ padding: "14px 12px", borderRadius: 13, background: isDark ? "rgba(0,245,255,0.04)" : "rgba(8,145,178,0.04)", border: "1px solid rgba(0,245,255,0.12)", textAlign: "center" }}>
+            <Hourglass size={18} style={{ color: isDark ? "#00f5ff" : "#0891b2", margin: "0 auto 6px", display: "block" }} />
+            <p style={{ fontSize: 22, fontWeight: 800, color: textPrimary, margin: 0, lineHeight: 1 }}>{(stats.totalWorkingHours ?? 0).toFixed(1)}</p>
+            <p style={{ fontSize: 10, color: textSecondary, marginTop: 4 }}>{t("totalHoursMonth")}</p>
+          </div>
+
+          {/* Late minutes */}
+          <div style={{ padding: "14px 12px", borderRadius: 13, background: (stats.totalLateMinutes ?? 0) > 0 ? "rgba(245,158,11,0.05)" : "rgba(16,185,129,0.04)", border: `1px solid ${(stats.totalLateMinutes ?? 0) > 0 ? "rgba(245,158,11,0.2)" : "rgba(16,185,129,0.12)"}`, textAlign: "center" }}>
+            <AlertTriangle size={18} style={{ color: (stats.totalLateMinutes ?? 0) > 0 ? "#f59e0b" : "#10b981", margin: "0 auto 6px", display: "block" }} />
+            <p style={{ fontSize: 22, fontWeight: 800, color: textPrimary, margin: 0, lineHeight: 1 }}>{stats.totalLateMinutes ?? 0}</p>
+            <p style={{ fontSize: 10, color: textSecondary, marginTop: 4 }}>{t("totalLateMin")} (دقيقة)</p>
+          </div>
+
+          {/* Pending leave requests */}
+          <div style={{ padding: "14px 12px", borderRadius: 13, background: leaveSummary.pendingCount > 0 ? "rgba(245,158,11,0.05)" : "rgba(255,255,255,0.02)", border: `1px solid ${leaveSummary.pendingCount > 0 ? "rgba(245,158,11,0.2)" : innerBorder}`, textAlign: "center" }}>
+            <Calendar size={18} style={{ color: leaveSummary.pendingCount > 0 ? "#f59e0b" : textSecondary, margin: "0 auto 6px", display: "block" }} />
+            <p style={{ fontSize: 22, fontWeight: 800, color: leaveSummary.pendingCount > 0 ? "#f59e0b" : textPrimary, margin: 0, lineHeight: 1 }}>{leaveSummary.pendingCount}</p>
+            <p style={{ fontSize: 10, color: textSecondary, marginTop: 4 }}>{t("myPendingLeaves")}</p>
+          </div>
+
+          {/* Approved leave days this month */}
+          <div style={{ padding: "14px 12px", borderRadius: 13, background: leaveSummary.approvedDaysMonth > 0 ? "rgba(248,113,113,0.05)" : "rgba(255,255,255,0.02)", border: `1px solid ${leaveSummary.approvedDaysMonth > 0 ? "rgba(248,113,113,0.2)" : innerBorder}`, textAlign: "center" }}>
+            <CalendarX size={18} style={{ color: leaveSummary.approvedDaysMonth > 0 ? "#f87171" : textSecondary, margin: "0 auto 6px", display: "block" }} />
+            <p style={{ fontSize: 22, fontWeight: 800, color: leaveSummary.approvedDaysMonth > 0 ? "#f87171" : textPrimary, margin: 0, lineHeight: 1 }}>{leaveSummary.approvedDaysMonth}</p>
+            <p style={{ fontSize: 10, color: textSecondary, marginTop: 4 }}>{t("approvedLeavesMonth")}</p>
+          </div>
+        </div>
+
+        {/* Leave deduction notice */}
+        {leaveSummary.approvedDaysMonth > 0 && (
+          <div style={{ marginTop: 10, padding: "8px 12px", borderRadius: 10, background: "rgba(248,113,113,0.06)", border: "1px solid rgba(248,113,113,0.15)", display: "flex", alignItems: "center", gap: 7 }}>
+            <AlertTriangle size={13} style={{ color: "#f87171", flexShrink: 0 }} />
+            <span style={{ fontSize: 11, color: isDark ? "rgba(255,255,255,0.5)" : "#475569" }}>{t("leaveDeductedNote")}</span>
+          </div>
+        )}
       </div>
 
       {/* Recent Records */}

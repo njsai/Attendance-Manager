@@ -52,6 +52,43 @@ router.get("/", requireAuth, async (req, res) => {
   } catch (err) { console.error(err); res.status(500).json({ message: "Server error" }); }
 });
 
+// ── Weekly off days per employee ──────────────────────────────────────────────
+router.get("/:id/weekly-off", requireAdmin, async (req, res) => {
+  try {
+    const companyId = req.session.companyId!;
+    const id = parseInt(String(req.params.id));
+    const { pool } = await import("@workspace/db");
+    const { rows } = await pool.query(
+      `SELECT e.weekly_off_days AS emp_days, c.weekly_off_days AS co_days
+       FROM employees e JOIN companies c ON c.id = e.company_id
+       WHERE e.id = $1 AND e.company_id = $2`, [id, companyId]
+    );
+    if (!rows.length) { res.status(404).json({ message: "الموظف غير موجود" }); return; }
+    const r = rows[0] as any;
+    const hasOverride = r.emp_days !== null && r.emp_days !== "";
+    const activeDays = hasOverride ? r.emp_days : r.co_days;
+    const days = activeDays ? activeDays.split(",").map(Number).filter((n: number) => n >= 0 && n <= 6) : [];
+    res.json({ weeklyOffDays: days, isOverride: hasOverride, companyDays: r.co_days ? r.co_days.split(",").map(Number) : [5,6] });
+  } catch (err) { console.error(err); res.status(500).json({ message: "خطأ في الخادم" }); }
+});
+
+router.put("/:id/weekly-off", requireAdmin, async (req, res) => {
+  try {
+    const companyId = req.session.companyId!;
+    const id = parseInt(String(req.params.id));
+    const { weeklyOffDays, useCompanyDefault } = req.body;
+    const { pool } = await import("@workspace/db");
+    if (useCompanyDefault) {
+      await pool.query(`UPDATE employees SET weekly_off_days = NULL WHERE id = $1 AND company_id = $2`, [id, companyId]);
+      res.json({ weeklyOffDays: null, isOverride: false }); return;
+    }
+    if (!Array.isArray(weeklyOffDays)) { res.status(400).json({ message: "weeklyOffDays مطلوبة" }); return; }
+    const valid = weeklyOffDays.filter((d: any) => Number.isInteger(d) && d >= 0 && d <= 6);
+    await pool.query(`UPDATE employees SET weekly_off_days = $1 WHERE id = $2 AND company_id = $3`, [valid.join(","), id, companyId]);
+    res.json({ weeklyOffDays: valid, isOverride: true });
+  } catch (err) { console.error(err); res.status(500).json({ message: "خطأ في الخادم" }); }
+});
+
 router.get("/:id", requireAuth, async (req, res) => {
   try {
     const companyId = req.session.companyId!;

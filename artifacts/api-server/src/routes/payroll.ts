@@ -41,9 +41,9 @@ function calcNet(p: {
   );
 }
 
-// ─── Helper: compute unpaid leave deduction for employee in a month ───────────
-// Correctly handles leaves that span month boundaries by calculating the
-// actual overlap between each leave's date range and the target month.
+// ─── Helper: compute leave deduction for employee in a month ─────────────────
+// Deducts ALL approved leaves (any type) that overlap the target month.
+// Correctly handles leaves that span month boundaries.
 async function buildLeaveDeduction(employeeId: number, month: number, year: number, dailyRate: number): Promise<number> {
   const monthStart = `${year}-${String(month).padStart(2, "0")}-01`;
   const lastDay = new Date(year, month, 0).getDate();
@@ -57,7 +57,6 @@ async function buildLeaveDeduction(employeeId: number, month: number, year: numb
         FROM leaves
         WHERE employee_id = ${employeeId}
           AND status = 'approved'
-          AND leave_type = 'unpaid'
           AND start_date <= ${monthEnd}::date
           AND end_date   >= ${monthStart}::date`
   );

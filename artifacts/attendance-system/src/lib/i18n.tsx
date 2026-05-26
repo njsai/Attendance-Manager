@@ -48,6 +48,16 @@ const translations = {
     saveWeeklyDays: "حفظ أيام الراحة",
     sunday: "الأحد", monday: "الاثنين", tuesday: "الثلاثاء",
     wednesday: "الأربعاء", thursday: "الخميس", friday: "الجمعة", saturday: "السبت",
+    // Employee needs / summary
+    myNeeds: "ملخصي وطلباتي",
+    totalHoursMonth: "ساعات العمل هذا الشهر",
+    totalLateMin: "دقائق التأخير",
+    myPendingLeaves: "طلبات إجازة معلقة",
+    approvedLeavesMonth: "أيام إجازة مُقرّة هذا الشهر",
+    leaveDeductedNote: "تُخصم الإجازات المُعتمدة من الراتب عند إصدار كشف الراتب",
+    perEmployeeWeeklyOff: "أيام الراحة الخاصة بهذا الموظف",
+    useCompanyDefault: "استخدام إعداد الشركة الافتراضي",
+    employeeOverride: "تخصيص للموظف",
 
     // Roles
     admin: "مدير النظام",
@@ -406,6 +416,16 @@ const translations = {
     saveWeeklyDays: "Save Rest Days",
     sunday: "Sun", monday: "Mon", tuesday: "Tue",
     wednesday: "Wed", thursday: "Thu", friday: "Fri", saturday: "Sat",
+    // Employee needs / summary
+    myNeeds: "My Summary & Requests",
+    totalHoursMonth: "Work Hours This Month",
+    totalLateMin: "Late Minutes",
+    myPendingLeaves: "Pending Leave Requests",
+    approvedLeavesMonth: "Approved Leave Days This Month",
+    leaveDeductedNote: "Approved leaves are deducted from salary when payroll is processed",
+    perEmployeeWeeklyOff: "Weekly Rest Days for This Employee",
+    useCompanyDefault: "Use Company Default",
+    employeeOverride: "Custom for Employee",
 
     // Roles
     admin: "Admin",

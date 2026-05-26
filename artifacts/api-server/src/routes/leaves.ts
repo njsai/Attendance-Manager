@@ -22,6 +22,37 @@ const leaveSelect = {
   departmentName: departmentsTable.name,
 };
 
+// ── My leave summary (employee self) — must be before /:id routes ─────────────
+router.get("/my-summary", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.userId!;
+    const now = new Date();
+    const year = now.getFullYear();
+    const monthStart = `${year}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+    const lastDay = new Date(year, now.getMonth() + 1, 0).getDate();
+    const monthEnd = `${year}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+    const { pool } = await import("@workspace/db");
+    const { rows } = await pool.query(
+      `SELECT
+         COUNT(*) FILTER (WHERE status = 'pending')                          AS pending_count,
+         COUNT(*) FILTER (WHERE status = 'approved')                         AS approved_total,
+         COALESCE(SUM(total_days) FILTER (WHERE status = 'approved'
+           AND start_date >= $2::date AND start_date <= $3::date), 0)        AS approved_days_month,
+         COALESCE(SUM(total_days) FILTER (WHERE status = 'approved'
+           AND EXTRACT(YEAR FROM start_date) = $4), 0)                      AS approved_days_year
+       FROM leaves WHERE employee_id = $1`,
+      [userId, monthStart, monthEnd, year]
+    );
+    const r = rows[0] as any;
+    res.json({
+      pendingCount: Number(r.pending_count ?? 0),
+      approvedTotal: Number(r.approved_total ?? 0),
+      approvedDaysMonth: Number(r.approved_days_month ?? 0),
+      approvedDaysYear: Number(r.approved_days_year ?? 0),
+    });
+  } catch (err) { console.error(err); res.status(500).json({ message: "خطأ في الخادم" }); }
+});
+
 router.get("/", requireAuth, async (req, res) => {
   try {
     const companyId = req.session.companyId!;
