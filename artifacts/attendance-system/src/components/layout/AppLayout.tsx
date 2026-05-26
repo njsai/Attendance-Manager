@@ -7,7 +7,7 @@ import {
   LayoutDashboard, Users, Building2, Clock,
   CalendarCheck, FileBarChart, LogOut, Menu, X, Home, Settings, MessageCircle,
   Sun, Moon, Languages, Banknote, Zap, Bell, ChevronLeft, AlertTriangle, Info, CheckCircle, UserCircle, CreditCard,
-  Calendar, TrendingUp, BookOpen,
+  Calendar, TrendingUp, BookOpen, Star,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import NotificationBell from "@/components/NotificationBell";
@@ -35,6 +35,7 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
     { name: t("calendar"),        path: "/calendar",    icon: Calendar },
     { name: t("performance"),     path: "/performance", icon: TrendingUp },
     { name: t("knowledgeCenter"), path: "/knowledge",   icon: BookOpen },
+    { name: t("holidays"),        path: "/holidays",    icon: Star },
     { name: t("settings"),        path: "/settings",    icon: Settings },
   ];
 

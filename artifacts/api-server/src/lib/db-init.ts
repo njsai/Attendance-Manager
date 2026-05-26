@@ -272,6 +272,19 @@ async function tryInitOnce(): Promise<void> {
       features = EXCLUDED.features
   `);
 
+  // ─── Public holidays table ────────────────────────────────────────────────
+  await runSql(`CREATE TABLE IF NOT EXISTS public_holidays (
+    id           SERIAL PRIMARY KEY,
+    company_id   INTEGER NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+    name         TEXT NOT NULL,
+    date         DATE NOT NULL,
+    is_recurring BOOLEAN NOT NULL DEFAULT FALSE,
+    notes        TEXT,
+    created_at   TIMESTAMP NOT NULL DEFAULT NOW()
+  )`);
+  await runSql(`CREATE INDEX IF NOT EXISTS idx_holidays_company ON public_holidays(company_id)`);
+  await runSql(`CREATE INDEX IF NOT EXISTS idx_holidays_date    ON public_holidays(date)`);
+
   // ─── Add preference columns if missing (idempotent) ─────────────────────
   await runSql(`ALTER TABLE employees ADD COLUMN IF NOT EXISTS preferred_theme TEXT NOT NULL DEFAULT 'dark'`);
   await runSql(`ALTER TABLE employees ADD COLUMN IF NOT EXISTS preferred_lang  TEXT NOT NULL DEFAULT 'ar'`);

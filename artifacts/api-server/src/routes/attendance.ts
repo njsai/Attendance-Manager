@@ -605,6 +605,26 @@ router.post("/check-in", requireAuth, async (req, res) => {
       }
     }
 
+    // ── Public holiday guard — block employees & managers on holidays ────────
+    if (req.session.role !== "admin") {
+      const { pool } = await import("@workspace/db");
+      const holidayResult = await pool.query(
+        `SELECT name FROM public_holidays
+         WHERE company_id = $1
+           AND (
+             date = $2::date
+             OR (is_recurring = TRUE AND to_char(date,'MM-DD') = to_char($2::date,'MM-DD'))
+           )
+         LIMIT 1`,
+        [companyId, today]
+      );
+      if (holidayResult.rows.length > 0) {
+        const holidayName = (holidayResult.rows[0] as any).name;
+        res.status(403).json({ message: `اليوم عطلة رسمية (${holidayName}) — لا يُسمح بتسجيل الحضور` });
+        return;
+      }
+    }
+
     // Duplicate check
     const [existing] = await db
       .select({ id: attendanceTable.id })

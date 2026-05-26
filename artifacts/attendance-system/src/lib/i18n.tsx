@@ -27,6 +27,19 @@ const translations = {
     performance: "تقييم الأداء",
     myPerformance: "أدائي",
     knowledgeCenter: "مركز المعرفة",
+    holidays: "العطل الرسمية",
+
+    // Holidays page
+    publicHolidays: "العطل الرسمية",
+    addHoliday: "إضافة عطلة",
+    editHoliday: "تعديل العطلة",
+    holidayName: "اسم العطلة",
+    holidayDate: "تاريخ العطلة",
+    holidayRecurring: "تتكرر كل سنة",
+    holidayNotes: "ملاحظات",
+    holidayBlockedMsg: "اليوم عطلة رسمية — لا يُسمح بتسجيل الحضور",
+    noHolidays: "لا توجد عطل رسمية مضافة",
+    holidayDeleteConfirm: "هل تريد حذف هذه العطلة؟",
 
     // Roles
     admin: "مدير النظام",
@@ -364,6 +377,19 @@ const translations = {
     performance: "Performance",
     myPerformance: "My Performance",
     knowledgeCenter: "Knowledge Center",
+    holidays: "Holidays",
+
+    // Holidays page
+    publicHolidays: "Public Holidays",
+    addHoliday: "Add Holiday",
+    editHoliday: "Edit Holiday",
+    holidayName: "Holiday Name",
+    holidayDate: "Date",
+    holidayRecurring: "Repeats annually",
+    holidayNotes: "Notes",
+    holidayBlockedMsg: "Today is a public holiday — check-in not allowed",
+    noHolidays: "No public holidays added",
+    holidayDeleteConfirm: "Delete this holiday?",
 
     // Roles
     admin: "Admin",

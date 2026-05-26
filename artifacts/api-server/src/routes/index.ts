@@ -27,6 +27,7 @@ import userNotificationsRouter from "./user-notifications.js";
 import calendarRouter from "./calendar.js";
 import performanceRouter from "./performance.js";
 import knowledgeRouter from "./knowledge.js";
+import holidaysRouter from "./holidays.js";
 
 const router: IRouter = Router();
 
@@ -58,5 +59,6 @@ router.use("/user-notifications", userNotificationsRouter);
 router.use("/calendar", calendarRouter);
 router.use("/performance", performanceRouter);
 router.use("/knowledge", knowledgeRouter);
+router.use("/holidays", holidaysRouter);
 
 export default router;

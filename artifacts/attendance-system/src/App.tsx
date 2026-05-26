@@ -35,6 +35,7 @@ import AdminPerformance  from "@/pages/admin/Performance";
 import EmployeePerformance from "@/pages/employee/Performance";
 import AdminKnowledgeCenter from "@/pages/admin/KnowledgeCenter";
 import EmployeeKnowledgeCenter from "@/pages/employee/KnowledgeCenter";
+import AdminHolidays from "@/pages/admin/Holidays";
 
 // ─── Lazy-loaded (super admin + rarely visited) ───────────────────────────────
 const SuperAdminDashboard  = lazy(() => import("@/pages/super-admin/Dashboard"));
@@ -152,6 +153,7 @@ function Router() {
         <Route path="/calendar">{() => <Guard adminOnly><AdminCalendar /></Guard>}</Route>
         <Route path="/performance">{() => <Guard adminOnly><AdminPerformance /></Guard>}</Route>
         <Route path="/knowledge">{() => <Guard adminOnly><AdminKnowledgeCenter /></Guard>}</Route>
+        <Route path="/holidays">{() => <Guard adminOnly><AdminHolidays /></Guard>}</Route>
 
         {/* Employee */}
         <Route path="/my-attendance">{() => <Guard><EmployeeDashboard /></Guard>}</Route>
