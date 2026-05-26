@@ -41,6 +41,14 @@ const translations = {
     noHolidays: "لا توجد عطل رسمية مضافة",
     holidayDeleteConfirm: "هل تريد حذف هذه العطلة؟",
 
+    // Weekly holidays
+    weeklyHolidays: "العطل الأسبوعية",
+    weeklyHolidaysDesc: "حدد أيام الراحة الأسبوعية لشركتك",
+    weeklyOffBlocked: "اليوم عطلة أسبوعية — لا يُسمح بتسجيل الحضور",
+    saveWeeklyDays: "حفظ أيام الراحة",
+    sunday: "الأحد", monday: "الاثنين", tuesday: "الثلاثاء",
+    wednesday: "الأربعاء", thursday: "الخميس", friday: "الجمعة", saturday: "السبت",
+
     // Roles
     admin: "مدير النظام",
     manager: "مشرف",
@@ -390,6 +398,14 @@ const translations = {
     holidayBlockedMsg: "Today is a public holiday — check-in not allowed",
     noHolidays: "No public holidays added",
     holidayDeleteConfirm: "Delete this holiday?",
+
+    // Weekly holidays
+    weeklyHolidays: "Weekly Days Off",
+    weeklyHolidaysDesc: "Set your company's weekly rest days",
+    weeklyOffBlocked: "Today is a weekly day off — check-in not allowed",
+    saveWeeklyDays: "Save Rest Days",
+    sunday: "Sun", monday: "Mon", tuesday: "Tue",
+    wednesday: "Wed", thursday: "Thu", friday: "Fri", saturday: "Sat",
 
     // Roles
     admin: "Admin",

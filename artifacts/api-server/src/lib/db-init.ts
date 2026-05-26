@@ -292,6 +292,10 @@ async function tryInitOnce(): Promise<void> {
   // ─── Add company_code column if missing (idempotent) ─────────────────────
   await runSql(`ALTER TABLE companies ADD COLUMN IF NOT EXISTS company_code TEXT`);
 
+  // ─── Weekly off days per company (idempotent) ─────────────────────────────
+  // "5,6" = Friday+Saturday (common in Iraq/Middle East). 0=Sun…6=Sat.
+  await runSql(`ALTER TABLE companies ADD COLUMN IF NOT EXISTS weekly_off_days TEXT NOT NULL DEFAULT '5,6'`);
+
   console.log("[DB-Init] All tables verified ✓");
 
   // ─── Seed super admin ONLY if none exist ─────────────────────────────────

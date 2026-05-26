@@ -605,9 +605,24 @@ router.post("/check-in", requireAuth, async (req, res) => {
       }
     }
 
-    // ── Public holiday guard — block employees & managers on holidays ────────
+    // ── Holiday guards — block employees & managers on holidays ──────────────
     if (req.session.role !== "admin") {
       const { pool } = await import("@workspace/db");
+
+      // 1) Weekly off days
+      const companyRow = await pool.query(
+        `SELECT weekly_off_days FROM companies WHERE id = $1`, [companyId]
+      );
+      const rawWeekly: string = (companyRow.rows[0] as any)?.weekly_off_days ?? "5,6";
+      const weeklyOff = rawWeekly ? rawWeekly.split(",").map(Number) : [];
+      const todayDow = now.getDay(); // 0=Sun … 6=Sat
+      if (weeklyOff.includes(todayDow)) {
+        const DAY_NAMES = ["الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت"];
+        res.status(403).json({ message: `اليوم (${DAY_NAMES[todayDow]}) عطلة أسبوعية — لا يُسمح بتسجيل الحضور` });
+        return;
+      }
+
+      // 2) Public holiday
       const holidayResult = await pool.query(
         `SELECT name FROM public_holidays
          WHERE company_id = $1
